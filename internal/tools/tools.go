@@ -14,7 +14,7 @@ func RendererInvocation(tool, prompt string, unsafe bool) ([]string, error) {
 		if unsafe {
 			return []string{"codex", "exec", "--dangerously-bypass-approvals-and-sandbox", "--json", prompt}, nil
 		}
-		return []string{"codex", "exec", "--sandbox", "workspace-write", "--ask-for-approval", "never", "--json", prompt}, nil
+		return []string{"codex", "--ask-for-approval", "never", "exec", "--sandbox", "workspace-write", "--json", prompt}, nil
 	case "claude":
 		mode := []string{"--permission-mode", "acceptEdits"}
 		if unsafe {
@@ -50,7 +50,7 @@ func OrchestratorInvocation(tool, workdir, prompt string, unsafe bool) ([]string
 		if unsafe {
 			return []string{"codex", "exec", "--cd", workdir, "--dangerously-bypass-approvals-and-sandbox", "-"}, prompt, nil
 		}
-		return []string{"codex", "exec", "--cd", workdir, "--sandbox", "workspace-write", "--ask-for-approval", "never", "-"}, prompt, nil
+		return []string{"codex", "--ask-for-approval", "never", "exec", "--cd", workdir, "--sandbox", "workspace-write", "-"}, prompt, nil
 	case "claude":
 		if unsafe {
 			return []string{"claude", "-p", prompt, "--dangerously-skip-permissions"}, "", nil

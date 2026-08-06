@@ -10,7 +10,7 @@ func TestRendererInvocationSafeByDefault(t *testing.T) {
 		tool string
 		want []string
 	}{
-		{"codex", []string{"codex", "exec", "--sandbox", "workspace-write", "--ask-for-approval", "never", "--json", "prompt"}},
+		{"codex", []string{"codex", "--ask-for-approval", "never", "exec", "--sandbox", "workspace-write", "--json", "prompt"}},
 		{"claude", []string{"claude", "-p", "--permission-mode", "acceptEdits", "--verbose", "--output-format", "stream-json", "--prompt-suggestions", "false", "prompt"}},
 		{"qoder", []string{"qoderclicn", "-p", "prompt", "--permission-mode", "dont_ask", "--output-format", "stream-json"}},
 		{"codebuddy", []string{"codebuddy", "-p", "--verbose", "--output-format", "stream-json", "--permission-mode", "acceptEdits", "prompt"}},
@@ -59,7 +59,7 @@ func TestOrchestratorInvocationUsesSafeWorkspaceMode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"codex", "exec", "--cd", "/work", "--sandbox", "workspace-write", "--ask-for-approval", "never", "-"}
+	want := []string{"codex", "--ask-for-approval", "never", "exec", "--cd", "/work", "--sandbox", "workspace-write", "-"}
 	if !reflect.DeepEqual(got, want) || stdin != "prompt" {
 		t.Fatalf("got=%#v stdin=%q", got, stdin)
 	}
