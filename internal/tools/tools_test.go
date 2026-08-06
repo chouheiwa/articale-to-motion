@@ -10,7 +10,7 @@ func TestRendererInvocationSafeByDefault(t *testing.T) {
 		tool string
 		want []string
 	}{
-		{"codex", []string{"codex", "--ask-for-approval", "never", "exec", "--sandbox", "workspace-write", "--json", "prompt"}},
+		{"codex", []string{"codex", "--ask-for-approval", "never", "exec", "--skip-git-repo-check", "--sandbox", "workspace-write", "--json", "prompt"}},
 		{"claude", []string{"claude", "-p", "--permission-mode", "acceptEdits", "--verbose", "--output-format", "stream-json", "--prompt-suggestions", "false", "prompt"}},
 		{"qoder", []string{"qoderclicn", "-p", "prompt", "--permission-mode", "dont_ask", "--output-format", "stream-json"}},
 		{"codebuddy", []string{"codebuddy", "-p", "--verbose", "--output-format", "stream-json", "--permission-mode", "acceptEdits", "prompt"}},
@@ -34,7 +34,7 @@ func TestRendererInvocationUnsafeIsExplicit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"codex", "exec", "--dangerously-bypass-approvals-and-sandbox", "--json", "prompt"}
+	want := []string{"codex", "exec", "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", "--json", "prompt"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %#v want %#v", got, want)
 	}
@@ -59,7 +59,18 @@ func TestOrchestratorInvocationUsesSafeWorkspaceMode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"codex", "--ask-for-approval", "never", "exec", "--cd", "/work", "--sandbox", "workspace-write", "-"}
+	want := []string{"codex", "--ask-for-approval", "never", "exec", "--skip-git-repo-check", "--cd", "/work", "--sandbox", "workspace-write", "-"}
+	if !reflect.DeepEqual(got, want) || stdin != "prompt" {
+		t.Fatalf("got=%#v stdin=%q", got, stdin)
+	}
+}
+
+func TestOrchestratorInvocationUnsafeSkipsGitCheck(t *testing.T) {
+	got, stdin, err := OrchestratorInvocation("codex", "/work", "prompt", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"codex", "exec", "--skip-git-repo-check", "--cd", "/work", "--dangerously-bypass-approvals-and-sandbox", "-"}
 	if !reflect.DeepEqual(got, want) || stdin != "prompt" {
 		t.Fatalf("got=%#v stdin=%q", got, stdin)
 	}
