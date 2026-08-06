@@ -4,6 +4,8 @@
 
 ArticleToMotion 是面向 macOS 和 Linux 的竖屏 MG 视频生产 CLI。它可以把定稿 SRT 拆成并发渲染的动画镜头，也可以从文章或口播稿完成 TTS、字幕、封面、声音制作和发布交付。
 
+▶ [观看 ArticleToMotion 宣传视频（MP4，4 分 47 秒）](https://github.com/chouheiwa/articale-to-motion/releases/download/v1.0.0/article-to-motion-tutorial.mp4)
+
 Go 版本以单个 `am` 二进制发布，不依赖 Python。项目 Prompt、发布模板和视觉规范由二进制内置，HyperFrames 技能在初始化时从固定官方版本安装。
 
 ## 安装
