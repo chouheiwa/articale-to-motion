@@ -21,11 +21,15 @@ func TestLoadPrecedence(t *testing.T) {
 	}
 }
 
-func TestLoadRejectsSameTools(t *testing.T) {
+func TestLoadAllowsSameTools(t *testing.T) {
 	root := t.TempDir()
 	os.WriteFile(filepath.Join(root, "article-to-motion.conf"), []byte("ORCHESTRATOR=codex\nRENDERER=codex\n"), 0o644)
-	if _, err := Load(root, nil); err == nil {
-		t.Fatal("expected same-tool error")
+	cfg, err := Load(root, map[string]string{})
+	if err != nil {
+		t.Fatalf("same tool should be allowed: %v", err)
+	}
+	if cfg.Orchestrator != "codex" || cfg.Renderer != "codex" {
+		t.Fatalf("unexpected config: %+v", cfg)
 	}
 }
 

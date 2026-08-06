@@ -67,7 +67,10 @@ func TestRunStartsConfiguredOrchestrator(t *testing.T) {
 	bin := t.TempDir()
 	os.WriteFile(filepath.Join(root, "article-to-motion.conf"), []byte("ORCHESTRATOR=codex\nRENDERER=claude\n"), 0o644)
 	os.WriteFile(filepath.Join(root, "PROMPT.md"), []byte("hello orchestrator"), 0o644)
-	script := "#!/bin/sh\ncat > " + filepath.Join(root, "received.txt") + "\n"
+	script := "#!/bin/sh\n" +
+		"printf '%s\\n' \"$AM_EXECUTABLE\" > \"" + filepath.Join(root, "am-executable.txt") + "\"\n" +
+		"printf '%s\\n' \"$PATH\" > \"" + filepath.Join(root, "child-path.txt") + "\"\n" +
+		"cat > \"" + filepath.Join(root, "received.txt") + "\"\n"
 	os.WriteFile(filepath.Join(bin, "codex"), []byte(script), 0o755)
 	old, _ := os.Getwd()
 	os.Chdir(root)
@@ -82,6 +85,22 @@ func TestRunStartsConfiguredOrchestrator(t *testing.T) {
 	body, err := os.ReadFile(filepath.Join(root, "received.txt"))
 	if err != nil || string(body) != "hello orchestrator" {
 		t.Fatalf("received=%q err=%v", body, err)
+	}
+	executable, err := os.ReadFile(filepath.Join(root, "am-executable.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	executablePath := strings.TrimSpace(string(executable))
+	if executablePath == "" || !filepath.IsAbs(executablePath) {
+		t.Fatalf("AM_EXECUTABLE should be absolute, got %q", executablePath)
+	}
+	childPath, err := os.ReadFile(filepath.Join(root, "child-path.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pathEntries := filepath.SplitList(strings.TrimSpace(string(childPath)))
+	if len(pathEntries) == 0 || pathEntries[0] != filepath.Dir(executablePath) {
+		t.Fatalf("executable directory should lead PATH: executable=%q PATH=%q", executablePath, childPath)
 	}
 }
 
@@ -103,7 +122,7 @@ func TestStyleAndEmptyRunAllCommands(t *testing.T) {
 	}
 }
 
-func TestInitConflictAndInvalidConfigFailCleanly(t *testing.T) {
+func TestInitConflictAndSameToolConfigSucceeds(t *testing.T) {
 	target := t.TempDir()
 	os.WriteFile(filepath.Join(target, "PROMPT.md"), []byte("custom"), 0o644)
 	if code := Execute([]string{"init", target, "--skip-hyperframes"}, &bytes.Buffer{}, &bytes.Buffer{}); code != 1 {
@@ -114,8 +133,12 @@ func TestInitConflictAndInvalidConfigFailCleanly(t *testing.T) {
 	old, _ := os.Getwd()
 	os.Chdir(root)
 	defer os.Chdir(old)
-	if code := Execute([]string{"config", "get", "RENDERER"}, &bytes.Buffer{}, &bytes.Buffer{}); code != 1 {
-		t.Fatalf("invalid config exit=%d", code)
+	var out bytes.Buffer
+	if code := Execute([]string{"config", "get", "RENDERER"}, &out, &out); code != 0 {
+		t.Fatalf("same-tool config exit=%d output=%s", code, out.String())
+	}
+	if got := strings.TrimSpace(out.String()); got != "codex" {
+		t.Fatalf("renderer=%q want codex", got)
 	}
 }
 

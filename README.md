@@ -15,7 +15,7 @@ Go 版本以单个 `am` 二进制发布，不依赖 Python。项目 Prompt、发
 - macOS 或 Linux（amd64/arm64）
 - Node.js 22+
 - Git、FFmpeg、FFprobe
-- Codex、Claude Code、Qoder、CodeBuddy、OpenCode 中至少两个已登录的 CLI
+- Codex、Claude Code、Qoder、CodeBuddy、OpenCode 中至少一个已登录的 CLI
 
 ## 创建项目
 
@@ -26,7 +26,7 @@ cd my-video
 
 `am init` 不覆盖内容不同的已有文件。默认执行 `npx --yes hyperframes@0.7.94 skills`；离线或 CI 环境可使用 `--skip-hyperframes`。
 
-编辑 `article-to-motion.conf` 选择不同的编排工具与渲染工具：
+编辑 `article-to-motion.conf` 选择编排工具与渲染工具；两者可以相同：
 
 ```text
 ORCHESTRATOR=codex
@@ -50,6 +50,8 @@ am run
 ```bash
 am run PROMPT-PRODUCTION.md
 ```
+
+`am run` 会自动将当前 `am` 可执行文件所在目录放到编排子进程的 `PATH` 首位，并注入其绝对路径为 `AM_EXECUTABLE`。因此 Prompt 中的 `am scene ...` 会继续使用启动本次流程的同一个 CLI，无需把二进制复制进项目。
 
 镜头命令也可独立使用：
 

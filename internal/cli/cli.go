@@ -38,6 +38,27 @@ func currentEnvironment() map[string]string {
 	return result
 }
 
+func addExecutableLocation(env map[string]string) {
+	executable, err := os.Executable()
+	if err != nil {
+		return
+	}
+	executable, err = filepath.Abs(executable)
+	if err != nil {
+		return
+	}
+	if resolved, resolveErr := filepath.EvalSymlinks(executable); resolveErr == nil {
+		executable = resolved
+	}
+	env["AM_EXECUTABLE"] = executable
+	directory := filepath.Dir(executable)
+	if current := env["PATH"]; current != "" {
+		env["PATH"] = directory + string(os.PathListSeparator) + current
+	} else {
+		env["PATH"] = directory
+	}
+}
+
 func Execute(args []string, stdout, stderr io.Writer) int {
 	return ExecuteContext(context.Background(), args, stdout, stderr)
 }
@@ -251,7 +272,9 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		}
 		process := exec.Command(binary, argv[1:]...)
 		process.Dir, process.Stdout, process.Stderr = workdir, stdout, stderr
-		process.Env = envList(cfg.ChildEnvironment(currentEnvironment(), isUnsafe, strings.FieldsFunc(os.Getenv("AM_PASSTHROUGH_ENV"), func(r rune) bool { return r == ',' || r == ' ' })))
+		childEnvironment := cfg.ChildEnvironment(currentEnvironment(), isUnsafe, strings.FieldsFunc(os.Getenv("AM_PASSTHROUGH_ENV"), func(r rune) bool { return r == ',' || r == ' ' }))
+		addExecutableLocation(childEnvironment)
+		process.Env = envList(childEnvironment)
 		if stdin != "" {
 			process.Stdin = strings.NewReader(stdin)
 		}

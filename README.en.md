@@ -10,7 +10,7 @@ The Go release ships as one `am` binary with embedded project templates. It does
 
 ## Install and initialize
 
-Download the appropriate archive from GitHub Releases, verify it with `checksums.txt`, and place `am` on `PATH`. Node.js 22+, Git, FFmpeg/FFprobe, and two authenticated supported AI CLIs are required.
+Download the appropriate archive from GitHub Releases, verify it with `checksums.txt`, and place `am` on `PATH`. Node.js 22+, Git, FFmpeg/FFprobe, and at least one authenticated supported AI CLI are required. `ORCHESTRATOR` and `RENDERER` may use the same CLI.
 
 ```bash
 am init my-video
@@ -32,6 +32,8 @@ For complete production from an article or spoken script:
 ```bash
 am run PROMPT-PRODUCTION.md
 ```
+
+`am run` prepends the directory of the current `am` executable to the orchestrator process's `PATH` and exposes its absolute path as `AM_EXECUTABLE`. Commands such as `am scene ...` in the prompt therefore resolve to the same CLI that started the workflow, without copying the binary into each project.
 
 Scene operations are available directly:
 

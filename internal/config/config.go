@@ -103,9 +103,6 @@ func Load(root string, environ map[string]string) (Config, error) {
 	if !validTools[cfg.Renderer] {
 		return Config{}, fmt.Errorf("无效的 RENDERER: %s（可选：codex claude qoder codebuddy opencode）", cfg.Renderer)
 	}
-	if cfg.Orchestrator == cfg.Renderer {
-		return Config{}, fmt.Errorf("ORCHESTRATOR 和 RENDERER 不能相同：%s", cfg.Renderer)
-	}
 	if !validTTS[cfg.TTSProvider] {
 		return Config{}, fmt.Errorf("无效的 TTS_PROVIDER: %s（可选：minimax bailian）", cfg.TTSProvider)
 	}
