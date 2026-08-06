@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.8'
+          cache: true
+      - name: Test
+        run: go test ./...
+      - name: Build archives
+        run: |
+          mkdir -p dist
+          for target in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
+            os="${target%/*}"
+            arch="${target#*/}"
+            dir="article-to-motion-${GITHUB_REF_NAME}-${os}-${arch}"
+            mkdir "$dir"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags='-s -w' -o "$dir/am" ./cmd/am
+            cp LICENSE README.md README.en.md "$dir/"
+            tar -czf "dist/${dir}.tar.gz" "$dir"
+          done
+          cd dist
+          sha256sum *.tar.gz > checksums.txt
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --generate-notes --title "ArticleToMotion $GITHUB_REF_NAME"

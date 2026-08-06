@@ -1,0 +1,147 @@
+package config
+
+import (
+	"bufio"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+)
+
+const (
+	DefaultSceneJobs = 3
+	MaxSceneJobs     = 16
+)
+
+var (
+	validTools = map[string]bool{"codex": true, "claude": true, "qoder": true, "codebuddy": true, "opencode": true}
+	validTTS   = map[string]bool{"minimax": true, "bailian": true}
+	secretKey  = regexp.MustCompile(`(?i)(API_KEY|TOKEN|SECRET|PASSWORD)$`)
+)
+
+type Config struct {
+	Orchestrator string
+	Renderer     string
+	TTSProvider  string
+	SceneJobs    int
+	Overlay      map[string]string
+}
+
+func envMap() map[string]string {
+	out := make(map[string]string)
+	for _, entry := range os.Environ() {
+		key, value, ok := strings.Cut(entry, "=")
+		if ok {
+			out[key] = value
+		}
+	}
+	return out
+}
+
+func parseFile(path string) (map[string]string, error) {
+	out := make(map[string]string)
+	f, err := os.Open(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return out, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		line = strings.TrimPrefix(line, "export ")
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key, value = strings.TrimSpace(key), strings.TrimSpace(value)
+		if len(value) >= 2 && ((value[0] == '\'' && value[len(value)-1] == '\'') || (value[0] == '"' && value[len(value)-1] == '"')) {
+			value = value[1 : len(value)-1]
+		}
+		out[key] = value
+	}
+	return out, scanner.Err()
+}
+
+func Load(root string, environ map[string]string) (Config, error) {
+	if environ == nil {
+		environ = envMap()
+	}
+	dotenv, err := parseFile(filepath.Join(root, ".env"))
+	if err != nil {
+		return Config{}, fmt.Errorf("读取 .env: %w", err)
+	}
+	for key := range dotenv {
+		if secretKey.MatchString(key) {
+			return Config{}, fmt.Errorf(".env 不得保存密钥 %s，请使用对应工具的登录命令", key)
+		}
+	}
+	conf, err := parseFile(filepath.Join(root, "article-to-motion.conf"))
+	if err != nil {
+		return Config{}, fmt.Errorf("读取 article-to-motion.conf: %w", err)
+	}
+	resolve := func(key, fallback string) string {
+		for _, source := range []map[string]string{environ, dotenv, conf} {
+			if value := source[key]; value != "" {
+				return value
+			}
+		}
+		return fallback
+	}
+	cfg := Config{Orchestrator: resolve("ORCHESTRATOR", ""), Renderer: resolve("RENDERER", ""), TTSProvider: resolve("TTS_PROVIDER", "minimax"), Overlay: dotenv}
+	if !validTools[cfg.Orchestrator] {
+		return Config{}, fmt.Errorf("无效的 ORCHESTRATOR: %s（可选：codex claude qoder codebuddy opencode）", cfg.Orchestrator)
+	}
+	if !validTools[cfg.Renderer] {
+		return Config{}, fmt.Errorf("无效的 RENDERER: %s（可选：codex claude qoder codebuddy opencode）", cfg.Renderer)
+	}
+	if cfg.Orchestrator == cfg.Renderer {
+		return Config{}, fmt.Errorf("ORCHESTRATOR 和 RENDERER 不能相同：%s", cfg.Renderer)
+	}
+	if !validTTS[cfg.TTSProvider] {
+		return Config{}, fmt.Errorf("无效的 TTS_PROVIDER: %s（可选：minimax bailian）", cfg.TTSProvider)
+	}
+	cfg.SceneJobs, err = strconv.Atoi(resolve("SCENE_JOBS", strconv.Itoa(DefaultSceneJobs)))
+	if err != nil || cfg.SceneJobs < 1 || cfg.SceneJobs > MaxSceneJobs {
+		return Config{}, fmt.Errorf("SCENE_JOBS 必须在 1..%d 之间", MaxSceneJobs)
+	}
+	return cfg, nil
+}
+
+func (c Config) ChildEnvironment(base map[string]string, unsafe bool, passthrough []string) map[string]string {
+	if base == nil {
+		base = envMap()
+	}
+	out := make(map[string]string)
+	if unsafe {
+		for key, value := range base {
+			out[key] = value
+		}
+	} else {
+		allowed := []string{"PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE", "SSL_CERT_DIR"}
+		allowed = append(allowed, passthrough...)
+		for _, key := range allowed {
+			if value, ok := base[key]; ok {
+				out[key] = value
+			}
+		}
+	}
+	for key, value := range c.Overlay {
+		out[key] = value
+	}
+	out["ORCHESTRATOR"] = c.Orchestrator
+	out["RENDERER"] = c.Renderer
+	out["TTS_PROVIDER"] = c.TTSProvider
+	if unsafe {
+		out["AM_UNSAFE"] = "1"
+	}
+	return out
+}

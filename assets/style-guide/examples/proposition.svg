@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1857C4" stroke-opacity="0.055" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#0E2340" flood-opacity="0.07"/>
+    </filter>
+  </defs>
+  <rect width="1080" height="1440" fill="#F5F7FB"/>
+  <rect width="1080" height="1440" fill="url(#grid)"/>
+  <ellipse cx="540" cy="1450" rx="620" ry="420" fill="#EAF1FD" opacity="0.72"/>
+  <g fill="none" stroke="#C3D2E6" stroke-width="2">
+    <path d="M40 140v-44h44 M996 96h44v44 M40 1340v40h44 M996 1380h44v-40"/>
+  </g>
+  <g font-family="Inter, Hiragino Sans GB, PingFang SC, sans-serif">
+    <circle cx="96" cy="137" r="7.5" fill="#1857C4"/>
+    <text x="117" y="148" fill="#1857C4" font-size="30" font-weight="700" letter-spacing="4">命题型</text>
+    <text x="992" y="146" text-anchor="end" fill="#4E6076" font-size="19" font-family="JetBrains Mono, monospace" letter-spacing="3">PROPOSITION</text>
+    <rect x="88" y="180" width="904" height="2" fill="#D5DEEB"/>
+    <rect x="88" y="180" width="330" height="2" fill="#1857C4"/>
+  </g>
+
+  <g font-family="Inter, Hiragino Sans GB, PingFang SC, sans-serif">
+    <rect x="88" y="294" width="154" height="48" rx="24" fill="#1857C4"/>
+    <text x="165" y="327" text-anchor="middle" fill="#FFFFFF" font-size="21" font-weight="700" letter-spacing="3">核心命题</text>
+    <text x="88" y="480" fill="#0E2340" font-size="92" font-weight="900" letter-spacing="-2">复杂系统</text>
+    <text x="88" y="586" fill="#0E2340" font-size="92" font-weight="900" letter-spacing="-2">到底怎么</text>
+    <text x="88" y="692" fill="#1857C4" font-size="92" font-weight="900" letter-spacing="-2">运转？</text>
+    <rect x="88" y="750" width="76" height="5" rx="2.5" fill="#1857C4"/>
+    <text x="88" y="820" fill="#4E6076" font-size="28" font-weight="400">先提出冲突，再展示这条视频要验证的机制。</text>
+    <g transform="translate(88 980)">
+      <rect width="812" height="154" rx="18" fill="#FFFFFF" stroke="#D5DEEB" stroke-width="2"/>
+      <text x="30" y="47" fill="#4E6076" font-size="19" font-family="JetBrains Mono, monospace" letter-spacing="3">QUESTION → STRUCTURE → ANSWER</text>
+      <rect x="30" y="76" width="752" height="16" rx="8" fill="#EAF1FD"/>
+      <rect x="30" y="76" width="430" height="16" rx="8" fill="#1857C4"/>
+      <text x="30" y="126" fill="#0E2340" font-size="25" font-weight="600">封面即完成态，稳定 18 帧后再转场</text>
+    </g>
+  </g>
+</svg>
