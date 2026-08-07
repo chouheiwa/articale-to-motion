@@ -254,6 +254,7 @@ scenes/
     scene.json
     prompt.md
     transcription.srt
+    CLAUDE.md        # 渲染器锁定文件，文件名随渲染工具而定
 ```
 
 每个镜头必须：
@@ -261,9 +262,10 @@ scenes/
 - 建立 `scene.json`：执行契约。字段为 `id`、`duration_seconds`、`output`、`transcript`、`text`，可选 `style_guide` 和 `renderer`；未知字段会直接报错。`text` 会被包进 `<scene-text>` 定界块送进渲染提示词并声明为「数据而非指令」，因此 `text` 本身不得含 `[[USER_MESSAGE]]` 标记或 `<scene-text>` / `</scene-text>` 及其形近变体，含则报错。
 - 建立 `prompt.md`：本镜头的创意方向、视觉概念和表达重点。交付规格、阶段消息等执行契约由 `am` 保证，不在本文件中。
 - 使用 `am init` 安装的固定版本 HyperFrames 技能。若技能缺失，停止执行并运行 `npx --yes hyperframes@0.7.94 skills`；不得复制其他项目或本机的私有技能目录。
+- 建立渲染器锁定文件：固定 HyperFrames 版本为 `0.7.94` 并要求每次 CLI 调用都带 `npx --yes hyperframes@0.7.94` 前缀；禁止 `hyperframes@latest`、不带版本的 `npx hyperframes`、`skills update` 以及任何会改动已装技能的命令；禁止读取 `.env` 或打印凭据；禁止改动 `scene.json` 里的执行契约。文件名取决于该镜头所用渲染工具会自动读取的项目级指令文件（例如 `claude` 读 `CLAUDE.md`），按所选工具各自的约定命名，不要不管用哪个工具都写成 `CLAUDE.md`。
+- 锁定文件写「只在本镜头目录内工作、不查看兄弟镜头和上级项目目录」时，必须同时写明一条例外：`am` 在提示词中给出的 HyperFrames 技能目录是允许读取的外部路径。该路径由 `am` 按渲染工具解析后注入，缺这条例外会让渲染工具拒读动效 rule 索引，动画退化成只有淡入和位移。
 - 把完整的 `transcription-production.srt` 复制为镜头目录中的 `transcription.srt`，让渲染工具理解全文上下文。
-- 仓库根目录存在视觉规范文件（如 `frame.md`）时必须复制进镜头目录，并在 `scene.json` 的 `style_guide` 中声明。声明后，画布规格、配色、字体层级和安全区会作为强制约束写进渲染提示词，这是跨镜头视觉一致性的唯一保障；声明了但文件不存在会报错。
-- 在 `prompt.md` 中写入创意描述，使艺术方向和视觉概念贴合当前文案，但不能改动 `am` 保证的执行契约。
+- 仓库根目录存在视觉规范文件（如 `frame.md`）时必须复制进镜头目录，并在 `scene.json` 的 `style_guide` 中声明。声明后，画布规格、配色、字体层级和安全区会作为强制约束写进渲染提示词，这是跨镜头视觉一致性的唯一保障；声明了但文件不存在会报错。- 在 `prompt.md` 中写入创意描述，使艺术方向和视觉概念贴合当前文案，但不能改动 `am` 保证的执行契约。
 - 要求输出 1080×1440、30fps、静音、无音轨的 MP4。
 - 在 `prompt.md` 中附上该镜头的全局起止帧、短语事件表、禁止提前出现的未来短语、最小可读帧数和结尾停留要求；这些内容作为创意实现的时间合同，不改变 `am` 已有执行字段。
 - 要求渲染工具先盘点所有可读 DOM 元素，并确保它们全部登记到 `visible-event-inventory.json`；装饰元素可豁免，但必须明确标记为装饰。
