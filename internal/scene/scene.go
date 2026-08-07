@@ -127,7 +127,9 @@ func Load(directory string) (Scene, error) {
 
 func isFinite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
 
-func BuildPrompt(s Scene) (string, error) {
+// BuildPrompt 拼装单镜头提示词。skillsDir 由 ResolveSkillsDir 解析；
+// 传空字符串时动效要求退回按技能名引用，不写死任何本机路径。
+func BuildPrompt(s Scene, skillsDir string) (string, error) {
 	body := "创意方向：\n- 用图形、概念文字和必要的真实素材表达镜头语义。\n- 视觉复杂度服务于文案，不为炫技拉长渲染。\n"
 	promptFile, err := contained(s.Directory, "prompt.md", "prompt.md")
 	if err != nil {
@@ -157,11 +159,12 @@ func BuildPrompt(s Scene) (string, error) {
 先阅读完整字幕并检查素材。使用安装好的 HyperFrames 技能和 CLI，动画必须确定性、可按任意帧计算，并渲染完整时长。
 
 %s%s
+%s
 阶段性汇报规则：仅在关键阶段输出以下原文：
 [[USER_MESSAGE]]需求理解和素材检查已完成
 [[USER_MESSAGE]]开始联网搜索
 [[USER_MESSAGE]]代码已完成，开始渲染
 [[USER_MESSAGE]]视频已渲染完成：%s
-`, s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, s.Output)
+`, s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, motionRequirements(skillsDir), s.Output)
 	return prompt, nil
 }
