@@ -43,6 +43,22 @@ func TestSafeChildEnvironment(t *testing.T) {
 	}
 }
 
+// USER 不是密钥，但 macOS 上 claude CLI 靠它定位 Keychain 凭据。
+// 白名单漏掉它时，渲染器会以「Not logged in」失败，且失败信息和权限隔离毫无关联。
+func TestSafeChildEnvironmentKeepsIdentityVariables(t *testing.T) {
+	cfg := Config{Orchestrator: "codex", Renderer: "claude", TTSProvider: "minimax"}
+	base := map[string]string{"PATH": "/bin", "HOME": "/home/test", "USER": "test", "LOGNAME": "test", "SHELL": "/bin/zsh"}
+	env := cfg.ChildEnvironment(base, false, nil)
+	for _, key := range []string{"USER", "LOGNAME", "SHELL"} {
+		if env[key] != base[key] {
+			t.Errorf("%s must survive the allowlist, got %q", key, env[key])
+		}
+	}
+	if _, leaked := env["AWS_SECRET_ACCESS_KEY"]; leaked {
+		t.Fatal("allowlist must still drop unrelated variables")
+	}
+}
+
 func TestDotEnvRejectsSecrets(t *testing.T) {
 	root := t.TempDir()
 	os.WriteFile(filepath.Join(root, "article-to-motion.conf"), []byte("ORCHESTRATOR=codex\nRENDERER=claude\n"), 0o644)

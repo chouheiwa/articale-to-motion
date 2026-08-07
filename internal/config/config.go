@@ -123,7 +123,10 @@ func (c Config) ChildEnvironment(base map[string]string, unsafe bool, passthroug
 			out[key] = value
 		}
 	} else {
-		allowed := []string{"PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE", "SSL_CERT_DIR"}
+		// USER / LOGNAME / SHELL 不是凭据，但工具链要靠它们确定身份：
+		// macOS 上 claude CLI 缺 USER 就读不到 Keychain 里的登录态，
+		// 报的却是「Not logged in」，与权限隔离毫无关联，极难排查。
+		allowed := []string{"PATH", "HOME", "USER", "LOGNAME", "SHELL", "TMPDIR", "LANG", "LC_ALL", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE", "SSL_CERT_DIR"}
 		allowed = append(allowed, passthrough...)
 		for _, key := range allowed {
 			if value, ok := base[key]; ok {
