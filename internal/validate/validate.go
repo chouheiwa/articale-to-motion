@@ -159,6 +159,16 @@ func Style(projectRoot string) error {
 	if !reflect.DeepEqual(frame, guide) {
 		return fmt.Errorf("frame.md 与人类可读风格说明的 token 不一致")
 	}
+	for index, item := range frame["typography"].(map[string]any)["font_files"].([]any) {
+		path := item.(map[string]any)["file"].(string)
+		if err := safeRelative(projectRoot, path); err != nil {
+			return fmt.Errorf("typography.font_files[%d].file: %w", index, err)
+		}
+		info, err := os.Stat(filepath.Join(projectRoot, filepath.FromSlash(path)))
+		if err != nil || !info.Mode().IsRegular() {
+			return fmt.Errorf("typography.font_files[%d] 声明的字体文件不存在：%s", index, path)
+		}
+	}
 	for _, item := range frame["scene_archetypes"].([]any) {
 		entry := item.(map[string]any)
 		path := entry["example_png"].(string)
@@ -230,7 +240,10 @@ func validateStyleSchema(tokens map[string]any) error {
 	if err != nil {
 		return err
 	}
-	if err := requireKeys(typography, []string{"primary_stack", "mono_stack", "sizes_px", "weights", "line_heights"}, "typography"); err != nil {
+	if err := requireKeys(typography, []string{"primary_stack", "mono_stack", "sizes_px", "weights", "line_heights", "font_files"}, "typography"); err != nil {
+		return err
+	}
+	if err := validateFontStacks(typography); err != nil {
 		return err
 	}
 	for _, metric := range []struct {
@@ -334,6 +347,86 @@ func validateStyleSchema(tokens map[string]any) error {
 	for _, item := range forbidden {
 		if _, ok := item.(string); !ok {
 			return fmt.Errorf("forbidden 必须是非空字符串数组")
+		}
+	}
+	return nil
+}
+
+// autoEmbeddedFonts 是 HyperFrames 0.7.94 会自动下载并内联的字体族
+// （CANONICAL_FONTS，背后是 @fontsource/* 包）。清单里没有任何简体中文字体：
+// 唯一的 CJK 项 Noto Sans JP 缺失大量简体字，不能当替代品。
+var autoEmbeddedFonts = map[string]bool{
+	"archivo black": true, "eb garamond": true, "ibm plex mono": true, "inter": true,
+	"jetbrains mono": true, "lato": true, "league gothic": true, "montserrat": true,
+	"noto sans jp": true, "nunito": true, "open sans": true, "oswald": true,
+	"outfit": true, "playfair display": true, "poppins": true, "roboto": true,
+	"source code pro": true, "space mono": true,
+}
+
+// genericFontFamilies 是 CSS 内建的兜底关键字，不需要字体文件。
+var genericFontFamilies = map[string]bool{
+	"sans-serif": true, "serif": true, "monospace": true, "cursive": true,
+	"fantasy": true, "system-ui": true, "ui-sans-serif": true, "ui-serif": true,
+	"ui-monospace": true, "emoji": true, "math": true, "fangsong": true,
+}
+
+func fontStackFamilies(stack string) []string {
+	parts := strings.Split(stack, ",")
+	families := make([]string, 0, len(parts))
+	for _, part := range parts {
+		name := strings.ToLower(strings.Trim(strings.TrimSpace(part), `"'`))
+		if name != "" {
+			families = append(families, name)
+		}
+	}
+	return families
+}
+
+// validateFontStacks 保证字体栈里的每个字体族要么被 HyperFrames 自动内联，
+// 要么由项目自带文件。渲染机是干净的无头 Chrome：写一个只存在于本机的系统字体
+// （PingFang SC、Hiragino Sans GB 等），本地渲染会因为回退而"看着正常"，
+// 云端和 CI 上排版却是错的，而且没有任何报错。
+func validateFontStacks(typography map[string]any) error {
+	declared := map[string]bool{}
+	entries, ok := typography["font_files"].([]any)
+	if !ok || len(entries) == 0 {
+		return fmt.Errorf("typography.font_files 必须是非空数组")
+	}
+	for index, item := range entries {
+		entry, err := requireMap(item, fmt.Sprintf("typography.font_files[%d]", index))
+		if err != nil {
+			return err
+		}
+		family, familyOK := entry["family"].(string)
+		file, fileOK := entry["file"].(string)
+		weight := number(entry["weight"])
+		if !familyOK || family == "" || !fileOK || file == "" || weight < 1 {
+			return fmt.Errorf("typography.font_files[%d] 必须声明 family、weight 和 file", index)
+		}
+		declared[strings.ToLower(family)] = true
+	}
+	used := map[string]bool{}
+	for _, key := range []string{"primary_stack", "mono_stack"} {
+		stack, ok := typography[key].(string)
+		if !ok || stack == "" {
+			return fmt.Errorf("typography.%s 必须是非空字符串", key)
+		}
+		for _, family := range fontStackFamilies(stack) {
+			if genericFontFamilies[family] {
+				continue
+			}
+			used[family] = true
+			if autoEmbeddedFonts[family] || declared[family] {
+				continue
+			}
+			return fmt.Errorf("typography.%s 使用了既不会被 HyperFrames 自动内联、"+
+				"也没有在 typography.font_files 中自带文件的字体：%s（渲染机没有本机系统字体，"+
+				"排版会静默回退）", key, family)
+		}
+	}
+	for family := range declared {
+		if !used[family] {
+			return fmt.Errorf("typography.font_files 声明了字体 %s，但两个字体栈都没有使用它", family)
 		}
 	}
 	return nil

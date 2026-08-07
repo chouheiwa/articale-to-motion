@@ -94,6 +94,12 @@ func TestBuildPromptUsesCreativeBodyAndStyleGuide(t *testing.T) {
 	if err != nil || !strings.Contains(prompt, "CUSTOM CREATIVE") || !strings.Contains(prompt, "视觉规范") {
 		t.Fatalf("prompt=%s err=%v", prompt, err)
 	}
+	// 渲染机没有本机系统字体，字体自带文件这条必须进执行契约而不是只写在文档里。
+	for _, want := range []string{"@font-face", "font_files", "font-display: block"} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("style guide prompt missing %q", want)
+		}
+	}
 }
 
 func TestLoadRejectsTranscriptSymlinkOutsideScene(t *testing.T) {

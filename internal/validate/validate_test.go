@@ -118,6 +118,113 @@ func TestStyleRejectsInvalidSchemaSections(t *testing.T) {
 	}
 }
 
+// styleFixture 复制出一份完整的风格资产树（含 assets/），这样 Style 的失败一定来自
+// 被测的那处改动，而不是缺文件——否则用例会空过。
+func styleFixture(t *testing.T, frameBody, guideBody string) string {
+	t.Helper()
+	root := t.TempDir()
+	repo := filepath.Join("..", "..")
+	if err := os.MkdirAll(filepath.Join(root, "docs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "frame.md"), []byte(frameBody), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "docs", "清晰系统蓝图-视频风格说明书.md"), []byte(guideBody), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, dir := range []string{filepath.Join("assets", "style-guide", "examples"), filepath.Join("assets", "fonts")} {
+		entries, err := os.ReadDir(filepath.Join(repo, dir))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(filepath.Join(root, dir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			body, err := os.ReadFile(filepath.Join(repo, dir, entry.Name()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(root, dir, entry.Name()), body, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return root
+}
+
+func TestStyleFixtureItselfPasses(t *testing.T) {
+	frame, _ := os.ReadFile(filepath.Join("..", "..", "frame.md"))
+	guide, _ := os.ReadFile(filepath.Join("..", "..", "docs", "清晰系统蓝图-视频风格说明书.md"))
+	if err := Style(styleFixture(t, string(frame), string(guide))); err != nil {
+		t.Fatalf("unmodified fixture must pass, otherwise every rejection case passes vacuously: %v", err)
+	}
+}
+
+// 渲染机是一台干净的无头 Chrome。字体栈里出现只存在于本机的系统字体时，
+// 本地渲染会因为回退而"看着正常"，云端 / CI 上排版却是错的——必须在 token 层挡住。
+func TestStyleRejectsFontsThatDoNotShipWithTheProject(t *testing.T) {
+	frame, _ := os.ReadFile(filepath.Join("..", "..", "frame.md"))
+	guide, _ := os.ReadFile(filepath.Join("..", "..", "docs", "清晰系统蓝图-视频风格说明书.md"))
+	cases := map[string][2]string{
+		"system-font-in-primary": {
+			`primary_stack: '"Inter", "Noto Sans SC", sans-serif'`,
+			`primary_stack: '"Inter", "PingFang SC", sans-serif'`,
+		},
+		"system-font-in-mono": {
+			`mono_stack: '"JetBrains Mono", "Noto Sans SC", monospace'`,
+			`mono_stack: '"JetBrains Mono", "Hiragino Sans GB", monospace'`,
+		},
+		"declaration-without-use": {
+			`    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}`,
+			`    - {family: "Unused Face", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}`,
+		},
+		"missing-font-files": {
+			"  font_files:",
+			"  unused_key:",
+		},
+	}
+	for name, replacement := range cases {
+		t.Run(name, func(t *testing.T) {
+			// 两份文件一起改，否则失败原因会是 token 漂移而不是字体规则。
+			modifiedFrame := replaceOnce(string(frame), replacement[0], replacement[1])
+			modifiedGuide := replaceOnce(string(guide), replacement[0], replacement[1])
+			if modifiedFrame == string(frame) || modifiedGuide == string(guide) {
+				t.Fatalf("fixture replacement did not match: %q", replacement[0])
+			}
+			err := Style(styleFixture(t, modifiedFrame, modifiedGuide))
+			if err == nil {
+				t.Fatal("expected the font stack to be rejected")
+			}
+			if !strings.Contains(err.Error(), "typography") {
+				t.Fatalf("rejection must come from the font rule, got %v", err)
+			}
+		})
+	}
+}
+
+func TestStyleRejectsDeclaredFontFileThatIsMissing(t *testing.T) {
+	frame, _ := os.ReadFile(filepath.Join("..", "..", "frame.md"))
+	guide, _ := os.ReadFile(filepath.Join("..", "..", "docs", "清晰系统蓝图-视频风格说明书.md"))
+	const old, replacement = `file: "assets/fonts/noto-sans-sc-400.woff2"`, `file: "assets/fonts/absent.woff2"`
+	modifiedFrame := replaceOnce(string(frame), old, replacement)
+	modifiedGuide := replaceOnce(string(guide), old, replacement)
+	if modifiedFrame == string(frame) || modifiedGuide == string(guide) {
+		t.Fatal("fixture replacement did not match")
+	}
+	err := Style(styleFixture(t, modifiedFrame, modifiedGuide))
+	if err == nil {
+		t.Fatal("expected the missing font file to be rejected")
+	}
+	if !strings.Contains(err.Error(), "absent.woff2") {
+		t.Fatalf("error should name the missing file, got %v", err)
+	}
+}
+
 func TestRegenerateExamplesUsesImageMagickAndWritesAllArtifacts(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("shell fixture is Unix-only")

@@ -27,7 +27,9 @@
 - `scene.json`：执行契约。字段为 `id`、`duration_seconds`、`output`、`transcript`、`text`，可选 `style_guide` 和 `renderer`。未知字段会直接报错。
 - `prompt.md`：本镜头的创意方向、视觉概念和表达重点。可以按镜头文案自由改写，交付规格、阶段消息等执行契约由 `am` 保证，不在本文件中。
 - `transcription.srt`：复制完整字幕文件，供渲染工具理解整体上下文。
-- `frame.md`：仓库根目录存在视觉规范文件时必须一并复制，并在 `scene.json` 的 `style_guide` 中声明。声明了但文件不存在会报错。- 渲染器锁定文件：固定 HyperFrames 版本、禁止升级或改动已装技能、禁止读取 `.env`、禁止改动 `scene.json` 的执行契约。文件名取决于该镜头所用渲染工具会自动读取的项目级指令文件（例如 `claude` 读 `CLAUDE.md`），按所选工具各自的约定命名。
+- `frame.md`：仓库根目录存在视觉规范文件时必须一并复制，并在 `scene.json` 的 `style_guide` 中声明。声明了但文件不存在会报错。
+- `assets/fonts/`：把视觉规范 `typography.font_files` 声明的字体文件按相同相对路径复制进来。渲染机是一台干净的无头 Chrome，不装任何系统字体，中文字形只能由这些自带文件提供；字体栈里没有 `@font-face` 的字体族会静默回退，本地看着正常、成片排版却是错的。
+- 渲染器锁定文件：固定 HyperFrames 版本、禁止升级或改动已装技能、禁止读取 `.env`、禁止改动 `scene.json` 的执行契约。文件名取决于该镜头所用渲染工具会自动读取的项目级指令文件（例如 `claude` 读 `CLAUDE.md`），按所选工具各自的约定命名。
 
 HyperFrames 技能由 `am init` 从固定的官方版本安装。若技能缺失，停止执行并运行
 `npx --yes hyperframes@0.7.94 skills`，不得复制其他项目或本机的私有技能目录。

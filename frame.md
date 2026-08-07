@@ -32,8 +32,13 @@ colors:
   warning_red: "#A8412A"
   success_green: "#4FBF8B"
 typography:
-  primary_stack: '"Inter", "Hiragino Sans GB", "PingFang SC", sans-serif'
-  mono_stack: '"JetBrains Mono", "Hiragino Sans GB", monospace'
+  primary_stack: '"Inter", "Noto Sans SC", sans-serif'
+  mono_stack: '"JetBrains Mono", "Noto Sans SC", monospace'
+  font_files:
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
   sizes_px:
     cover_min: 78
     cover_max: 112
@@ -206,9 +211,10 @@ forbidden:
 制作完成后检查：
 
 1. 核心颜色、字体、圆角和间距是否来自 frontmatter。
-2. 关键文字是否避让平台 UI。
-3. 标签、状态和图标距边缘是否至少 22px。
-4. 列表、骨架屏和进度条底部是否至少留 22px。
-5. 第 0 帧是否完成、可读且稳定 18 帧。
-6. 动画是否可寻址、确定性、无同质化入场。
-7. 成片声音是否达到 loudness 和 true-peak 目标。
+2. `typography.font_files` 里用到的每个字重是否都有对应的 `@font-face`，`src` 是否指向镜头目录内真实存在的文件，是否都是 `font-display: block`。渲染机不装系统字体，漏一条就会静默回退成通用字体，本地却看不出来。
+3. 关键文字是否避让平台 UI。
+4. 标签、状态和图标距边缘是否至少 22px。
+5. 列表、骨架屏和进度条底部是否至少留 22px。
+6. 第 0 帧是否完成、可读且稳定 18 帧。
+7. 动画是否可寻址、确定性、无同质化入场。
+8. 成片声音是否达到 loudness 和 true-peak 目标。

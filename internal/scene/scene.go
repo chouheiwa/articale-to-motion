@@ -140,7 +140,13 @@ func BuildPrompt(s Scene, skillsDir string) (string, error) {
 	}
 	style := ""
 	if s.StyleGuide != "" {
-		style = "\n视觉规范（强制）：完整读取 " + s.StyleGuide + "，严格遵守画布、配色、字体和安全区。\n"
+		// 渲染机是干净的无头 Chrome：字体栈里任何没有 @font-face 的字体族都会静默回退，
+		// 本地看着正常、成片排版是错的。所以字体自带文件这条必须由执行契约保证。
+		style = "\n视觉规范（强制）：完整读取 " + s.StyleGuide + "，严格遵守画布、配色、字体和安全区。\n" +
+			"字体（强制）：只允许使用 " + s.StyleGuide + " 的 typography 字体栈中声明的字体族。" +
+			"其中 typography.font_files 列出的字体必须在 composition 里用 @font-face 指向本镜头目录内的对应文件，" +
+			"每个用到的字重各写一条，并使用 font-display: block（并行抽帧下 swap 会让部分帧抓到回退字体）。" +
+			"不得引用任何未随镜头目录一起提供的字体文件。\n"
 	}
 	prompt := fmt.Sprintf(`当前只执行一个 MG 动画镜头，不进行交互提问。
 
