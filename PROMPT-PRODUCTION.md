@@ -114,17 +114,21 @@ TTS 工具由 `article-to-motion.conf`（或环境变量 `TTS_PROVIDER`）决定
 - 用同一段 10–20 秒代表性文案生成 2–3 个试听版本（`--out production/audio/try-<voiceId>.wav`），文件名包含 voice ID。
 - 音色、语速确认后再生成正式配音。
 - 优先按完整语义段落调用 TTS，避免按字幕行逐条生成造成语调碎裂。
+- 正式生成前，先扫描终稿全文，把容易误读的英文单词、英文缩写、产品名、模型名、专有名词和数字逐一列出并确定预期读音，再写入对应 TTS 的发音控制；同一词出现多次也要统一。不要靠生成后试听再补。
 - 保留原始请求命令（去掉密钥）、CLI 返回的元数据（时长、采样率、大小）、原始音频和时间戳文件，写入生成报告。
 - 不得手工伪造服务返回的时间戳。
 
 **MiniMax 固定参数**
 
 - 模型使用 `--model speech-2.8-hd`，音量默认 `--volume 1`、音高默认 `--pitch 0`。语速不得被模板永久硬编码为已确认值：可从 `0.98` 开始试听，但必须让用户根据代表性密集段落和完整试听确认，最终值写入项目配置。情绪由音色本身表达（`mmx` 不提供 `emotion` 参数），选择偏平静、真诚的音色，不通过变调模拟。
-- 需要 48kHz 双声道 PCM 时，加 `--sample-rate 48000 --format wav --channels 2` 输出，便于后续统一混音。
+- 需要双声道 PCM 时，加 `--format wav --channels 2` 输出，便于后续统一混音。MiniMax WAV 采样率仅支持 `8000/16000/22050/24000/32000/44100`，不支持 48000；需要 48kHz 时用 `--sample-rate 44100`，或改用 MP3 输出。
 - 用 `--subtitles` 同时取得真实句级时间戳，例如：
   `mmx speech synthesize --text "..." --voice <voiceId> --speed <confirmedSpeed> --subtitles --out production/audio/voice.wav`
   该命令会额外产出 `production/audio/voice.srt`（毫秒精度），作为第四阶段重建字幕的真实依据。
-- 为容易误读的中文、英文缩写、模型名和数字，用 `--pronunciation 原文/读音` 控制（可重复），例如 `--pronunciation MiniMax/米尼麦克斯`。
+- 用 `--pronunciation 原文/替换内容` 钉住上面的易误读词（可重复传入多条）。替换内容按词的语言和意图选择记音法：
+  - 英文词用括号包裹的 IPA 音标，例如 `--pronunciation "MiniMax/ˈmɪniˌmæks"`、`--pronunciation "AI/ˌeɪˈaɪ"`。
+  - 中文多音字用括号包裹的拼音带声调，例如 `--pronunciation "处理/(chu3)(li3)"`。
+  - 缩写按字母念或作文本展开时用纯文本，例如 `--pronunciation "API/诶屁爱"`、`--pronunciation "omg/oh my god"`；仍要按中文读音读的品牌/产品名直接写汉字，例如 `--pronunciation "MiniMax/米尼麦克斯"`。
 
 **百炼固定参数**
 
@@ -134,7 +138,9 @@ TTS 工具由 `article-to-motion.conf`（或环境变量 `TTS_PROVIDER`）决定
   1. 合成音频：`bl speech synthesize --text "..." --voice <voiceId> --rate 0.98 --format wav --sample-rate 48000 --out production/audio/voice.wav`
   2. 识别时间戳：`bl speech recognize --url production/audio/voice.wav --language zh --out production/audio/voice-asr.json`
   从 ASR 结果中提取句级开始/结束时间，转换为 `production/audio/voice.srt`（毫秒精度），作为第四阶段重建字幕的真实依据。
-- 为容易误读的中文、英文缩写、模型名和数字，用 SSML 标记控制（加 `--enable-ssml`），例如 `<phoneme alphabet="py" ph="mi2 ni2 mai4 ke4 si1">MiniMax</phoneme>`。
+- 用 SSML `<phoneme>` 钉住上面的易误读词（需加 `--enable-ssml`）。`alphabet` 必须匹配词的语言：中文词用 `py`（拼音），英文词必须用 `ipa`（国际音标）——用拼音去近似英文只会得到中式英文。
+  - 英文词用 `alphabet="ipa"`，例如 `<phoneme alphabet="ipa" ph="ˈmɪniˌmæks">MiniMax</phoneme>`、`<phoneme alphabet="ipa" ph="ˌeɪˈaɪ">AI</phoneme>`。
+  - 中文多音字用 `alphabet="py"`，例如 `<phoneme alphabet="py" ph="he2">和</phoneme>`。
 
 ### 断句检查
 
@@ -142,11 +148,11 @@ TTS 工具由 `article-to-motion.conf`（或环境变量 `TTS_PROVIDER`）决定
 
 - 产品名、模型名或短语是否被错误拆开。
 - "主语—谓语""动词—宾语""条件—结论"是否被不自然地切断。
-- 数字、英文缩写和专有名词是否读对。
+- 数字、英文缩写和专有名词是否读对；英文词应为标准英文发音，不能是拼音近似的中式英文。
 - 长句是否有足够呼吸。
 - 句尾是否留出画面展示时间。
 
-发现断句问题时，先修改稿件标点、分段或发音控制，再重新生成受影响段落；不要只靠后期剪切掩盖。
+发现断句或发音问题时，先修改稿件标点、分段或发音控制，再重新生成受影响段落；不要只靠后期剪切掩盖。发音控制必须覆盖生成前扫描列出的全部易误读词，同一词出现多次也要统一。
 
 ### 配音审核关卡
 
