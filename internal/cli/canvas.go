@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/chouheiwa/articale-to-motion/internal/preset"
 	"golang.org/x/term"
 )
@@ -49,7 +50,90 @@ func isTerminal(f *os.File) bool {
 	return term.IsTerminal(int(f.Fd()))
 }
 
-// pickCanvas 的交互实现在下一步接入 bubbletea。
-func pickCanvas(io.Writer) (preset.Preset, error) {
-	return preset.Preset{}, fmt.Errorf("交互选择框尚未接入，请显式传入 --canvas，可选：\n%s", canvasOptions())
+type canvasPicker struct {
+	choices   []preset.Preset
+	cursor    int
+	confirmed bool
+	aborted   bool
+}
+
+func newCanvasPicker() canvasPicker {
+	return canvasPicker{choices: preset.All()}
+}
+
+func (m canvasPicker) Selected() preset.Preset { return m.choices[m.cursor] }
+
+func (m canvasPicker) Init() tea.Cmd { return nil }
+
+func (m canvasPicker) up() canvasPicker {
+	if m.cursor > 0 {
+		m.cursor--
+	}
+	return m
+}
+
+func (m canvasPicker) down() canvasPicker {
+	if m.cursor < len(m.choices)-1 {
+		m.cursor++
+	}
+	return m
+}
+
+func (m canvasPicker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	key, ok := msg.(tea.KeyMsg)
+	if !ok {
+		return m, nil
+	}
+	switch key.Type {
+	case tea.KeyUp:
+		return m.up(), nil
+	case tea.KeyDown:
+		return m.down(), nil
+	case tea.KeyEnter:
+		m.confirmed = true
+		return m, tea.Quit
+	case tea.KeyCtrlC, tea.KeyEsc:
+		m.aborted = true
+		return m, tea.Quit
+	case tea.KeyRunes:
+		switch string(key.Runes) {
+		case "k":
+			return m.up(), nil
+		case "j":
+			return m.down(), nil
+		case "q":
+			m.aborted = true
+			return m, tea.Quit
+		}
+	}
+	return m, nil
+}
+
+func (m canvasPicker) View() string {
+	var b strings.Builder
+	b.WriteString("选择画幅\n\n")
+	for i, p := range m.choices {
+		marker := "  "
+		if i == m.cursor {
+			marker = "❯ "
+		}
+		b.WriteString(marker + p.Label + "\n")
+	}
+	b.WriteString("\n↑/↓ 移动　Enter 确认　Esc 取消\n")
+	return b.String()
+}
+
+func pickCanvas(stdout io.Writer) (preset.Preset, error) {
+	final, err := tea.NewProgram(newCanvasPicker(), tea.WithOutput(stdout)).Run()
+	if err != nil {
+		return preset.Preset{}, fmt.Errorf("画幅选择框启动失败：%w", err)
+	}
+	model, ok := final.(canvasPicker)
+	if !ok {
+		return preset.Preset{}, fmt.Errorf("画幅选择框返回了意外的状态")
+	}
+	if model.aborted || !model.confirmed {
+		return preset.Preset{}, fmt.Errorf("已取消初始化")
+	}
+	return model.Selected(), nil
 }
