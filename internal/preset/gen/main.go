@@ -11,8 +11,10 @@ import (
 	"embed"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/chouheiwa/articale-to-motion/internal/preset"
@@ -117,42 +119,63 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	targets := preset.All()
-	if *onlyPreset != "" {
-		p, ok := preset.ByID(*onlyPreset)
-		if !ok {
-			fatal(fmt.Errorf("未知预设 %q，可选：%s", *onlyPreset, strings.Join(preset.IDs(), " ")))
-		}
-		targets = []preset.Preset{p}
+	targets, err := selectTargets(*onlyPreset)
+	if err != nil {
+		fatal(err)
 	}
-	tpl := loadTemplates()
+	if err := generate(root, targets, loadTemplates(), *withExamples, os.Stdout); err != nil {
+		fatal(err)
+	}
+}
+
+func selectTargets(id string) ([]preset.Preset, error) {
+	if id == "" {
+		return preset.All(), nil
+	}
+	p, ok := preset.ByID(id)
+	if !ok {
+		return nil, fmt.Errorf("未知预设 %q，可选：%s", id, strings.Join(preset.IDs(), " "))
+	}
+	return []preset.Preset{p}, nil
+}
+
+// generate 把每套预设的文本产物写进 assets/presets/<id>/。
+// examples 为真时另用 rsvg-convert 重渲染示例 PNG。
+func generate(root string, targets []preset.Preset, tpl Templates, examples bool, out io.Writer) error {
 	for _, p := range targets {
 		dir := filepath.Join(root, "assets", "presets", p.ID)
 		files, err := Render(p, tpl)
 		if err != nil {
-			fatal(fmt.Errorf("渲染预设 %s: %w", p.ID, err))
+			return fmt.Errorf("渲染预设 %s: %w", p.ID, err)
 		}
-		for name, body := range files {
+		// map 遍历顺序随机，排序后输出让日志稳定可比对。
+		names := make([]string, 0, len(files))
+		for name := range files {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
 			path := filepath.Join(dir, filepath.FromSlash(name))
 			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-				fatal(err)
+				return err
 			}
-			if err := os.WriteFile(path, body, 0o644); err != nil {
-				fatal(err)
+			if err := os.WriteFile(path, files[name], 0o644); err != nil {
+				return err
 			}
-			fmt.Println("generated", filepath.ToSlash(filepath.Join("assets", "presets", p.ID, name)))
+			fmt.Fprintln(out, "generated", filepath.ToSlash(filepath.Join("assets", "presets", p.ID, name)))
 		}
-		if *withExamples {
-			if err := renderExamples(dir, p); err != nil {
-				fatal(fmt.Errorf("预设 %s 的示例图: %w", p.ID, err))
+		if examples {
+			if err := renderExamples(dir, p, out); err != nil {
+				return fmt.Errorf("预设 %s 的示例图: %w", p.ID, err)
 			}
 		}
 	}
+	return nil
 }
 
 // renderExamples 把该预设手写的 4 张 SVG 转成 PNG 并拼 contact sheet。
 // SVG 是手工绘制的排版基准，生成器不改动它们的内容。
-func renderExamples(dir string, p preset.Preset) error {
+func renderExamples(dir string, p preset.Preset, out io.Writer) error {
 	examples := filepath.Join(dir, "assets", "style-guide", "examples")
 	names := []string{"proposition", "comparison", "process", "capability_deck"}
 	pngPaths := make([]string, 0, len(names))
@@ -165,14 +188,14 @@ func renderExamples(dir string, p preset.Preset) error {
 		if err := styleimage.RenderSVG(svgPath, pngPath); err != nil {
 			return err
 		}
-		fmt.Println("generated", filepath.ToSlash(filepath.Join("assets", "presets", p.ID, "assets", "style-guide", "examples", name+".png")))
+		fmt.Fprintln(out, "generated", filepath.ToSlash(filepath.Join("assets", "presets", p.ID, "assets", "style-guide", "examples", name+".png")))
 		pngPaths = append(pngPaths, pngPath)
 	}
 	thumb := fmt.Sprintf("%dx%d", thumbnailWidthPx, thumbnailWidthPx*p.Canvas.HeightPx/p.Canvas.WidthPx)
 	if err := styleimage.ContactSheet(pngPaths, filepath.Join(examples, "contact-sheet.png"), thumb, "#D5DEEB"); err != nil {
 		return err
 	}
-	fmt.Println("generated", filepath.ToSlash(filepath.Join("assets", "presets", p.ID, "assets", "style-guide", "examples", "contact-sheet.png")))
+	fmt.Fprintln(out, "generated", filepath.ToSlash(filepath.Join("assets", "presets", p.ID, "assets", "style-guide", "examples", "contact-sheet.png")))
 	return nil
 }
 

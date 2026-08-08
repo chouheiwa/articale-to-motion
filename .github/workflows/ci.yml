@@ -26,6 +26,21 @@ jobs:
           cache: true
       - run: go test -race ./...
 
+  generated-assets:
+    name: generated assets are up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.8'
+          cache: true
+      # 只重跑文本产物。示例 PNG 在 -examples 开关后面，不参与这道门：
+      # 不同版本的 rsvg-convert 输出字节不同，纳进来会让门随 runner 随机失败。
+      - run: go generate ./internal/preset/
+      - name: assets/presets 必须与预设表一致
+        run: git diff --exit-code
+
   quality:
     runs-on: ubuntu-latest
     steps:
