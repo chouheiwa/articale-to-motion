@@ -17,6 +17,7 @@ import (
 	assets "github.com/chouheiwa/articale-to-motion"
 	"github.com/chouheiwa/articale-to-motion/internal/archive"
 	"github.com/chouheiwa/articale-to-motion/internal/config"
+	"github.com/chouheiwa/articale-to-motion/internal/preset"
 	"github.com/chouheiwa/articale-to-motion/internal/project"
 	"github.com/chouheiwa/articale-to-motion/internal/scene"
 	"github.com/chouheiwa/articale-to-motion/internal/schedule"
@@ -108,11 +109,20 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 				target = args[0]
 			}
 			target, _ = filepath.Abs(target)
-			result, err := project.Initialize(target, assets.Files)
+			chosen := preset.Default()
+			shared, err := assets.Shared()
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(stdout, "项目已初始化：%s（新增 %d，未变 %d）\n", target, result.Created, result.Unchanged)
+			presetFiles, err := assets.Preset(chosen.ID)
+			if err != nil {
+				return err
+			}
+			result, err := project.Initialize(target, shared, presetFiles)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(stdout, "项目已初始化：%s（画幅 %s，新增 %d，未变 %d）\n", target, chosen.Label, result.Created, result.Unchanged)
 			if skipHyperframes {
 				fmt.Fprintln(stdout, "警告：已跳过 HyperFrames 技能安装")
 				return nil

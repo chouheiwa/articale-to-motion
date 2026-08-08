@@ -19,28 +19,39 @@ type asset struct {
 	body []byte
 }
 
-func Initialize(target string, source fs.FS) (InitResult, error) {
+// Initialize 把若干棵源树叠加拷贝进项目目录。
+//
+// 每棵源树的内部路径就是它在项目根下的目标路径，不做任何改写。多棵树写入同一
+// 路径视为素材组织错误并直接报错——静默覆盖会让「哪棵树赢」取决于参数顺序。
+func Initialize(target string, sources ...fs.FS) (InitResult, error) {
 	target, _ = filepath.Abs(target)
 	if err := os.MkdirAll(target, 0o755); err != nil {
 		return InitResult{}, fmt.Errorf("创建项目目录: %w", err)
 	}
 	var assets []asset
-	err := fs.WalkDir(source, ".", func(path string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() || path == "assets.go" || path == "go.mod" {
+	seen := make(map[string]bool)
+	for _, source := range sources {
+		err := fs.WalkDir(source, ".", func(path string, entry fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			if seen[path] {
+				return fmt.Errorf("多棵源树写入同一路径：%s", path)
+			}
+			seen[path] = true
+			body, err := fs.ReadFile(source, path)
+			if err != nil {
+				return err
+			}
+			assets = append(assets, asset{name: path, body: body})
 			return nil
-		}
-		body, err := fs.ReadFile(source, path)
+		})
 		if err != nil {
-			return err
+			return InitResult{}, fmt.Errorf("读取内置项目模板: %w", err)
 		}
-		assets = append(assets, asset{name: path, body: body})
-		return nil
-	})
-	if err != nil {
-		return InitResult{}, fmt.Errorf("读取内置项目模板: %w", err)
 	}
 
 	result := InitResult{}

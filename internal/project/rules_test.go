@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	assets "github.com/chouheiwa/articale-to-motion"
 )
 
 func seedRulesTemplate(t *testing.T, root, body string) {
@@ -106,7 +104,7 @@ func TestWriteRulesRejectsSymlinkedTarget(t *testing.T) {
 // 模板必须随 am init 下发，否则 am run 永远只会打印「缺模板」。
 func TestInitializeShipsRulesTemplate(t *testing.T) {
 	target := filepath.Join(t.TempDir(), "video")
-	if _, err := Initialize(target, assets.Files); err != nil {
+	if _, err := Initialize(target, builtinSources(t)...); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(target, RulesTemplate)); err != nil {

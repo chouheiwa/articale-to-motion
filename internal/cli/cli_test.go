@@ -54,10 +54,24 @@ func TestUnknownCommandUsesExitOne(t *testing.T) {
 	}
 }
 
-func TestValidatePublishCommand(t *testing.T) {
+// initProject 铺一个真实项目供校验类用例使用。
+// 素材拆成 assets/shared 与 assets/presets 两棵源树后，仓库根本身不再是一个
+// 可校验的项目，必须先 init 才有 frame.md、templates/ 和 assets/。
+func initProject(t *testing.T) string {
+	t.Helper()
+	root := filepath.Join(t.TempDir(), "video")
 	var out bytes.Buffer
-	path := filepath.Join("..", "..", "templates", "publish.md")
-	if code := Execute([]string{"validate", "publish", path, "--template", "--project-root", filepath.Join("..", "..")}, &out, &out); code != 0 {
+	if code := Execute([]string{"init", root, "--skip-hyperframes"}, &out, &out); code != 0 {
+		t.Fatalf("init code=%d output=%s", code, out.String())
+	}
+	return root
+}
+
+func TestValidatePublishCommand(t *testing.T) {
+	root := initProject(t)
+	var out bytes.Buffer
+	path := filepath.Join(root, "templates", "publish.md")
+	if code := Execute([]string{"validate", "publish", path, "--template", "--project-root", root}, &out, &out); code != 0 {
 		t.Fatalf("code=%d output=%s", code, out.String())
 	}
 }
@@ -105,7 +119,7 @@ func TestRunStartsConfiguredOrchestrator(t *testing.T) {
 }
 
 func TestStyleAndEmptyRunAllCommands(t *testing.T) {
-	root, _ := filepath.Abs(filepath.Join("..", ".."))
+	root := initProject(t)
 	var out bytes.Buffer
 	if code := Execute([]string{"validate", "style", "--project-root", root}, &out, &out); code != 0 {
 		t.Fatalf("style code=%d output=%s", code, out.String())
@@ -183,11 +197,9 @@ func TestRunAllRejectsNaNToleranceEvenWhenNoScenesExist(t *testing.T) {
 }
 
 func TestValidateStyleRegenerateExamplesReportsMissingImageMagick(t *testing.T) {
+	// 先铺项目再清空 PATH：init 本身不需要外部命令，但清空后就没法建了。
+	root := initProject(t)
 	t.Setenv("PATH", t.TempDir())
-	root, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatal(err)
-	}
 	var stderr bytes.Buffer
 	if code := Execute([]string{"validate", "style", "--project-root", root, "--regenerate-examples"}, &bytes.Buffer{}, &stderr); code != 1 {
 		t.Fatalf("exit=%d stderr=%s", code, stderr.String())

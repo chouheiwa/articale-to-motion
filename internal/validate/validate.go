@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	assets "github.com/chouheiwa/articale-to-motion"
+	"github.com/chouheiwa/articale-to-motion/internal/preset"
 	"gopkg.in/yaml.v3"
 )
 
@@ -525,7 +526,8 @@ func RegenerateExamples(projectRoot string, output io.Writer) error {
 	names := []string{"proposition", "comparison", "process", "capability_deck"}
 	pngPaths := make([]string, 0, len(names))
 	for _, name := range names {
-		sourcePath := "assets/style-guide/examples/" + name + ".svg"
+		// 预设感知在后续任务接上，这里先跟随素材重组指向默认预设，保持行为不变。
+		sourcePath := "assets/presets/" + preset.Default().ID + "/assets/style-guide/examples/" + name + ".svg"
 		source, readErr := assets.Files.ReadFile(sourcePath)
 		if readErr != nil {
 			return fmt.Errorf("读取内置示例 %s: %w", name, readErr)
