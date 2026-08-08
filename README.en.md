@@ -2,7 +2,9 @@
 
 # ArticleToMotion
 
-ArticleToMotion is a macOS and Linux CLI for producing vertical motion-graphics videos. It can split a final SRT into concurrently rendered scenes or drive a complete script, TTS, subtitle, cover, audio, and publishing workflow.
+ArticleToMotion is a macOS and Linux CLI for producing vertical motion-graphics videos.
+
+The canvas is chosen once at `am init` — interactively, or with `--canvas vertical-3x4` / `--canvas vertical-9x16` (1080×1440 and 1080×1920, both 30fps). Non-interactive environments must pass `--canvas` explicitly; there is no silent default. It can split a final SRT into concurrently rendered scenes or drive a complete script, TTS, subtitle, cover, audio, and publishing workflow.
 
 ▶ [Watch the ArticleToMotion promo video (MP4, 4m 47s)](https://github.com/chouheiwa/articale-to-motion/blob/main/docs/article-to-motion-tutorial.mp4)
 

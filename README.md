@@ -20,9 +20,19 @@ Go 版本以单个 `am` 二进制发布，不依赖 Python。项目 Prompt、发
 ## 创建项目
 
 ```bash
-am init my-video
+am init my-video                          # 交互选择画幅
+am init my-video --canvas vertical-9x16   # 或显式指定
 cd my-video
 ```
+
+画幅在初始化时一次性选定，写入项目的 `frame.md` 后不再更改。当前内置：
+
+| 预设 | 画幅 | 用途 |
+|---|---|---|
+| `vertical-3x4` | 1080×1440，30fps | 默认，知识与科技类竖屏解说 |
+| `vertical-9x16` | 1080×1920，30fps | 抖音等全屏竖屏平台 |
+
+非交互环境（CI、管道）必须显式传入 `--canvas`，不会静默取默认值。
 
 `am init` 不覆盖内容不同的已有文件。默认执行 `npx --yes hyperframes@0.7.94 skills`；离线或 CI 环境可使用 `--skip-hyperframes`。
 
