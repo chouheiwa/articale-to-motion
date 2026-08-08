@@ -12,11 +12,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/chouheiwa/articale-to-motion/internal/preset"
+	"github.com/chouheiwa/articale-to-motion/internal/styleimage"
 )
 
 //go:embed templates
@@ -105,14 +105,28 @@ func Render(p preset.Preset, tpl Templates) (map[string][]byte, error) {
 // SVG 改动后手动跑一次 `go run ./gen -examples` 更新 PNG 并提交。
 var withExamples = flag.Bool("examples", false, "同时用 ImageMagick 重新渲染示例 PNG")
 
+// onlyPreset 把本次生成限定在单套预设。
+//
+// 配合 -examples 使用：不限定时会把所有预设的 PNG 一并重刷，而不同机器的
+// ImageMagick 输出字节不同，会给没改过的预设带来无谓的二进制 diff。
+var onlyPreset = flag.String("preset", "", "只生成指定预设（默认全部）")
+
 func main() {
 	flag.Parse()
 	root, err := repoRoot()
 	if err != nil {
 		fatal(err)
 	}
+	targets := preset.All()
+	if *onlyPreset != "" {
+		p, ok := preset.ByID(*onlyPreset)
+		if !ok {
+			fatal(fmt.Errorf("未知预设 %q，可选：%s", *onlyPreset, strings.Join(preset.IDs(), " ")))
+		}
+		targets = []preset.Preset{p}
+	}
 	tpl := loadTemplates()
-	for _, p := range preset.All() {
+	for _, p := range targets {
 		dir := filepath.Join(root, "assets", "presets", p.ID)
 		files, err := Render(p, tpl)
 		if err != nil {
@@ -139,10 +153,6 @@ func main() {
 // renderExamples 把该预设手写的 4 张 SVG 转成 PNG 并拼 contact sheet。
 // SVG 是手工绘制的排版基准，生成器不改动它们的内容。
 func renderExamples(dir string, p preset.Preset) error {
-	magick, err := exec.LookPath("magick")
-	if err != nil {
-		return fmt.Errorf("需要 ImageMagick 的 `magick` 命令")
-	}
 	examples := filepath.Join(dir, "assets", "style-guide", "examples")
 	names := []string{"proposition", "comparison", "process", "capability_deck"}
 	pngPaths := make([]string, 0, len(names))
@@ -152,18 +162,15 @@ func renderExamples(dir string, p preset.Preset) error {
 			return fmt.Errorf("缺少手写示例图 %s: %w", name+".svg", err)
 		}
 		pngPath := filepath.Join(examples, name+".png")
-		if out, err := exec.Command(magick, "-background", "none", svgPath, pngPath).CombinedOutput(); err != nil {
-			return fmt.Errorf("渲染 %s 失败: %w: %s", name, err, strings.TrimSpace(string(out)))
+		if err := styleimage.RenderSVG(svgPath, pngPath); err != nil {
+			return err
 		}
 		fmt.Println("generated", filepath.ToSlash(filepath.Join("assets", "presets", p.ID, "assets", "style-guide", "examples", name+".png")))
 		pngPaths = append(pngPaths, pngPath)
 	}
 	thumb := fmt.Sprintf("%dx%d", thumbnailWidthPx, thumbnailWidthPx*p.Canvas.HeightPx/p.Canvas.WidthPx)
-	args := append([]string{"montage"}, pngPaths...)
-	args = append(args, "-thumbnail", thumb, "-tile", "4x1", "-geometry", thumb+"+10+10",
-		"-background", "#D5DEEB", filepath.Join(examples, "contact-sheet.png"))
-	if out, err := exec.Command(magick, args...).CombinedOutput(); err != nil {
-		return fmt.Errorf("生成 contact sheet 失败: %w: %s", err, strings.TrimSpace(string(out)))
+	if err := styleimage.ContactSheet(pngPaths, filepath.Join(examples, "contact-sheet.png"), thumb, "#D5DEEB"); err != nil {
+		return err
 	}
 	fmt.Println("generated", filepath.ToSlash(filepath.Join("assets", "presets", p.ID, "assets", "style-guide", "examples", "contact-sheet.png")))
 	return nil
