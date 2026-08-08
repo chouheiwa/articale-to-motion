@@ -1,6 +1,7 @@
 package scene
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,7 +85,7 @@ func TestLoadRejectsInvalidContracts(t *testing.T) {
 
 func TestBuildPromptUsesCreativeBodyAndStyleGuide(t *testing.T) {
 	dir := writeScene(t, `{"id":"scene-001","duration_seconds":1,"output":"out.mp4","transcript":"transcript.srt","text":"hello","style_guide":"frame.md"}`)
-	os.WriteFile(filepath.Join(dir, "frame.md"), []byte("style"), 0o644)
+	os.WriteFile(filepath.Join(dir, "frame.md"), []byte(frameWithCanvas(1080, 1440)), 0o644)
 	os.WriteFile(filepath.Join(dir, "prompt.md"), []byte("CUSTOM CREATIVE"), 0o644)
 	s, err := Load(dir)
 	if err != nil {
@@ -119,4 +120,66 @@ func quote(value string) string {
 	value = strings.ReplaceAll(value, `\`, `\\`)
 	value = strings.ReplaceAll(value, `"`, `\"`)
 	return `"` + value + `"`
+}
+
+// frameWithCanvas 造一份最小视觉规范：BuildPrompt 只读 canvas 这一段。
+func frameWithCanvas(width, height int) string {
+	return fmt.Sprintf("---\ncanvas:\n  width_px: %d\n  height_px: %d\n  fps: 30\n  orientation: vertical\n---\n正文\n", width, height)
+}
+
+func TestBuildPromptUsesCanvasFromStyleGuide(t *testing.T) {
+	dir := writeScene(t, `{"id":"scene-001","duration_seconds":1,"output":"out.mp4","transcript":"transcript.srt","text":"hello","style_guide":"frame.md"}`)
+	os.WriteFile(filepath.Join(dir, "frame.md"), []byte(frameWithCanvas(1080, 1920)), 0o644)
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, "")
+	if err != nil {
+		t.Fatalf("BuildPrompt: %v", err)
+	}
+	if !strings.Contains(prompt, "1080x1920") {
+		t.Error("提示词未使用 style_guide 声明的画幅")
+	}
+	if strings.Contains(prompt, "1080x1440") {
+		t.Error("提示词仍含硬编码的 1080x1440")
+	}
+}
+
+// 无 style_guide 时保持改造前的行为，存量镜头目录不受影响。
+func TestBuildPromptFallsBackWithoutStyleGuide(t *testing.T) {
+	dir := writeScene(t, `{"id":"scene-001","duration_seconds":1,"output":"out.mp4","transcript":"transcript.srt","text":"hello"}`)
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, "")
+	if err != nil {
+		t.Fatalf("BuildPrompt: %v", err)
+	}
+	if !strings.Contains(prompt, "1080x1440") {
+		t.Error("缺 style_guide 时应回退到 1080x1440")
+	}
+}
+
+// 声明了 style_guide 却读不出 canvas，说明规范文件是坏的。
+// 这时报错而不是回退默认：静默按 1080x1440 渲染正是这次改造要消除的故障。
+func TestBuildPromptRejectsStyleGuideWithoutCanvas(t *testing.T) {
+	for name, body := range map[string]string{
+		"无 frontmatter": "style",
+		"缺 canvas":      "---\nschema_version: 1\n---\n正文\n",
+		"canvas 不完整":    "---\ncanvas:\n  width_px: 1080\n---\n正文\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := writeScene(t, `{"id":"scene-001","duration_seconds":1,"output":"out.mp4","transcript":"transcript.srt","text":"hello","style_guide":"frame.md"}`)
+			os.WriteFile(filepath.Join(dir, "frame.md"), []byte(body), 0o644)
+			s, err := Load(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := BuildPrompt(s, ""); err == nil {
+				t.Fatal("坏掉的视觉规范应报错，而不是回退默认画幅")
+			}
+		})
+	}
 }

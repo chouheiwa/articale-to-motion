@@ -17,6 +17,7 @@ import (
 	assets "github.com/chouheiwa/articale-to-motion"
 	"github.com/chouheiwa/articale-to-motion/internal/archive"
 	"github.com/chouheiwa/articale-to-motion/internal/config"
+	"github.com/chouheiwa/articale-to-motion/internal/preset"
 	"github.com/chouheiwa/articale-to-motion/internal/project"
 	"github.com/chouheiwa/articale-to-motion/internal/scene"
 	"github.com/chouheiwa/articale-to-motion/internal/schedule"
@@ -98,6 +99,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 	root.PersistentFlags().BoolVar(&unsafe, "unsafe", false, "显式关闭 AI CLI 权限隔离（危险）")
 
 	var skipHyperframes bool
+	var canvasID string
 	initCmd := &cobra.Command{
 		Use:   "init [DIR]",
 		Short: "初始化一个可复现的视频项目",
@@ -108,11 +110,23 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 				target = args[0]
 			}
 			target, _ = filepath.Abs(target)
-			result, err := project.Initialize(target, assets.Files)
+			chosen, err := resolveCanvas(canvasID, os.Stdin, stdout)
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(stdout, "项目已初始化：%s（新增 %d，未变 %d）\n", target, result.Created, result.Unchanged)
+			shared, err := assets.Shared()
+			if err != nil {
+				return err
+			}
+			presetFiles, err := assets.Preset(chosen.ID)
+			if err != nil {
+				return err
+			}
+			result, err := project.Initialize(target, shared, presetFiles)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(stdout, "项目已初始化：%s（画幅 %s，新增 %d，未变 %d）\n", target, chosen.Label, result.Created, result.Unchanged)
 			if skipHyperframes {
 				fmt.Fprintln(stdout, "警告：已跳过 HyperFrames 技能安装")
 				return nil
@@ -126,6 +140,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		},
 	}
 	initCmd.Flags().BoolVar(&skipHyperframes, "skip-hyperframes", false, "跳过联网安装 HyperFrames 技能")
+	initCmd.Flags().StringVar(&canvasID, "canvas", "", "画幅预设："+strings.Join(preset.IDs(), " | ")+"；不传则在终端里交互选择")
 	root.AddCommand(initCmd)
 
 	configCmd := &cobra.Command{Use: "config", Short: "读取解析后的配置"}
@@ -261,6 +276,14 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("找不到 prompt 文件：%s", promptPath)
 		}
+		rulesName, err := tools.ProjectRulesFilename(cfg.Orchestrator)
+		if err != nil {
+			return err
+		}
+		rulesPath, err := project.WriteRules(rootDir, rulesName)
+		if err != nil {
+			return err
+		}
 		isUnsafe := unsafe || os.Getenv("AM_UNSAFE") == "1"
 		argv, stdin, err := tools.OrchestratorInvocation(cfg.Orchestrator, workdir, string(prompt), isUnsafe)
 		if err != nil {
@@ -278,7 +301,10 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		if stdin != "" {
 			process.Stdin = strings.NewReader(stdin)
 		}
-		fmt.Fprintf(stdout, "编排工具: %s\n渲染工具: %s\nPrompt: %s\n---\n", cfg.Orchestrator, cfg.Renderer, promptPath)
+		if rulesPath == "" {
+			fmt.Fprintf(stderr, "警告：项目缺少 %s，本次不下发项目规则；可运行 am init 补齐\n", project.RulesTemplate)
+		}
+		fmt.Fprintf(stdout, "编排工具: %s\n渲染工具: %s\nPrompt: %s\n项目规则: %s\n---\n", cfg.Orchestrator, cfg.Renderer, promptPath, rulesDisplay(rulesPath))
 		if err := runProcessGroup(cmd.Context(), process); err != nil {
 			if exit, ok := err.(*exec.ExitError); ok {
 				return &exitError{code: exit.ExitCode(), message: "编排工具执行失败"}
@@ -360,6 +386,13 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 	validateCmd.AddCommand(styleCmd)
 	root.AddCommand(validateCmd)
 	return root
+}
+
+func rulesDisplay(path string) string {
+	if path == "" {
+		return "（缺模板，未下发）"
+	}
+	return path
 }
 
 func validateTolerance(value float64) error {
