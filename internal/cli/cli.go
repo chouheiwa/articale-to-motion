@@ -261,6 +261,14 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("找不到 prompt 文件：%s", promptPath)
 		}
+		rulesName, err := tools.ProjectRulesFilename(cfg.Orchestrator)
+		if err != nil {
+			return err
+		}
+		rulesPath, err := project.WriteRules(rootDir, rulesName)
+		if err != nil {
+			return err
+		}
 		isUnsafe := unsafe || os.Getenv("AM_UNSAFE") == "1"
 		argv, stdin, err := tools.OrchestratorInvocation(cfg.Orchestrator, workdir, string(prompt), isUnsafe)
 		if err != nil {
@@ -278,7 +286,10 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		if stdin != "" {
 			process.Stdin = strings.NewReader(stdin)
 		}
-		fmt.Fprintf(stdout, "编排工具: %s\n渲染工具: %s\nPrompt: %s\n---\n", cfg.Orchestrator, cfg.Renderer, promptPath)
+		if rulesPath == "" {
+			fmt.Fprintf(stderr, "警告：项目缺少 %s，本次不下发项目规则；可运行 am init 补齐\n", project.RulesTemplate)
+		}
+		fmt.Fprintf(stdout, "编排工具: %s\n渲染工具: %s\nPrompt: %s\n项目规则: %s\n---\n", cfg.Orchestrator, cfg.Renderer, promptPath, rulesDisplay(rulesPath))
 		if err := runProcessGroup(cmd.Context(), process); err != nil {
 			if exit, ok := err.(*exec.ExitError); ok {
 				return &exitError{code: exit.ExitCode(), message: "编排工具执行失败"}
@@ -360,6 +371,13 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 	validateCmd.AddCommand(styleCmd)
 	root.AddCommand(validateCmd)
 	return root
+}
+
+func rulesDisplay(path string) string {
+	if path == "" {
+		return "（缺模板，未下发）"
+	}
+	return path
 }
 
 func validateTolerance(value float64) error {

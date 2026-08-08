@@ -77,6 +77,24 @@ func OrchestratorInvocation(tool, workdir, prompt string, unsafe bool) ([]string
 	}
 }
 
+// ProjectRulesFilename 返回该工具会自动从工作目录向上递归读取的项目级指令文件名。
+//
+// 名字必须逐个工具核对，不能统一成 AGENTS.md：Claude Code 官方文档明写
+// "Claude Code reads CLAUDE.md, not AGENTS.md"，CodeBuddy 读的是产品名派生的
+// CODEBUDDY.md。写错文件名不会报错，只会让规则静默失效。
+func ProjectRulesFilename(tool string) (string, error) {
+	switch tool {
+	case "codex", "qoder", "opencode":
+		return "AGENTS.md", nil
+	case "claude":
+		return "CLAUDE.md", nil
+	case "codebuddy":
+		return "CODEBUDDY.md", nil
+	default:
+		return "", fmt.Errorf("未知工具：%s", tool)
+	}
+}
+
 func ExtractUserMessages(tool, line string) []string {
 	var event map[string]any
 	if json.Unmarshal([]byte(line), &event) != nil {
