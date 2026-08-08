@@ -99,6 +99,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 	root.PersistentFlags().BoolVar(&unsafe, "unsafe", false, "显式关闭 AI CLI 权限隔离（危险）")
 
 	var skipHyperframes bool
+	var canvasID string
 	initCmd := &cobra.Command{
 		Use:   "init [DIR]",
 		Short: "初始化一个可复现的视频项目",
@@ -109,7 +110,10 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 				target = args[0]
 			}
 			target, _ = filepath.Abs(target)
-			chosen := preset.Default()
+			chosen, err := resolveCanvas(canvasID, os.Stdin, stdout)
+			if err != nil {
+				return err
+			}
 			shared, err := assets.Shared()
 			if err != nil {
 				return err
@@ -136,6 +140,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		},
 	}
 	initCmd.Flags().BoolVar(&skipHyperframes, "skip-hyperframes", false, "跳过联网安装 HyperFrames 技能")
+	initCmd.Flags().StringVar(&canvasID, "canvas", "", "画幅预设："+strings.Join(preset.IDs(), " | ")+"；不传则在终端里交互选择")
 	root.AddCommand(initCmd)
 
 	configCmd := &cobra.Command{Use: "config", Short: "读取解析后的配置"}

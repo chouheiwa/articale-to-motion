@@ -27,7 +27,7 @@ func TestHelpListsPublicCommands(t *testing.T) {
 func TestInitCreatesProjectWithoutNetworkWhenSkipped(t *testing.T) {
 	target := filepath.Join(t.TempDir(), "project")
 	var out bytes.Buffer
-	code := Execute([]string{"init", target, "--skip-hyperframes"}, &out, &out)
+	code := Execute([]string{"init", target, "--canvas", "vertical-3x4", "--skip-hyperframes"}, &out, &out)
 	if code != 0 {
 		t.Fatalf("exit %d: %s", code, out.String())
 	}
@@ -61,7 +61,7 @@ func initProject(t *testing.T) string {
 	t.Helper()
 	root := filepath.Join(t.TempDir(), "video")
 	var out bytes.Buffer
-	if code := Execute([]string{"init", root, "--skip-hyperframes"}, &out, &out); code != 0 {
+	if code := Execute([]string{"init", root, "--canvas", "vertical-3x4", "--skip-hyperframes"}, &out, &out); code != 0 {
 		t.Fatalf("init code=%d output=%s", code, out.String())
 	}
 	return root
@@ -139,7 +139,7 @@ func TestStyleAndEmptyRunAllCommands(t *testing.T) {
 func TestInitConflictAndSameToolConfigSucceeds(t *testing.T) {
 	target := t.TempDir()
 	os.WriteFile(filepath.Join(target, "PROMPT.md"), []byte("custom"), 0o644)
-	if code := Execute([]string{"init", target, "--skip-hyperframes"}, &bytes.Buffer{}, &bytes.Buffer{}); code != 1 {
+	if code := Execute([]string{"init", target, "--canvas", "vertical-3x4", "--skip-hyperframes"}, &bytes.Buffer{}, &bytes.Buffer{}); code != 1 {
 		t.Fatalf("conflict exit=%d", code)
 	}
 	root := t.TempDir()
@@ -242,5 +242,56 @@ func TestRunCancellationReturns130AndTerminatesProcessGroup(t *testing.T) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("orchestrator process group was not terminated")
+	}
+}
+
+func TestInitRejectsUnknownCanvas(t *testing.T) {
+	var out bytes.Buffer
+	code := Execute([]string{"init", filepath.Join(t.TempDir(), "video"), "--canvas", "vertical-4x5", "--skip-hyperframes"}, &out, &out)
+	if code == 0 {
+		t.Fatal("未知画幅应报错")
+	}
+	if !strings.Contains(out.String(), "vertical-9x16") {
+		t.Errorf("错误信息应列出可选画幅，实际：%s", out.String())
+	}
+}
+
+func TestInitWritesChosenCanvas(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "video")
+	var out bytes.Buffer
+	if code := Execute([]string{"init", target, "--canvas", "vertical-9x16", "--skip-hyperframes"}, &out, &out); code != 0 {
+		t.Fatalf("init code=%d output=%s", code, out.String())
+	}
+	body, err := os.ReadFile(filepath.Join(target, "frame.md"))
+	if err != nil {
+		t.Fatalf("读取 frame.md: %v", err)
+	}
+	if !strings.Contains(string(body), "height_px: 1920") {
+		t.Error("frame.md 未写入 9:16 画幅")
+	}
+	if !strings.Contains(string(body), "top_px: 1470") {
+		t.Error("frame.md 的字幕安全区未按 9:16 推导")
+	}
+	// 共享树与预设树都要落地。
+	for _, name := range []string{
+		filepath.Join("assets", "fonts", "noto-sans-sc-400.woff2"),
+		filepath.Join("assets", "style-guide", "examples", "proposition.png"),
+		filepath.Join("templates", "project-rules.md"),
+	} {
+		if _, err := os.Stat(filepath.Join(target, name)); err != nil {
+			t.Errorf("缺少 %s: %v", name, err)
+		}
+	}
+}
+
+// 非交互环境不静默取默认画幅：选错画幅会让整个项目的排版基准和成片规格全错。
+func TestInitRequiresExplicitCanvasWhenNotInteractive(t *testing.T) {
+	var out bytes.Buffer
+	code := Execute([]string{"init", filepath.Join(t.TempDir(), "video"), "--skip-hyperframes"}, &out, &out)
+	if code == 0 {
+		t.Fatal("非交互且未传 --canvas 时应报错")
+	}
+	if !strings.Contains(out.String(), "--canvas") {
+		t.Errorf("错误信息应提示传 --canvas，实际：%s", out.String())
 	}
 }
