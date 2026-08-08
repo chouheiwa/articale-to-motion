@@ -109,3 +109,31 @@ func TestExtractMessagesForEveryStreamShape(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+// 文件名写错不会报错，只会让项目规则静默失效，所以逐个工具钉死。
+func TestProjectRulesFilenamePerTool(t *testing.T) {
+	tests := map[string]string{
+		"codex":     "AGENTS.md",
+		"qoder":     "AGENTS.md",
+		"opencode":  "AGENTS.md",
+		"claude":    "CLAUDE.md",
+		"codebuddy": "CODEBUDDY.md",
+	}
+	for tool, want := range tests {
+		t.Run(tool, func(t *testing.T) {
+			got, err := ProjectRulesFilename(tool)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != want {
+				t.Fatalf("got %s want %s", got, want)
+			}
+		})
+	}
+}
+
+func TestProjectRulesFilenameRejectsUnknownTool(t *testing.T) {
+	if _, err := ProjectRulesFilename("cursor"); err == nil {
+		t.Fatal("expected error for unknown tool")
+	}
+}

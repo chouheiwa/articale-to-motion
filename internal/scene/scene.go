@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -127,6 +129,49 @@ func Load(directory string) (Scene, error) {
 
 func isFinite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
 
+// defaultCanvasSpec 是没有视觉规范时的画幅，与本项目引入画幅预设之前的行为一致。
+const defaultCanvasSpec = "1080x1440、30fps"
+
+// canvasSpec 从镜头目录里的视觉规范文件读出画布规格。
+//
+// 这里刻意不依赖 internal/preset：镜头目录可以脱离项目独立运行
+// （am scene run <目录>），能拿到的只有目录内的文件。
+//
+// 声明了 style_guide 却读不出 canvas 时报错而不是回退默认：静默按 1080x1440
+// 渲染正是这次改造要消除的故障——校验层和执行层各说各的，成片才暴露。
+func canvasSpec(directory, styleGuide string) (string, error) {
+	if styleGuide == "" {
+		return defaultCanvasSpec, nil
+	}
+	path, err := contained(directory, styleGuide, "style_guide")
+	if err != nil {
+		return "", err
+	}
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("读取视觉规范失败：%w", err)
+	}
+	parts := strings.SplitN(string(body), "---", 3)
+	if len(parts) != 3 {
+		return "", fmt.Errorf("视觉规范 %s 缺少 YAML frontmatter，无法确定画幅", styleGuide)
+	}
+	var parsed struct {
+		Canvas struct {
+			WidthPx  int `yaml:"width_px"`
+			HeightPx int `yaml:"height_px"`
+			FPS      int `yaml:"fps"`
+		} `yaml:"canvas"`
+	}
+	if err := yaml.Unmarshal([]byte(parts[1]), &parsed); err != nil {
+		return "", fmt.Errorf("视觉规范 %s 的 frontmatter 解析失败：%w", styleGuide, err)
+	}
+	c := parsed.Canvas
+	if c.WidthPx <= 0 || c.HeightPx <= 0 || c.FPS <= 0 {
+		return "", fmt.Errorf("视觉规范 %s 的 canvas 缺少 width_px / height_px / fps", styleGuide)
+	}
+	return fmt.Sprintf("%dx%d、%dfps", c.WidthPx, c.HeightPx, c.FPS), nil
+}
+
 // BuildPrompt 拼装单镜头提示词。skillsDir 由 ResolveSkillsDir 解析；
 // 传空字符串时动效要求退回按技能名引用，不写死任何本机路径。
 func BuildPrompt(s Scene, skillsDir string) (string, error) {
@@ -137,6 +182,10 @@ func BuildPrompt(s Scene, skillsDir string) (string, error) {
 	}
 	if content, readErr := os.ReadFile(promptFile); readErr == nil {
 		body = string(content)
+	}
+	canvas, err := canvasSpec(s.Directory, s.StyleGuide)
+	if err != nil {
+		return "", err
 	}
 	style := ""
 	if s.StyleGuide != "" {
@@ -151,7 +200,7 @@ func BuildPrompt(s Scene, skillsDir string) (string, error) {
 	prompt := fmt.Sprintf(`当前只执行一个 MG 动画镜头，不进行交互提问。
 
 任务目标：
-- 制作 1080x1440、30fps、静音、无音轨的 HyperFrames 动画。
+- 制作 %s、静音、无音轨的 HyperFrames 动画。
 - 镜头编号：%s
 - 时长：%.3f 秒
 - 输出：%s
@@ -171,6 +220,6 @@ func BuildPrompt(s Scene, skillsDir string) (string, error) {
 [[USER_MESSAGE]]开始联网搜索
 [[USER_MESSAGE]]代码已完成，开始渲染
 [[USER_MESSAGE]]视频已渲染完成：%s
-`, s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, motionRequirements(skillsDir), s.Output)
+`, canvas, s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, motionRequirements(skillsDir), s.Output)
 	return prompt, nil
 }
