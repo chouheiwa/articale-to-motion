@@ -44,8 +44,19 @@ func TestPublicTreeContainsNoPrivateOrLegacyContent(t *testing.T) {
 
 func TestPromptsUseInstalledCLIAndDoNotExposeExecutorIdentity(t *testing.T) {
 	root, _ := filepath.Abs(filepath.Join("..", ".."))
-	for _, name := range []string{"PROMPT.md", "PROMPT-PRODUCTION.md"} {
-		body, err := os.ReadFile(filepath.Join(root, name))
+	// 提示词已按「是否含画幅数字」拆进两棵源树：与画幅无关的进 shared，
+	// 含画幅的每套预设一份。用 glob 而非写死清单，新增画幅预设自动纳入。
+	names := []string{filepath.Join(root, "assets", "shared", "PROMPT.md")}
+	production, err := filepath.Glob(filepath.Join(root, "assets", "presets", "*", "PROMPT-PRODUCTION.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(production) == 0 {
+		t.Fatal("assets/presets 下没有任何 PROMPT-PRODUCTION.md，检查素材路径")
+	}
+	names = append(names, production...)
+	for _, name := range names {
+		body, err := os.ReadFile(name)
 		if err != nil {
 			t.Fatal(err)
 		}

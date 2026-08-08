@@ -7,10 +7,12 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/chouheiwa/articale-to-motion/internal/preset"
 )
 
 func TestPublishTemplatePasses(t *testing.T) {
-	if _, err := Publish(filepath.Join("..", "..", "templates", "publish.md"), ".", true); err != nil {
+	if _, err := Publish(sharedSource("templates", "publish.md"), ".", true); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -24,7 +26,7 @@ func TestPublishRejectsMissingRequiredKey(t *testing.T) {
 }
 
 func TestPublishRejectsSecretsAndEscapingPaths(t *testing.T) {
-	template, _ := os.ReadFile(filepath.Join("..", "..", "templates", "publish.md"))
+	template, _ := os.ReadFile(sharedSource("templates", "publish.md"))
 	for name, replacement := range map[string]string{"secret": "introduction: sk-abcdefghijklmnop", "escape": "path: ../final.mp4"} {
 		t.Run(name, func(t *testing.T) {
 			body := string(template)
@@ -42,14 +44,17 @@ func TestPublishRejectsSecretsAndEscapingPaths(t *testing.T) {
 	}
 }
 
+// 素材拆成两棵源树后仓库根不再是一个可校验的项目，改为在铺好的夹具上验。
 func TestStyleGuidePairPasses(t *testing.T) {
-	if err := Style(filepath.Join("..", "..")); err != nil {
+	frame, _ := os.ReadFile(presetSource("frame.md"))
+	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
+	if err := Style(styleFixture(t, string(frame), string(guide))); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestPublishRejectsUnsafeYAMLStatusAndMissingHeading(t *testing.T) {
-	template, _ := os.ReadFile(filepath.Join("..", "..", "templates", "publish.md"))
+	template, _ := os.ReadFile(sharedSource("templates", "publish.md"))
 	cases := map[string]string{
 		"unsafe-tag":      replaceOnce(string(template), "schema_version: 1", "schema_version: !custom 1"),
 		"bad-status":      replaceOnce(string(template), "publish_status: draft", "publish_status: published"),
@@ -72,8 +77,8 @@ func TestStyleRejectsTokenDriftAndMissingDocuments(t *testing.T) {
 		t.Fatal("missing style files should fail")
 	}
 	os.MkdirAll(filepath.Join(root, "docs"), 0o755)
-	frame, _ := os.ReadFile(filepath.Join("..", "..", "frame.md"))
-	guide, _ := os.ReadFile(filepath.Join("..", "..", "docs", "清晰系统蓝图-视频风格说明书.md"))
+	frame, _ := os.ReadFile(presetSource("frame.md"))
+	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
 	os.WriteFile(filepath.Join(root, "frame.md"), frame, 0o644)
 	os.WriteFile(filepath.Join(root, "docs", "清晰系统蓝图-视频风格说明书.md"), []byte(replaceOnce(string(guide), "width_px: 1080", "width_px: 999")), 0o644)
 	if err := Style(root); err == nil {
@@ -82,8 +87,8 @@ func TestStyleRejectsTokenDriftAndMissingDocuments(t *testing.T) {
 }
 
 func TestStyleRejectsInvalidSchemaSections(t *testing.T) {
-	frame, _ := os.ReadFile(filepath.Join("..", "..", "frame.md"))
-	guide, _ := os.ReadFile(filepath.Join("..", "..", "docs", "清晰系统蓝图-视频风格说明书.md"))
+	frame, _ := os.ReadFile(presetSource("frame.md"))
+	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
 	cases := map[string][2]string{
 		"schema":     {"schema_version: 1", "schema_version: 2"},
 		"identity":   {"style_id: clear-system-blueprint-v1", "style_id: [invalid]"},
@@ -123,7 +128,6 @@ func TestStyleRejectsInvalidSchemaSections(t *testing.T) {
 func styleFixture(t *testing.T, frameBody, guideBody string) string {
 	t.Helper()
 	root := t.TempDir()
-	repo := filepath.Join("..", "..")
 	if err := os.MkdirAll(filepath.Join(root, "docs"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -133,23 +137,27 @@ func styleFixture(t *testing.T, frameBody, guideBody string) string {
 	if err := os.WriteFile(filepath.Join(root, "docs", "清晰系统蓝图-视频风格说明书.md"), []byte(guideBody), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	for _, dir := range []string{filepath.Join("assets", "style-guide", "examples"), filepath.Join("assets", "fonts")} {
-		entries, err := os.ReadDir(filepath.Join(repo, dir))
+	// 源在两棵素材树里，目标是项目内的扁平路径——两边不再同名，得分别给出。
+	for _, pair := range []struct{ source, destination string }{
+		{presetSource("assets", "style-guide", "examples"), filepath.Join("assets", "style-guide", "examples")},
+		{sharedSource("assets", "fonts"), filepath.Join("assets", "fonts")},
+	} {
+		entries, err := os.ReadDir(pair.source)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := os.MkdirAll(filepath.Join(root, dir), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Join(root, pair.destination), 0o755); err != nil {
 			t.Fatal(err)
 		}
 		for _, entry := range entries {
 			if entry.IsDir() {
 				continue
 			}
-			body, err := os.ReadFile(filepath.Join(repo, dir, entry.Name()))
+			body, err := os.ReadFile(filepath.Join(pair.source, entry.Name()))
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(filepath.Join(root, dir, entry.Name()), body, 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(root, pair.destination, entry.Name()), body, 0o644); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -157,9 +165,19 @@ func styleFixture(t *testing.T, frameBody, guideBody string) string {
 	return root
 }
 
+// 素材已按画幅拆进 assets/presets 与 assets/shared 两棵源树，
+// 测试夹具统一走这两个辅助函数，避免相对路径散落各处。
+func presetSource(parts ...string) string {
+	return filepath.Join(append([]string{"..", "..", "assets", "presets", preset.Default().ID}, parts...)...)
+}
+
+func sharedSource(parts ...string) string {
+	return filepath.Join(append([]string{"..", "..", "assets", "shared"}, parts...)...)
+}
+
 func TestStyleFixtureItselfPasses(t *testing.T) {
-	frame, _ := os.ReadFile(filepath.Join("..", "..", "frame.md"))
-	guide, _ := os.ReadFile(filepath.Join("..", "..", "docs", "清晰系统蓝图-视频风格说明书.md"))
+	frame, _ := os.ReadFile(presetSource("frame.md"))
+	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
 	if err := Style(styleFixture(t, string(frame), string(guide))); err != nil {
 		t.Fatalf("unmodified fixture must pass, otherwise every rejection case passes vacuously: %v", err)
 	}
@@ -168,8 +186,8 @@ func TestStyleFixtureItselfPasses(t *testing.T) {
 // 渲染机是一台干净的无头 Chrome。字体栈里出现只存在于本机的系统字体时，
 // 本地渲染会因为回退而"看着正常"，云端 / CI 上排版却是错的——必须在 token 层挡住。
 func TestStyleRejectsFontsThatDoNotShipWithTheProject(t *testing.T) {
-	frame, _ := os.ReadFile(filepath.Join("..", "..", "frame.md"))
-	guide, _ := os.ReadFile(filepath.Join("..", "..", "docs", "清晰系统蓝图-视频风格说明书.md"))
+	frame, _ := os.ReadFile(presetSource("frame.md"))
+	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
 	cases := map[string][2]string{
 		"system-font-in-primary": {
 			`primary_stack: '"Inter", "Noto Sans SC", sans-serif'`,
@@ -208,8 +226,8 @@ func TestStyleRejectsFontsThatDoNotShipWithTheProject(t *testing.T) {
 }
 
 func TestStyleRejectsDeclaredFontFileThatIsMissing(t *testing.T) {
-	frame, _ := os.ReadFile(filepath.Join("..", "..", "frame.md"))
-	guide, _ := os.ReadFile(filepath.Join("..", "..", "docs", "清晰系统蓝图-视频风格说明书.md"))
+	frame, _ := os.ReadFile(presetSource("frame.md"))
+	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
 	const old, replacement = `file: "assets/fonts/noto-sans-sc-400.woff2"`, `file: "assets/fonts/absent.woff2"`
 	modifiedFrame := replaceOnce(string(frame), old, replacement)
 	modifiedGuide := replaceOnce(string(guide), old, replacement)
@@ -237,8 +255,8 @@ func TestRegenerateExamplesUsesImageMagickAndWritesAllArtifacts(t *testing.T) {
 	if err := os.Mkdir(bin, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	frame, _ := os.ReadFile(filepath.Join("..", "..", "frame.md"))
-	guide, _ := os.ReadFile(filepath.Join("..", "..", "docs", "清晰系统蓝图-视频风格说明书.md"))
+	frame, _ := os.ReadFile(presetSource("frame.md"))
+	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
 	os.WriteFile(filepath.Join(root, "frame.md"), frame, 0o644)
 	os.WriteFile(filepath.Join(root, "docs", "清晰系统蓝图-视频风格说明书.md"), guide, 0o644)
 	magick := filepath.Join(bin, "magick")
@@ -286,7 +304,7 @@ func TestPublishRejectsEvidenceSymlinkOutsideProject(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(root, "evidence.txt")); err != nil {
 		t.Skipf("symlink unavailable: %v", err)
 	}
-	template, _ := os.ReadFile(filepath.Join("..", "..", "templates", "publish.md"))
+	template, _ := os.ReadFile(sharedSource("templates", "publish.md"))
 	body := replaceOnce(string(template), `approval: ""`, `approval: evidence.txt`)
 	path := filepath.Join(root, "publish.md")
 	os.WriteFile(path, []byte(body), 0o644)
