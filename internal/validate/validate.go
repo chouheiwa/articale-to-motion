@@ -7,7 +7,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -15,6 +14,7 @@ import (
 
 	assets "github.com/chouheiwa/articale-to-motion"
 	"github.com/chouheiwa/articale-to-motion/internal/preset"
+	"github.com/chouheiwa/articale-to-motion/internal/styleimage"
 	"gopkg.in/yaml.v3"
 )
 
@@ -515,10 +515,6 @@ func RegenerateExamples(projectRoot string, output io.Writer) error {
 			return fmt.Errorf("frame.md 的 colors.%s 必须是六位十六进制颜色", name)
 		}
 	}
-	magick, err := exec.LookPath("magick")
-	if err != nil {
-		return fmt.Errorf("需要 ImageMagick 的 `magick` 命令")
-	}
 	outputDir := filepath.Join(projectRoot, "assets", "style-guide", "examples")
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return err
@@ -541,17 +537,15 @@ func RegenerateExamples(projectRoot string, output io.Writer) error {
 		if err := os.WriteFile(svgPath, []byte(svg), 0o644); err != nil {
 			return err
 		}
-		if commandOutput, err := exec.Command(magick, "-background", "none", svgPath, pngPath).CombinedOutput(); err != nil {
-			return fmt.Errorf("ImageMagick 渲染 %s 失败: %w: %s", name, err, strings.TrimSpace(string(commandOutput)))
+		if err := styleimage.RenderSVG(svgPath, pngPath); err != nil {
+			return err
 		}
 		fmt.Fprintf(output, "generated %s\ngenerated %s\n", filepath.ToSlash(filepath.Join("assets", "style-guide", "examples", name+".svg")), filepath.ToSlash(filepath.Join("assets", "style-guide", "examples", name+".png")))
 		pngPaths = append(pngPaths, pngPath)
 	}
 	contactPath := filepath.Join(outputDir, "contact-sheet.png")
-	args := append([]string{"montage"}, pngPaths...)
-	args = append(args, "-thumbnail", "405x540", "-tile", "4x1", "-geometry", "405x540+10+10", "-background", colors["structure_line"].(string), contactPath)
-	if commandOutput, err := exec.Command(magick, args...).CombinedOutput(); err != nil {
-		return fmt.Errorf("ImageMagick 生成 contact sheet 失败: %w: %s", err, strings.TrimSpace(string(commandOutput)))
+	if err := styleimage.ContactSheet(pngPaths, contactPath, "405x540", colors["structure_line"].(string)); err != nil {
+		return err
 	}
 	fmt.Fprintf(output, "generated %s\n", filepath.ToSlash(filepath.Join("assets", "style-guide", "examples", "contact-sheet.png")))
 	return nil

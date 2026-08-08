@@ -259,8 +259,11 @@ func TestRegenerateExamplesUsesImageMagickAndWritesAllArtifacts(t *testing.T) {
 	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
 	os.WriteFile(filepath.Join(root, "frame.md"), frame, 0o644)
 	os.WriteFile(filepath.Join(root, "docs", "清晰系统蓝图-视频风格说明书.md"), guide, 0o644)
+	// montage 的产物是最后一个参数；rsvg-convert 的产物在 -o 之后，两者桩法不同。
 	magick := filepath.Join(bin, "magick")
 	os.WriteFile(magick, []byte("#!/bin/sh\nfor last; do :; done\n: > \"$last\"\n"), 0o755)
+	rsvg := filepath.Join(bin, "rsvg-convert")
+	os.WriteFile(rsvg, []byte("#!/bin/sh\nwhile [ $# -gt 0 ]; do\n  if [ \"$1\" = \"-o\" ]; then shift; : > \"$1\"; exit 0; fi\n  shift\ndone\nexit 1\n"), 0o755)
 	t.Setenv("PATH", bin)
 	var output bytes.Buffer
 	if err := RegenerateExamples(root, &output); err != nil {
