@@ -127,6 +127,12 @@ func TestStyleRejectsInvalidSchemaSections(t *testing.T) {
 // 被测的那处改动，而不是缺文件——否则用例会空过。
 func styleFixture(t *testing.T, frameBody, guideBody string) string {
 	t.Helper()
+	return styleFixtureFor(t, preset.Default().ID, frameBody, guideBody)
+}
+
+// styleFixtureFor 同上，但示例图取自指定画幅预设。
+func styleFixtureFor(t *testing.T, presetID, frameBody, guideBody string) string {
+	t.Helper()
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "docs"), 0o755); err != nil {
 		t.Fatal(err)
@@ -139,7 +145,7 @@ func styleFixture(t *testing.T, frameBody, guideBody string) string {
 	}
 	// 源在两棵素材树里，目标是项目内的扁平路径——两边不再同名，得分别给出。
 	for _, pair := range []struct{ source, destination string }{
-		{presetSource("assets", "style-guide", "examples"), filepath.Join("assets", "style-guide", "examples")},
+		{filepath.Join("..", "..", "assets", "presets", presetID, "assets", "style-guide", "examples"), filepath.Join("assets", "style-guide", "examples")},
 		{sharedSource("assets", "fonts"), filepath.Join("assets", "fonts")},
 	} {
 		entries, err := os.ReadDir(pair.source)
@@ -323,4 +329,89 @@ func replaceOnce(body, old, replacement string) string {
 		}
 	}
 	return body
+}
+
+// presetFixture 铺一份该画幅预设的完整项目。
+func presetFixture(t *testing.T, presetID string) string {
+	t.Helper()
+	dir := filepath.Join("..", "..", "assets", "presets", presetID)
+	frame, err := os.ReadFile(filepath.Join(dir, "frame.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	guide, err := os.ReadFile(filepath.Join(dir, "docs", "清晰系统蓝图-视频风格说明书.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return styleFixtureFor(t, presetID, string(frame), string(guide))
+}
+
+// 每套内置预设的产物都必须自洽，新增画幅无需再改这个用例。
+func TestStyleAcceptsEveryBuiltinPreset(t *testing.T) {
+	for _, p := range preset.All() {
+		t.Run(p.ID, func(t *testing.T) {
+			if err := Style(presetFixture(t, p.ID)); err != nil {
+				t.Fatalf("%s 应通过校验：%v", p.ID, err)
+			}
+		})
+	}
+}
+
+// 手改安全区在改造前查不出来：旧校验只看字段齐全且非负。
+func TestStyleRejectsTamperedSafeArea(t *testing.T) {
+	root := presetFixture(t, "vertical-3x4")
+	tamperBoth(t, root, "top_px: 990", "top_px: 1000")
+	err := Style(root)
+	if err == nil {
+		t.Fatal("被篡改的 safe_area 应被拒绝")
+	}
+	if !strings.Contains(err.Error(), "subtitles") {
+		t.Errorf("错误应指出字段名，实际：%v", err)
+	}
+}
+
+func TestStyleRejectsUnknownCanvas(t *testing.T) {
+	root := presetFixture(t, "vertical-3x4")
+	tamperBoth(t, root, "height_px: 1440", "height_px: 1600")
+	err := Style(root)
+	if err == nil {
+		t.Fatal("未内置的画幅应被拒绝")
+	}
+	if !strings.Contains(err.Error(), "vertical-9x16") {
+		t.Errorf("错误应列出可选画幅，实际：%v", err)
+	}
+}
+
+// 9:16 的 frame.md 配 3:4 的示例图必须被挡住。
+func TestStyleRejectsExamplesFromAnotherCanvas(t *testing.T) {
+	dir := filepath.Join("..", "..", "assets", "presets", "vertical-9x16")
+	frame, _ := os.ReadFile(filepath.Join(dir, "frame.md"))
+	guide, _ := os.ReadFile(filepath.Join(dir, "docs", "清晰系统蓝图-视频风格说明书.md"))
+	root := styleFixtureFor(t, "vertical-3x4", string(frame), string(guide))
+	err := Style(root)
+	if err == nil {
+		t.Fatal("画幅不匹配的示例图应被拒绝")
+	}
+	if !strings.Contains(err.Error(), "1080x1920") {
+		t.Errorf("错误应给出期望尺寸，实际：%v", err)
+	}
+}
+
+// tamperBoth 同时改两份文件，避免先被 frontmatter DeepEqual 拦下而测不到目标断言。
+func tamperBoth(t *testing.T, root, from, to string) {
+	t.Helper()
+	for _, name := range []string{"frame.md", filepath.Join("docs", "清晰系统蓝图-视频风格说明书.md")} {
+		path := filepath.Join(root, name)
+		body, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("读 %s: %v", name, err)
+		}
+		replaced := strings.Replace(string(body), from, to, 1)
+		if replaced == string(body) {
+			t.Fatalf("%s 里找不到 %q", name, from)
+		}
+		if err := os.WriteFile(path, []byte(replaced), 0o644); err != nil {
+			t.Fatalf("写 %s: %v", name, err)
+		}
+	}
 }
