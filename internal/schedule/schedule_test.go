@@ -67,7 +67,7 @@ func TestRunAllHonorsConcurrencyAndRetries(t *testing.T) {
 		return nil
 	}
 	report := RunAll(context.Background(), scenes, 2, 1, runner)
-	if maximum > 2 || report.ExitCode() != 0 || report.Counts()[Succeeded] != 3 || attempts["scene-002"] != 2 {
+	if maximum > 2 || report.ExitCode() != 0 || report.CountValues[Succeeded] != 3 || attempts["scene-002"] != 2 {
 		t.Fatalf("bad report=%+v max=%d attempts=%v", report, maximum, attempts)
 	}
 }
@@ -96,7 +96,7 @@ func TestRunAllRecordsSkipWithoutRetry(t *testing.T) {
 	report := RunAll(context.Background(), scenes, 1, 5, func(context.Context, scene.Scene) error {
 		return Outcome(Skipped, "已有合格产物")
 	})
-	if report.Counts()[Skipped] != 1 || report.Scenes[0].Attempts != 0 {
+	if report.CountValues[Skipped] != 1 || report.Scenes[0].Attempts != 0 {
 		t.Fatalf("unexpected report: %+v", report)
 	}
 }

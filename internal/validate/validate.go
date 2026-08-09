@@ -86,7 +86,7 @@ func safeRelative(root string, value any) error {
 	return nil
 }
 
-func Publish(path, projectRoot string, templateMode bool) (map[string]any, error) {
+func Publish(path, projectRoot string) (map[string]any, error) {
 	data, body, err := frontmatter(path)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,11 @@ func Publish(path, projectRoot string, templateMode bool) (map[string]any, error
 	if !statuses[status] {
 		return nil, fmt.Errorf("无效的 publish_status：%v", data["publish_status"])
 	}
-	if secretValue.MatchString(string(mustRead(path))) {
+	rawBody, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("读取 %s: %w", path, err)
+	}
+	if secretValue.MatchString(string(rawBody)) {
 		return nil, fmt.Errorf("publish.md 不得包含密钥")
 	}
 	video, ok := data["video"].(map[string]any)
@@ -133,13 +137,7 @@ func Publish(path, projectRoot string, templateMode bool) (map[string]any, error
 			return nil, fmt.Errorf("markdown 缺少章节：%s", heading)
 		}
 	}
-	_ = templateMode
 	return data, nil
-}
-
-func mustRead(path string) []byte {
-	body, _ := os.ReadFile(path)
-	return body
 }
 
 func Style(projectRoot string) error {

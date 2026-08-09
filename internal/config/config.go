@@ -9,6 +9,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/chouheiwa/articale-to-motion/internal/envutil"
+	"github.com/chouheiwa/articale-to-motion/internal/tools"
 )
 
 const (
@@ -17,9 +20,8 @@ const (
 )
 
 var (
-	validTools = map[string]bool{"codex": true, "claude": true, "qoder": true, "codebuddy": true, "opencode": true}
-	validTTS   = map[string]bool{"minimax": true, "bailian": true}
-	secretKey  = regexp.MustCompile(`(?i)(API_KEY|TOKEN|SECRET|PASSWORD)$`)
+	validTTS  = map[string]bool{"minimax": true, "bailian": true}
+	secretKey = regexp.MustCompile(`(?i)(API_KEY|TOKEN|SECRET|PASSWORD)$`)
 )
 
 type Config struct {
@@ -31,14 +33,7 @@ type Config struct {
 }
 
 func envMap() map[string]string {
-	out := make(map[string]string)
-	for _, entry := range os.Environ() {
-		key, value, ok := strings.Cut(entry, "=")
-		if ok {
-			out[key] = value
-		}
-	}
-	return out
+	return envutil.EnvMap()
 }
 
 func parseFile(path string) (map[string]string, error) {
@@ -97,10 +92,10 @@ func Load(root string, environ map[string]string) (Config, error) {
 		return fallback
 	}
 	cfg := Config{Orchestrator: resolve("ORCHESTRATOR", ""), Renderer: resolve("RENDERER", ""), TTSProvider: resolve("TTS_PROVIDER", "minimax"), Overlay: dotenv}
-	if !validTools[cfg.Orchestrator] {
+	if !tools.ValidTools[cfg.Orchestrator] {
 		return Config{}, fmt.Errorf("无效的 ORCHESTRATOR: %s（可选：codex claude qoder codebuddy opencode）", cfg.Orchestrator)
 	}
-	if !validTools[cfg.Renderer] {
+	if !tools.ValidTools[cfg.Renderer] {
 		return Config{}, fmt.Errorf("无效的 RENDERER: %s（可选：codex claude qoder codebuddy opencode）", cfg.Renderer)
 	}
 	if !validTTS[cfg.TTSProvider] {

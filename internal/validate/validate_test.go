@@ -12,7 +12,7 @@ import (
 )
 
 func TestPublishTemplatePasses(t *testing.T) {
-	if _, err := Publish(sharedSource("templates", "publish.md"), ".", true); err != nil {
+	if _, err := Publish(sharedSource("templates", "publish.md"), "."); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -20,7 +20,7 @@ func TestPublishTemplatePasses(t *testing.T) {
 func TestPublishRejectsMissingRequiredKey(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "publish.md")
 	os.WriteFile(path, []byte("---\nschema_version: 1\n---\n"), 0o644)
-	if _, err := Publish(path, ".", true); err == nil {
+	if _, err := Publish(path, "."); err == nil {
 		t.Fatal("expected missing key error")
 	}
 }
@@ -37,7 +37,7 @@ func TestPublishRejectsSecretsAndEscapingPaths(t *testing.T) {
 			}
 			path := filepath.Join(t.TempDir(), "publish.md")
 			os.WriteFile(path, []byte(body), 0o644)
-			if _, err := Publish(path, filepath.Dir(path), true); err == nil {
+			if _, err := Publish(path, filepath.Dir(path)); err == nil {
 				t.Fatal("expected rejection")
 			}
 		})
@@ -64,7 +64,7 @@ func TestPublishRejectsUnsafeYAMLStatusAndMissingHeading(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "publish.md")
 			os.WriteFile(path, []byte(body), 0o644)
-			if _, err := Publish(path, filepath.Dir(path), true); err == nil {
+			if _, err := Publish(path, filepath.Dir(path)); err == nil {
 				t.Fatal("expected validation failure")
 			}
 		})
@@ -317,7 +317,7 @@ func TestPublishRejectsEvidenceSymlinkOutsideProject(t *testing.T) {
 	body := replaceOnce(string(template), `approval: ""`, `approval: evidence.txt`)
 	path := filepath.Join(root, "publish.md")
 	os.WriteFile(path, []byte(body), 0o644)
-	if _, err := Publish(path, root, true); err == nil {
+	if _, err := Publish(path, root); err == nil {
 		t.Fatal("expected external symlink rejection")
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/chouheiwa/articale-to-motion/internal/config"
+	"github.com/chouheiwa/articale-to-motion/internal/envutil"
 	"github.com/chouheiwa/articale-to-motion/internal/tools"
 )
 
@@ -36,11 +37,7 @@ func resolveBinary(name, pathValue string) (string, error) {
 }
 
 func environmentList(values map[string]string) []string {
-	result := make([]string, 0, len(values))
-	for key, value := range values {
-		result = append(result, key+"="+value)
-	}
-	return result
+	return envutil.EnvList(values)
 }
 
 func Run(ctx context.Context, s Scene, cfg config.Config, unsafe bool, baseEnv map[string]string, userOutput io.Writer, tolerance float64) error {
@@ -89,7 +86,7 @@ func Run(ctx context.Context, s Scene, cfg config.Config, unsafe bool, baseEnv m
 
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Dir = s.Directory
-	passthrough := strings.FieldsFunc(baseEnv["AM_PASSTHROUGH_ENV"], func(r rune) bool { return r == ',' || r == ' ' })
+	passthrough := envutil.ParsePassthrough(baseEnv["AM_PASSTHROUGH_ENV"])
 	cmd.Env = environmentList(cfg.ChildEnvironment(baseEnv, unsafe, passthrough))
 	cmd.Stdin = nil
 	cmd.Stderr = stderrFile

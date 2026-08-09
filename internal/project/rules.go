@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 )
 
 // RulesTemplate 是项目规则模板在项目内的相对路径。
@@ -48,23 +50,8 @@ func WriteRules(root, filename string) (string, error) {
 		return "", fmt.Errorf("检查 %s: %w", destination, err)
 	}
 
-	tmp, err := os.CreateTemp(root, ".am-rules-*")
-	if err != nil {
+	if err := fsutil.AtomicWrite(destination, body, 0o644); err != nil {
 		return "", err
-	}
-	tmpName := tmp.Name()
-	if _, err = tmp.Write(body); err == nil {
-		err = tmp.Chmod(0o644)
-	}
-	if closeErr := tmp.Close(); err == nil {
-		err = closeErr
-	}
-	if err == nil {
-		err = os.Rename(tmpName, destination)
-	}
-	if err != nil {
-		_ = os.Remove(tmpName)
-		return "", fmt.Errorf("写入 %s: %w", destination, err)
 	}
 	return destination, nil
 }

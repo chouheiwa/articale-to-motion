@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 	"github.com/chouheiwa/articale-to-motion/internal/scene"
 )
 
@@ -40,7 +41,6 @@ type Report struct {
 	Scenes        []SceneResult  `json:"scenes"`
 }
 
-func (r Report) Counts() map[Status]int { return r.CountValues }
 func (r Report) ExitCode() int {
 	if r.Interrupted {
 		return 130
@@ -57,24 +57,7 @@ func (r Report) WriteJSON(path string) error {
 		return err
 	}
 	body = append(body, '\n')
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".am-report-*")
-	if err != nil {
-		return err
-	}
-	name := tmp.Name()
-	defer os.Remove(name)
-	if _, err = tmp.Write(body); err == nil {
-		err = tmp.Close()
-	} else {
-		_ = tmp.Close()
-	}
-	if err != nil {
-		return err
-	}
-	return os.Rename(name, path)
+	return fsutil.AtomicWrite(path, body, 0o644)
 }
 
 func (r Report) Render() string {
@@ -145,27 +128,34 @@ func RunAll(ctx context.Context, scenes []scene.Scene, jobs, retries int, runner
 		for s := range tasks {
 			begin := time.Now()
 			result := SceneResult{SceneID: s.ID, Status: Failed}
-			for attempt := 1; attempt <= retries+1; attempt++ {
-				result.Attempts = attempt
-				err := runner(ctx, s)
-				if err == nil {
-					result.Status, result.Reason = Succeeded, ""
-					break
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						result.Reason = fmt.Sprintf("渲染器 panic: %v", r)
+					}
+				}()
+				for attempt := 1; attempt <= retries+1; attempt++ {
+					result.Attempts = attempt
+					err := runner(ctx, s)
+					if err == nil {
+						result.Status, result.Reason = Succeeded, ""
+						break
+					}
+					var outcome *outcomeError
+					if errors.As(err, &outcome) {
+						result.Status, result.Reason = outcome.status, outcome.reason
+						result.Attempts = 0
+						break
+					}
+					result.Reason = err.Error()
+					if ctx.Err() != nil {
+						break
+					}
+					if attempt <= retries {
+						archiveAttempt(s)
+					}
 				}
-				var outcome *outcomeError
-				if errors.As(err, &outcome) {
-					result.Status, result.Reason = outcome.status, outcome.reason
-					result.Attempts = 0
-					break
-				}
-				result.Reason = err.Error()
-				if ctx.Err() != nil {
-					break
-				}
-				if attempt <= retries {
-					archiveAttempt(s)
-				}
-			}
+			}()
 			result.Seconds = time.Since(begin).Seconds()
 			results <- result
 		}

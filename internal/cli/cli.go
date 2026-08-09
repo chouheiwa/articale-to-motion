@@ -17,6 +17,7 @@ import (
 	assets "github.com/chouheiwa/articale-to-motion"
 	"github.com/chouheiwa/articale-to-motion/internal/archive"
 	"github.com/chouheiwa/articale-to-motion/internal/config"
+	"github.com/chouheiwa/articale-to-motion/internal/envutil"
 	"github.com/chouheiwa/articale-to-motion/internal/preset"
 	"github.com/chouheiwa/articale-to-motion/internal/project"
 	"github.com/chouheiwa/articale-to-motion/internal/scene"
@@ -29,23 +30,18 @@ import (
 const Version = "1.0.0"
 
 func currentEnvironment() map[string]string {
-	result := make(map[string]string)
-	for _, item := range os.Environ() {
-		key, value, ok := strings.Cut(item, "=")
-		if ok {
-			result[key] = value
-		}
-	}
-	return result
+	return envutil.EnvMap()
 }
 
 func addExecutableLocation(env map[string]string) {
 	executable, err := os.Executable()
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "警告：无法获取可执行文件路径：%v\n", err)
 		return
 	}
 	executable, err = filepath.Abs(executable)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "警告：无法解析可执行文件路径：%v\n", err)
 		return
 	}
 	if resolved, resolveErr := filepath.EvalSymlinks(executable); resolveErr == nil {
@@ -70,12 +66,12 @@ func ExecuteContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	root.SetArgs(args)
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(stderr, err)
-		if errors.Is(ctx.Err(), context.Canceled) {
-			return 130
-		}
 		var coded *exitError
 		if errors.As(err, &coded) {
 			return coded.code
+		}
+		if errors.Is(ctx.Err(), context.Canceled) {
+			return 130
 		}
 		if strings.Contains(err.Error(), "缺少必需工具") {
 			return 127
@@ -180,7 +176,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return scene.Run(cmd.Context(), s, cfg, unsafe || os.Getenv("AM_UNSAFE") == "1", currentEnvironment(), stdout, tolerance)
+			return scene.Run(cmd.Context(), s, cfg, envutil.IsUnsafe(unsafe), currentEnvironment(), stdout, tolerance)
 		},
 	}
 	runScene.Flags().Float64Var(&tolerance, "duration-tolerance", 0.15, "产物时长容差（秒）")
@@ -219,7 +215,10 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 					if verifyErr := scene.VerifyOutput(item, env, tolerance); verifyErr != nil {
 						continue
 					}
-					outputInfo, _ := os.Stat(item.OutputPath())
+					outputInfo, statErr := os.Stat(item.OutputPath())
+					if statErr != nil {
+						continue
+					}
 					status := schedule.Skipped
 					reason := "已有合格产物"
 					for _, input := range []string{filepath.Join(item.Directory, "scene.json"), filepath.Join(item.Directory, "prompt.md")} {
@@ -235,7 +234,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 				if outcome, ok := initial[s.ID]; ok {
 					return outcome
 				}
-				return scene.Run(ctx, s, cfg, unsafe || os.Getenv("AM_UNSAFE") == "1", currentEnvironment(), stdout, tolerance)
+				return scene.Run(ctx, s, cfg, envutil.IsUnsafe(unsafe), currentEnvironment(), stdout, tolerance)
 			})
 			fmt.Fprintln(stdout, report.Render())
 			if reportPath != "" {
@@ -284,7 +283,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		isUnsafe := unsafe || os.Getenv("AM_UNSAFE") == "1"
+		isUnsafe := envutil.IsUnsafe(unsafe)
 		argv, stdin, err := tools.OrchestratorInvocation(cfg.Orchestrator, workdir, string(prompt), isUnsafe)
 		if err != nil {
 			return err
@@ -295,7 +294,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		}
 		process := exec.Command(binary, argv[1:]...)
 		process.Dir, process.Stdout, process.Stderr = workdir, stdout, stderr
-		childEnvironment := cfg.ChildEnvironment(currentEnvironment(), isUnsafe, strings.FieldsFunc(os.Getenv("AM_PASSTHROUGH_ENV"), func(r rune) bool { return r == ',' || r == ' ' }))
+		childEnvironment := cfg.ChildEnvironment(currentEnvironment(), isUnsafe, envutil.ParsePassthrough(os.Getenv("AM_PASSTHROUGH_ENV")))
 		addExecutableLocation(childEnvironment)
 		process.Env = envList(childEnvironment)
 		if stdin != "" {
@@ -348,14 +347,13 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 
 	validateCmd := &cobra.Command{Use: "validate", Short: "校验发布配置与风格规范"}
 	var projectRoot string
-	var templateMode bool
 	var regenerateExamples bool
 	publishCmd := &cobra.Command{Use: "publish PATH", Args: cobra.ExactArgs(1), Short: "校验 publish.md", RunE: func(cmd *cobra.Command, args []string) error {
 		rootDir := projectRoot
 		if rootDir == "" {
 			rootDir = "."
 		}
-		data, err := validate.Publish(args[0], rootDir, templateMode)
+		data, err := validate.Publish(args[0], rootDir)
 		if err != nil {
 			return err
 		}
@@ -363,7 +361,6 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		return nil
 	}}
 	publishCmd.Flags().StringVar(&projectRoot, "project-root", "", "项目根目录")
-	publishCmd.Flags().BoolVar(&templateMode, "template", false, "模板模式")
 	validateCmd.AddCommand(publishCmd)
 	styleCmd := &cobra.Command{Use: "style", Args: cobra.NoArgs, Short: "校验风格规范", RunE: func(cmd *cobra.Command, args []string) error {
 		rootDir := projectRoot
@@ -403,11 +400,7 @@ func validateTolerance(value float64) error {
 }
 
 func envList(values map[string]string) []string {
-	result := make([]string, 0, len(values))
-	for key, value := range values {
-		result = append(result, key+"="+value)
-	}
-	return result
+	return envutil.EnvList(values)
 }
 
 type exitError struct {

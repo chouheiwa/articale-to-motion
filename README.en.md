@@ -12,14 +12,40 @@ The Go release ships as one `am` binary with embedded project templates. It does
 
 ## Install and initialize
 
-Download the appropriate archive from GitHub Releases, verify it with `checksums.txt`, and place `am` on `PATH`. Node.js 22+, Git, FFmpeg/FFprobe, and at least one authenticated supported AI CLI are required. `ORCHESTRATOR` and `RENDERER` may use the same CLI.
+Download the appropriate archive from GitHub Releases, verify it with `checksums.txt`, and place `am` on `PATH`. Requirements:
+
+- macOS or Linux (amd64/arm64)
+- Node.js 22+
+- Git, FFmpeg, FFprobe
+- At least one authenticated CLI: Codex, Claude Code, Qoder, CodeBuddy, or OpenCode
 
 ```bash
-am init my-video
+am init my-video                          # interactive canvas picker
+am init my-video --canvas vertical-9x16   # or specify explicitly
 cd my-video
 ```
 
-Initialization refuses conflicting files. Use `--skip-hyperframes` only for offline or CI environments.
+Canvas is chosen once at init and written to `frame.md`. Built-in presets:
+
+| Preset | Canvas | Use case |
+|---|---|---|
+| `vertical-3x4` | 1080×1440, 30fps | Default, knowledge/tech vertical |
+| `vertical-9x16` | 1080×1920, 30fps | Full-screen vertical (TikTok, etc.) |
+
+Non-interactive environments (CI, pipes) must pass `--canvas` explicitly; there is no silent default.
+
+`am init` refuses to overwrite existing files with different content. By default it runs `npx --yes hyperframes@0.7.94 skills`; use `--skip-hyperframes` for offline or CI environments.
+
+Edit `article-to-motion.conf` to choose the orchestrator and renderer (they may be the same CLI):
+
+```text
+ORCHESTRATOR=codex
+RENDERER=claude
+TTS_PROVIDER=minimax
+SCENE_JOBS=3
+```
+
+Priority: environment variables > project `.env` > config file > built-in defaults. The project `.env` must not store API Keys, Tokens, Secrets, or Passwords.
 
 ## Run
 
@@ -44,6 +70,8 @@ am scene run scenes/scene-001
 am scene run-all scenes/ --jobs 3 --retries 2 --report-json production/run-report.json
 ```
 
+Existing outputs are skipped; inputs newer than the output mark it as stale — use `--force` to re-render. Interruptions stop new tasks, terminate in-flight process groups, and write a partial report.
+
 AI CLIs run in project-scoped safe mode by default. `am --unsafe run` explicitly restores bypass/auto-approval behavior and should only be used for trusted projects. Extra environment variables in safe mode must be named in `AM_PASSTHROUGH_ENV`.
 
 ## Validate, archive, and develop
@@ -53,6 +81,13 @@ am validate publish publish.md --project-root .
 am validate style --project-root .
 am validate style --project-root . --regenerate-examples  # requires ImageMagick
 am archive --dry-run
+am archive
+```
+
+## Development
+
+```bash
+go build ./cmd/am
 go test ./...
 go test -race ./...
 go vet ./...

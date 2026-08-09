@@ -71,7 +71,7 @@ func TestValidatePublishCommand(t *testing.T) {
 	root := initProject(t)
 	var out bytes.Buffer
 	path := filepath.Join(root, "templates", "publish.md")
-	if code := Execute([]string{"validate", "publish", path, "--template", "--project-root", root}, &out, &out); code != 0 {
+	if code := Execute([]string{"validate", "publish", path, "--project-root", root}, &out, &out); code != 0 {
 		t.Fatalf("code=%d output=%s", code, out.String())
 	}
 }

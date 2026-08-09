@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/chouheiwa/articale-to-motion/internal/tools"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,7 +21,6 @@ const (
 var (
 	idPattern      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 	delimiterMatch = regexp.MustCompile(`(?i)<\s*/?\s*scene-text`)
-	validRenderer  = map[string]bool{"codex": true, "claude": true, "qoder": true, "codebuddy": true, "opencode": true}
 )
 
 type Scene struct {
@@ -89,7 +89,11 @@ func Load(directory string) (Scene, error) {
 	if err := json.Unmarshal(body, &result); err != nil {
 		return Scene{}, fmt.Errorf("scene.json 字段类型非法：%w", err)
 	}
-	result.Directory, _ = filepath.Abs(directory)
+	absDir, err := filepath.Abs(directory)
+	if err != nil {
+		return Scene{}, fmt.Errorf("无法解析镜头目录路径：%w", err)
+	}
+	result.Directory = absDir
 	if len(result.ID) > 100 || strings.HasPrefix(result.ID, "-") || result.ID == "." || result.ID == ".." || !idPattern.MatchString(result.ID) {
 		return Scene{}, fmt.Errorf("id 不是安全文件名：%q", result.ID)
 	}
@@ -121,7 +125,7 @@ func Load(directory string) (Scene, error) {
 			return Scene{}, fmt.Errorf("style_guide 指向的文件不存在：%s", result.StyleGuide)
 		}
 	}
-	if result.Renderer != "" && !validRenderer[result.Renderer] {
+	if result.Renderer != "" && !tools.ValidTools[result.Renderer] {
 		return Scene{}, fmt.Errorf("无效的 renderer：%s", result.Renderer)
 	}
 	return result, nil

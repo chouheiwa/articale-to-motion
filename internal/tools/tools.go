@@ -8,6 +8,11 @@ import (
 
 const UserMessageMarker = "[[USER_MESSAGE]]"
 
+// ValidTools 是所有合法的 AI CLI 工具名集合。
+// config、scene 等包共用此集合，新增工具时只需改这一处（加上
+// RendererInvocation、OrchestratorInvocation、ProjectRulesFilename 的 switch）。
+var ValidTools = map[string]bool{"codex": true, "claude": true, "qoder": true, "codebuddy": true, "opencode": true}
+
 func RendererInvocation(tool, prompt string, unsafe bool) ([]string, error) {
 	switch tool {
 	case "codex":
