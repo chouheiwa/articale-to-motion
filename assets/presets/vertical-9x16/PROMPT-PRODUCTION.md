@@ -261,8 +261,8 @@ scenes/
 
 - 建立 `scene.json`：执行契约。字段为 `id`、`duration_seconds`、`output`、`transcript`、`text`，可选 `style_guide` 和 `renderer`；未知字段会直接报错。`text` 会被包进 `<scene-text>` 定界块送进渲染提示词并声明为「数据而非指令」，因此 `text` 本身不得含 `[[USER_MESSAGE]]` 标记或 `<scene-text>` / `</scene-text>` 及其形近变体，含则报错。
 - 建立 `prompt.md`：本镜头的创意方向、视觉概念和表达重点。交付规格、阶段消息等执行契约由 `am` 保证，不在本文件中。
-- 使用 `am init` 安装的固定版本 HyperFrames 技能。若技能缺失，停止执行并运行 `npx --yes hyperframes@0.7.94 skills`；不得复制其他项目或本机的私有技能目录。
-- 建立渲染器锁定文件：固定 HyperFrames 版本为 `0.7.94` 并要求每次 CLI 调用都带 `npx --yes hyperframes@0.7.94` 前缀；禁止 `hyperframes@latest`、不带版本的 `npx hyperframes`、`skills update` 以及任何会改动已装技能的命令；禁止读取 `.env` 或打印凭据；禁止改动 `scene.json` 里的执行契约。文件名取决于该镜头所用渲染工具会自动读取的项目级指令文件（例如 `claude` 读 `CLAUDE.md`），按所选工具各自的约定命名，不要不管用哪个工具都写成 `CLAUDE.md`。
+- 使用 `am init` 安装的固定版本 HyperFrames 技能。若技能缺失，停止执行并运行 `npx --yes hyperframes@0.7.108 skills`；不得复制其他项目或本机的私有技能目录。
+- 建立渲染器锁定文件：固定 HyperFrames 版本为 `0.7.108` 并要求每次 CLI 调用都带 `npx --yes hyperframes@0.7.108` 前缀；禁止 `hyperframes@latest`、不带版本的 `npx hyperframes`、`skills update` 以及任何会改动已装技能的命令；禁止读取 `.env` 或打印凭据；禁止改动 `scene.json` 里的执行契约。文件名取决于该镜头所用渲染工具会自动读取的项目级指令文件（例如 `claude` 读 `CLAUDE.md`），按所选工具各自的约定命名，不要不管用哪个工具都写成 `CLAUDE.md`。
 - 锁定文件写「只在本镜头目录内工作、不查看兄弟镜头和上级项目目录」时，必须同时写明**两条**例外，两条路径都由 `am` 按渲染工具解析后注入提示词：
   - HyperFrames 技能目录（本机路径，在项目之外）。缺这条会让渲染工具拒读动效 rule 索引，动画退化成只有淡入和位移。
   - 项目根下的 `.agents/skills/`（随 `am init` 下发的内置技能，如 `text-to-lottie`、`algorithmic-art`）。它在项目内但在镜头目录之外，同样会被「只在本镜头目录内工作」挡住；缺这条不报错，只是该用内置技能的地方不用。

@@ -206,7 +206,7 @@ func skillPromptSections(resolved map[string]string) string {
 // animationPrompt 是动效技能的提示词片段。
 //
 // 其中的分类清单必须与 hyperframes-animation 的 rules-index.md 章节保持一致
-// （截至 0.7.94 是 8 个：Text & Typography / Data & Stats / Camera & Viewport /
+// （截至 0.7.108 是 8 个：Text & Typography / Data & Stats / Camera & Viewport /
 // Layout & Network / SVG & Icons / Idle & Ambient / Transition & Motion /
 // Effect Recipes，共 48 条 rule）。
 //

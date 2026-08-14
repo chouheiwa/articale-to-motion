@@ -127,10 +127,10 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 				fmt.Fprintln(stdout, "警告：已跳过 HyperFrames 技能安装")
 				return nil
 			}
-			npx := exec.Command("npx", "--yes", "hyperframes@0.7.94", "skills")
+			npx := exec.Command("npx", "--yes", "hyperframes@0.7.108", "skills")
 			npx.Dir, npx.Stdout, npx.Stderr = target, stdout, stderr
 			if err := npx.Run(); err != nil {
-				return fmt.Errorf("项目文件已写入，但 HyperFrames 技能安装失败；可在项目目录重试 npx --yes hyperframes@0.7.94 skills: %w", err)
+				return fmt.Errorf("项目文件已写入，但 HyperFrames 技能安装失败；可在项目目录重试 npx --yes hyperframes@0.7.108 skills: %w", err)
 			}
 			return nil
 		},

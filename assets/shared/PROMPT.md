@@ -32,7 +32,7 @@
 - 渲染器锁定文件：固定 HyperFrames 版本、禁止升级或改动已装技能、禁止读取 `.env`、禁止改动 `scene.json` 的执行契约。文件名取决于该镜头所用渲染工具会自动读取的项目级指令文件（例如 `claude` 读 `CLAUDE.md`），按所选工具各自的约定命名。
 
 技能有两个来源。HyperFrames 技能由 `am init` 从固定的官方版本安装，缺失时停止执行并运行
-`npx --yes hyperframes@0.7.94 skills`；`text-to-lottie`、`algorithmic-art` 随 `am` 二进制下发到项目的
+`npx --yes hyperframes@0.7.108 skills`；`text-to-lottie`、`algorithmic-art` 随 `am` 二进制下发到项目的
 `.agents/skills/`，缺失时重跑 `am init` 补齐，联网重装 HyperFrames 补不回它们。两者都不得从其他项目或本机私有目录复制。
 
 锁定文件如果限制「只在本镜头目录内工作」，必须给两条技能路径都留读取例外，它们都由 `am` 写进渲染提示词：本机 HyperFrames 技能目录（项目之外），以及项目根下的 `.agents/skills/`（在项目内但在镜头目录之外）。少了前者，渲染工具会拒读动效 rule 索引，动画退化成只有淡入和位移；少了后者不报错，只是该用内置技能的地方不用。
