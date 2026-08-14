@@ -61,8 +61,15 @@ func TestPromptsUseInstalledCLIAndDoNotExposeExecutorIdentity(t *testing.T) {
 			t.Fatal(err)
 		}
 		text := string(body)
-		if strings.Contains(text, "./am") || strings.Contains(strings.ToLower(text), "agent") {
-			t.Errorf("%s still exposes legacy entry or executor identity", name)
+		if strings.Contains(text, "./am") {
+			t.Errorf("%s 引用了 ./am：用户项目里没有这个二进制", name)
+		}
+		// 内置技能树的路径字面含 "agent"，但它是文件系统路径，不是执行者身份声明，
+		// 而提示词必须能点名它——锁定文件要靠这条路径写读取例外。先摘掉这个字面量
+		// 再查身份词，其余任何 "agent" 出现仍然失败。
+		identity := strings.ReplaceAll(strings.ToLower(text), skillTreeRoot, "")
+		if strings.Contains(identity, "agent") {
+			t.Errorf("%s 暴露了执行者身份（出现 agent 一词）", name)
 		}
 	}
 }

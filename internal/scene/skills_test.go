@@ -212,7 +212,7 @@ func TestBuildPromptEmbedsResolvedSkillPath(t *testing.T) {
 	}
 	skills := installSkill(t, filepath.Join(t.TempDir(), "skills"))
 
-	prompt, err := BuildPrompt(s, skills)
+	prompt, err := BuildPrompt(s, map[string]string{AnimationSkillName: skills})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +242,7 @@ func TestBuildPromptFallsBackToSkillNameWithoutPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	prompt, err := BuildPrompt(s, "")
+	prompt, err := BuildPrompt(s, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,5 +251,124 @@ func TestBuildPromptFallsBackToSkillNameWithoutPath(t *testing.T) {
 	}
 	if strings.Contains(prompt, "本机该技能目录为") {
 		t.Fatal("fallback prompt must not claim a machine-local path")
+	}
+}
+
+// installNamedSkill 在 dir 下伪造一份任意技能的最小完整安装。
+func installNamedSkill(t *testing.T, dir string, desc SkillDescriptor) string {
+	t.Helper()
+	skill := filepath.Join(dir, desc.Name)
+	if err := os.MkdirAll(skill, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range desc.RequiredFiles {
+		if err := os.WriteFile(filepath.Join(skill, name), []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
+// TestEveryRegisteredSkillContributesAPromptSection 保证注册表里加了技能却忘了
+// 写提示词片段时会失败——注册但不注入等于白装。
+func TestEveryRegisteredSkillContributesAPromptSection(t *testing.T) {
+	for _, desc := range RegisteredSkills {
+		if desc.PromptSection == nil {
+			t.Errorf("%s 没有 PromptSection", desc.Name)
+			continue
+		}
+		if len(desc.RequiredFiles) == 0 {
+			t.Errorf("%s 的 RequiredFiles 为空：ResolveSkill 会把任何目录都判为已安装", desc.Name)
+		}
+		// 未解析时必须按技能名引用，且不得凭空造出一条本机路径。
+		unresolved := desc.PromptSection("")
+		if !strings.Contains(unresolved, desc.Name) {
+			t.Errorf("%s 未解析时的片段没提到技能名：%s", desc.Name, unresolved)
+		}
+		if strings.Contains(unresolved, string(filepath.Separator)+desc.Name) {
+			t.Errorf("%s 未解析时不得写出本机路径：%s", desc.Name, unresolved)
+		}
+		// 解析后必须把本机绝对路径写进去，否则渲染器还得自己找。
+		resolved := desc.PromptSection(filepath.FromSlash("/tmp/skills"))
+		if !strings.Contains(resolved, filepath.Join("/tmp/skills", desc.Name)) {
+			t.Errorf("%s 解析后的片段没有注入本机路径：%s", desc.Name, resolved)
+		}
+	}
+}
+
+// TestResolveAllSkillsReportsOnlyInstalledSkills 校验部分安装的情形：装了的进
+// map，没装的缺席而不是报错。
+func TestResolveAllSkillsReportsOnlyInstalledSkills(t *testing.T) {
+	home := t.TempDir()
+	installNamedSkill(t, filepath.Join(home, ".claude", "skills"), RegisteredSkills[0])
+
+	resolved, err := ResolveAllSkills("claude", t.TempDir(), map[string]string{"HOME": home})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resolved) != 1 {
+		t.Fatalf("只装了一个技能，却解析出 %d 个：%v", len(resolved), resolved)
+	}
+	if _, ok := resolved[RegisteredSkills[0].Name]; !ok {
+		t.Fatalf("缺少已安装的 %s：%v", RegisteredSkills[0].Name, resolved)
+	}
+}
+
+// TestTextToLottiePromptKeepsLottieOutOfTheMotionBudget 锁住这条边界：
+// Lottie 与动效技能同时在提示词里，必须明确 Lottie 不顶替动效预算，
+// 否则渲染器会拿一个 Lottie 图层充当整镜头的动效工作量。
+func TestTextToLottiePromptKeepsLottieOutOfTheMotionBudget(t *testing.T) {
+	for _, dir := range []string{"", filepath.FromSlash("/tmp/skills")} {
+		section := textToLottiePrompt(dir)
+		for _, want := range []string{"默认不用", "不计入", "环境动效"} {
+			if !strings.Contains(section, want) {
+				t.Errorf("skillsDir=%q 的片段缺少 %q：%s", dir, want, section)
+			}
+		}
+	}
+}
+
+// TestBuildPromptInjectsEveryInstalledSkill 把注册表与提示词拼装接起来。
+func TestBuildPromptInjectsEveryInstalledSkill(t *testing.T) {
+	home := t.TempDir()
+	skills := filepath.Join(home, ".claude", "skills")
+	resolved := make(map[string]string)
+	for _, desc := range RegisteredSkills {
+		installNamedSkill(t, skills, desc)
+		resolved[desc.Name] = skills
+	}
+
+	dir := writeScene(t, `{"id":"scene-001","duration_seconds":1,"output":"out.mp4","transcript":"transcript.srt","text":"hello"}`)
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, resolved)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, desc := range RegisteredSkills {
+		if !strings.Contains(prompt, filepath.Join(skills, desc.Name)) {
+			t.Errorf("提示词里没有 %s 的本机路径", desc.Name)
+		}
+	}
+}
+
+// TestBuildPromptDegradesToSkillNamesWhenNothingInstalled 校验降级：一个技能都
+// 没装时提示词仍然成立，只是按技能名引用。
+func TestBuildPromptDegradesToSkillNamesWhenNothingInstalled(t *testing.T) {
+	dir := writeScene(t, `{"id":"scene-001","duration_seconds":1,"output":"out.mp4","transcript":"transcript.srt","text":"hello"}`)
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, desc := range RegisteredSkills {
+		if !strings.Contains(prompt, desc.Name) {
+			t.Errorf("降级后提示词里没有 %s", desc.Name)
+		}
 	}
 }

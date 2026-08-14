@@ -176,9 +176,9 @@ func canvasSpec(directory, styleGuide string) (string, error) {
 	return fmt.Sprintf("%dx%d、%dfps", c.WidthPx, c.HeightPx, c.FPS), nil
 }
 
-// BuildPrompt 拼装单镜头提示词。skillsDir 由 ResolveSkillsDir 解析；
-// 传空字符串时动效要求退回按技能名引用，不写死任何本机路径。
-func BuildPrompt(s Scene, skillsDir string) (string, error) {
+// BuildPrompt 拼装单镜头提示词。resolvedSkills 由 ResolveAllSkills 解析；
+// 未出现在 map 中的技能退回按技能名引用，不写死任何本机路径。
+func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 	body := "创意方向：\n- 用图形、概念文字和必要的真实素材表达镜头语义。\n- 视觉复杂度服务于文案，不为炫技拉长渲染。\n"
 	promptFile, err := contained(s.Directory, "prompt.md", "prompt.md")
 	if err != nil {
@@ -224,6 +224,6 @@ func BuildPrompt(s Scene, skillsDir string) (string, error) {
 [[USER_MESSAGE]]开始联网搜索
 [[USER_MESSAGE]]代码已完成，开始渲染
 [[USER_MESSAGE]]视频已渲染完成：%s
-`, canvas, s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, motionRequirements(skillsDir), s.Output)
+`, canvas, s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, skillPromptSections(resolvedSkills), s.Output)
 	return prompt, nil
 }

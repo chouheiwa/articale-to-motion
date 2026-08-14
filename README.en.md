@@ -36,6 +36,15 @@ Non-interactive environments (CI, pipes) must pass `--canvas` explicitly; there 
 
 `am init` refuses to overwrite existing files with different content. By default it runs `npx --yes hyperframes@0.7.94 skills`; use `--skip-hyperframes` for offline or CI environments.
 
+Initialization also writes the binary's built-in skill tree to the project's `.agents/skills/`, where the renderer discovers it automatically:
+
+| Skill | Purpose |
+|---|---|
+| `text-to-lottie` | Lottie layers inside a scene: logo reveals, icons, loaders, SVG stroke-on, vector effects |
+| `algorithmic-art` | Algorithmic and generative visuals |
+
+Both ship inside the binary. They need no network install, and `--skip-hyperframes` does not affect them.
+
 Edit `article-to-motion.conf` to choose the orchestrator and renderer (they may be the same CLI):
 
 ```text
@@ -94,3 +103,5 @@ go vet ./...
 ```
 
 ArticleToMotion is licensed under the [Apache License 2.0](./LICENSE). HyperFrames is an independent Apache-2.0 project installed at its pinned release by `am init`.
+
+The `references/` of the built-in `text-to-lottie` skill are trimmed from [diffusionstudio/lottie](https://github.com/diffusionstudio/lottie) (MIT). The copyright notice and the record of what was kept, dropped, and changed live in `LICENSE` and `ATTRIBUTION.md` under `assets/shared/.agents/skills/text-to-lottie/`.

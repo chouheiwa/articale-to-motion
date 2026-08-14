@@ -18,9 +18,13 @@ import (
 // Chrome，字体栈里没有 @font-face 的字体族会静默回退，本地看着正常、成片排版
 // 是错的。
 //
-// .env.example 要单列：//go:embed 对目录模式会跳过 . 开头的文件。
+// assets/shared/.agents/skills 是随项目下发的技能树。渲染工具靠 scene.ResolveSkill
+// 从镜头目录逐级向上找 .agents/skills，落到项目根就能被发现，无需用户另行安装。
 //
-//go:embed assets/shared assets/presets assets/shared/.env.example
+// .env.example 和 .agents 都要单列：//go:embed 对目录模式会跳过 . 开头的条目，
+// 漏了不报错，只是整棵树静默消失——assets_test.go 的内容断言守着这一点。
+//
+//go:embed assets/shared assets/presets assets/shared/.env.example assets/shared/.agents
 var Files embed.FS
 
 // Shared 返回与画幅无关的那棵源树。

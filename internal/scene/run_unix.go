@@ -48,14 +48,14 @@ func Run(ctx context.Context, s Scene, cfg config.Config, unsafe bool, baseEnv m
 	if renderer == "" {
 		renderer = cfg.Renderer
 	}
-	skillsDir, err := ResolveSkillsDir(renderer, s.Directory, SkillsEnvironment(baseEnv, cfg.Overlay))
+	resolvedSkills, err := ResolveAllSkills(renderer, s.Directory, SkillsEnvironment(baseEnv, cfg.Overlay))
 	if err != nil {
 		return err
 	}
-	if skillsDir == "" {
+	if resolvedSkills[AnimationSkillName] == "" {
 		fmt.Fprintf(userOutput, "警告：未能为渲染工具 %s 定位 %s 技能目录，动效要求改用技能名兜底；可运行 am init 安装，或用 %s 显式指定\n", renderer, AnimationSkillName, SkillsDirEnv)
 	}
-	prompt, err := BuildPrompt(s, skillsDir)
+	prompt, err := BuildPrompt(s, resolvedSkills)
 	if err != nil {
 		return err
 	}

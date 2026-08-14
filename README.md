@@ -36,6 +36,15 @@ cd my-video
 
 `am init` 不覆盖内容不同的已有文件。默认执行 `npx --yes hyperframes@0.7.94 skills`；离线或 CI 环境可使用 `--skip-hyperframes`。
 
+初始化还会把二进制内置的技能树写到项目的 `.agents/skills/`，渲染工具会自动发现：
+
+| 技能 | 用途 |
+|---|---|
+| `text-to-lottie` | 镜头里的 Lottie 图层：logo 演绎、图标、loader、SVG 描边、矢量特效 |
+| `algorithmic-art` | 算法与生成式视觉效果 |
+
+这两个随二进制下发，不需要联网安装，`--skip-hyperframes` 也不影响它们。
+
 编辑 `article-to-motion.conf` 选择编排工具与渲染工具；两者可以相同：
 
 ```text
@@ -106,3 +115,5 @@ go build ./cmd/am
 ```
 
 项目采用 [Apache License 2.0](./LICENSE)。HyperFrames 是独立的 Apache-2.0 项目，ArticleToMotion 初始化时使用固定版本，不在本仓库复制本机技能目录。
+
+内置技能 `text-to-lottie` 的 `references/` 裁剪自 [diffusionstudio/lottie](https://github.com/diffusionstudio/lottie)（MIT），版权声明与改动记录见 `assets/shared/.agents/skills/text-to-lottie/` 下的 `LICENSE` 与 `ATTRIBUTION.md`。
