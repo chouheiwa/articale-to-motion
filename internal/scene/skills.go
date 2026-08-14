@@ -204,6 +204,15 @@ func skillPromptSections(resolved map[string]string) string {
 }
 
 // animationPrompt 是动效技能的提示词片段。
+//
+// 其中的分类清单必须与 hyperframes-animation 的 rules-index.md 章节保持一致
+// （截至 0.7.94 是 8 个：Text & Typography / Data & Stats / Camera & Viewport /
+// Layout & Network / SVG & Icons / Idle & Ambient / Transition & Motion /
+// Effect Recipes，共 48 条 rule）。
+//
+// 这里没有测试能守：清单在联网安装的技能里，本仓库拿不到。升 HyperFrames 固定
+// 版本时要顺手核对一遍——漏掉一个分类不会报错，只会让「来自 3 个不同分类」这条
+// 约束对该分类的 rule 失效。
 func animationPrompt(skillsDir string) string {
 	reference := fmt.Sprintf(
 		"- 加载 %s 技能，实现前必须读取该技能目录下的 %s（原子动效 rule 索引）。\n"+
@@ -219,7 +228,7 @@ func animationPrompt(skillsDir string) string {
 	}
 	return "动效要求（强制）：\n" + reference +
 		"- 本镜头至少组合 3 条 rule，且必须来自 3 个不同分类" +
-		"（文字排版 / 数据统计 / 相机视口 / 布局网络 / SVG 图标 / 环境待机 / 转场运动）。\n" +
+		"（文字排版 / 数据统计 / 相机视口 / 布局网络 / SVG 图标 / 环境待机 / 转场运动 / 特效配方）。\n" +
 		"- 除 scale、x、y、opacity 之外，至少再动用 2 个属性：" +
 		"rotation、rotate3d、filter、clip-path、strokeDashoffset、backgroundPosition、translateZ 任选。\n" +
 		"- 镜头包含 3 个及以上阶段时，先读同目录 " + blueprintsIndexFile + " 选一个模板再落地。\n" +
