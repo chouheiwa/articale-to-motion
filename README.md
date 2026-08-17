@@ -98,7 +98,7 @@ am --unsafe run
 ```bash
 am validate publish publish.md --project-root .
 am validate style --project-root .
-am validate style --project-root . --regenerate-examples  # 需要 ImageMagick
+am validate style --project-root . --regenerate-examples  # 需要 rsvg-convert 与 magick
 am archive --dry-run
 am archive
 ```

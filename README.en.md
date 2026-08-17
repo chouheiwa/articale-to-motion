@@ -88,7 +88,7 @@ AI CLIs run in project-scoped safe mode by default. `am --unsafe run` explicitly
 ```bash
 am validate publish publish.md --project-root .
 am validate style --project-root .
-am validate style --project-root . --regenerate-examples  # requires ImageMagick
+am validate style --project-root . --regenerate-examples  # requires rsvg-convert and magick
 am archive --dry-run
 am archive
 ```
