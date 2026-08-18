@@ -507,3 +507,139 @@ func ffmpegFor(t *testing.T) string {
 	}
 	return path
 }
+
+func TestVerifySeparatesProblemsFromProbeFailures(t *testing.T) {
+	tc := toolchain(t)
+	path := sample(t, tc, "testsrc=size=320x240:rate=30:duration=1")
+
+	// 规格不符：跑成功了，但不合格。
+	report, err := tc.Verify(path, VerifyOptions{Spec: Spec{WidthPx: 1080, HeightPx: 1440}})
+	if err != nil {
+		t.Fatalf("规格不符不该返回 error，应当体现在 Problems 里：%v", err)
+	}
+	if report.OK || len(report.Problems) == 0 {
+		t.Errorf("规格不符却判定通过：%+v", report)
+	}
+
+	// 检查跑不成：返回 error，而不是一份 OK=false 的报告。
+	if _, err := tc.Verify(filepath.Join(t.TempDir(), "nope.mp4"), VerifyOptions{}); err == nil {
+		t.Error("文件不存在应当返回 error")
+	}
+}
+
+func TestVerifyExactFramesOverridesContainerDeclaration(t *testing.T) {
+	tc := toolchain(t)
+	path := sample(t, tc, "testsrc=size=320x240:rate=30:duration=2")
+	report, err := tc.Verify(path, VerifyOptions{Spec: Spec{Frames: 60}, ExactFrames: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !report.OK {
+		t.Errorf("60 帧应当通过：%v", report.Problems)
+	}
+	if report.Media.Video.NBFrames != 60 {
+		t.Errorf("报告里的帧数应当是精确统计值 60，实际 %d", report.Media.Video.NBFrames)
+	}
+	report, err = tc.Verify(path, VerifyOptions{Spec: Spec{Frames: 59}, ExactFrames: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.OK {
+		t.Error("帧数不符应当判定失败")
+	}
+}
+
+func TestVerifyFrameZeroBlankIsAProblemButDarkIsOnlyAHint(t *testing.T) {
+	tc := toolchain(t)
+
+	black := sample(t, tc, "color=c=black:size=320x240:rate=30:duration=1")
+	report, err := tc.Verify(black, VerifyOptions{CheckFrameZero: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.OK {
+		t.Error("纯黑第 0 帧应当判定失败")
+	}
+	if report.FrameZero == nil {
+		t.Error("报告里应当带上第 0 帧的统计量")
+	}
+
+	// 深色背景 + 稀疏文字：偏暗但可读，只该进 Hints，不该让 OK 变 false。
+	dark := filepath.Join(t.TempDir(), "dark.mp4")
+	cmd := exec.Command(ffmpegFor(t), "-v", "error", "-y",
+		"-f", "lavfi", "-i", "color=c=#0a0a0a:size=320x240:rate=30:duration=1",
+		"-vf", "drawbox=x=40:y=110:w=60:h=12:color=white@1:t=fill",
+		"-c:v", "libx264", "-pix_fmt", "yuv420p", dark)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("生成素材失败：%v\n%s", err, output)
+	}
+	report, err = tc.Verify(dark, VerifyOptions{CheckFrameZero: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !report.OK {
+		t.Errorf("偏暗但有内容的封面不该判定失败：%v", report.Problems)
+	}
+	if len(report.Hints) == 0 {
+		t.Error("偏暗应当留下提示")
+	}
+}
+
+// TestVerifyDecodeCatchesTruncatedFile 证明 Decode 能发现 Probe 发现不了的损坏。
+//
+// 必须用 +faststart 把 moov atom 放到文件头：默认编码把它写在尾部，
+// 一截断连 Probe 都失败，测到的就是「文件读不了」而不是「能读但解不完」——
+// 后者才是这条检查存在的理由。
+func TestVerifyDecodeCatchesTruncatedFile(t *testing.T) {
+	tc := toolchain(t)
+	path := sample(t, tc, "testsrc=size=320x240:rate=30:duration=2", "-movflags", "+faststart")
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	broken := filepath.Join(t.TempDir(), "broken.mp4")
+	if err := os.WriteFile(broken, body[:len(body)/3], 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tc.Probe(broken); err != nil {
+		t.Fatalf("前置条件不成立：moov 在头部时 Probe 应当仍然成功：%v", err)
+	}
+	report, err := tc.Verify(broken, VerifyOptions{Decode: true})
+	if err != nil {
+		t.Fatalf("Probe 成功时 Verify 不该返回 error：%v", err)
+	}
+	if report.OK {
+		t.Error("截断文件应当在解码检查里被发现")
+	}
+	// 不开 Decode 时这个文件会被判定通过——这正是过去的状态。
+	report, err = tc.Verify(broken, VerifyOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !report.OK {
+		t.Error("不开 Decode 时截断文件应当「通过」，否则这条测试没在测 Decode")
+	}
+}
+
+func TestReportWriteJSONIsMachineReadable(t *testing.T) {
+	report := Report{
+		SchemaVersion: ReportSchemaVersion,
+		Path:          "final.mp4",
+		OK:            false,
+		Problems:      []string{"分辨率不符：期望 1080x1440，实测 720x1280"},
+		Media:         Media{DurationSeconds: 1.5, Video: &VideoStream{WidthPx: 720, HeightPx: 1280}},
+	}
+	path := filepath.Join(t.TempDir(), "nested", "video-report.json")
+	if err := report.WriteJSON(path); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"schema_version": 1`, `"ok": false`, `"width_px": 720`} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("报告里缺少 %s：\n%s", want, body)
+		}
+	}
+}

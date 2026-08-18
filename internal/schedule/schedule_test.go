@@ -3,6 +3,7 @@ package schedule
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -228,5 +229,65 @@ func TestReportWritesAtomicJSONAndRenders(t *testing.T) {
 	failed.CountValues[Failed] = 1
 	if failed.ExitCode() != 1 {
 		t.Fatal("failed report must exit one")
+	}
+}
+
+// TestCoverageProblemsCatchesSplitMistakes 守着 PROMPT 里那条纯可判定的规则：
+// 「所有镜头 duration_seconds 之和应等于字幕跨度，误差不超过 0.1 秒」。
+// 过去只靠编排 agent 自己复核，漏一镜要等全部渲染完拼接时才发现。
+func TestCoverageProblemsCatchesSplitMistakes(t *testing.T) {
+	root := t.TempDir()
+	makeScene := func(id string, duration float64) scene.Scene {
+		dir := filepath.Join(root, id)
+		os.MkdirAll(dir, 0o755)
+		os.WriteFile(filepath.Join(dir, "transcript.srt"), []byte("test"), 0o644)
+		os.WriteFile(filepath.Join(dir, "scene.json"), fmt.Appendf(nil,
+			`{"id":"%s","duration_seconds":%v,"output":"%s.mp4","transcript":"transcript.srt","text":"hello"}`,
+			id, duration, id), 0o644)
+		s, err := scene.Load(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+
+	full := []scene.Scene{makeScene("scene-001", 2.5), makeScene("scene-002", 5.0)}
+	if problems := CoverageProblems(full, 7.5, 0.1); len(problems) != 0 {
+		t.Errorf("合计 7.5 秒对上字幕跨度 7.5 秒，不该报错：%v", problems)
+	}
+	// 误差在容差内。
+	if problems := CoverageProblems(full, 7.55, 0.1); len(problems) != 0 {
+		t.Errorf("0.05 秒偏差在容差内：%v", problems)
+	}
+	// 漏了一镜：合计明显短于字幕跨度。
+	problems := CoverageProblems(full, 12.0, 0.1)
+	if len(problems) != 1 {
+		t.Fatalf("应当报出总时长不符：%v", problems)
+	}
+	if !strings.Contains(problems[0], "7.500") || !strings.Contains(problems[0], "12.000") {
+		t.Errorf("错误信息应当同时给出两个实测值：%s", problems[0])
+	}
+}
+
+func TestCoverageProblemsRejectsEmptyAndDuplicateScenes(t *testing.T) {
+	if problems := CoverageProblems(nil, 0, 0.1); len(problems) != 1 {
+		t.Errorf("空镜头集合应当报错：%v", problems)
+	}
+	root := t.TempDir()
+	a := testScene(t, filepath.Join(root, "a"), "scene-001")
+	b := testScene(t, filepath.Join(root, "b"), "scene-001")
+	problems := CoverageProblems([]scene.Scene{a, b}, 0, 0.1)
+	if len(problems) != 1 || !strings.Contains(problems[0], "编号重复") {
+		t.Errorf("重复编号应当被发现：%v", problems)
+	}
+}
+
+// TestCoverageProblemsSkipsSpanCheckWhenNoSRT：没给字幕时只查集合自身，
+// 不能凭空拿 0 当成期望跨度去比。
+func TestCoverageProblemsSkipsSpanCheckWhenNoSRT(t *testing.T) {
+	root := t.TempDir()
+	scenes := []scene.Scene{testScene(t, root, "scene-001")}
+	if problems := CoverageProblems(scenes, 0, 0.1); len(problems) != 0 {
+		t.Errorf("没给字幕跨度时不该做跨度比对：%v", problems)
 	}
 }

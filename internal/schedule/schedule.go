@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -86,6 +87,39 @@ func Plan(root string) ([]scene.Scene, error) {
 	}
 	sort.Slice(result, func(i, j int) bool { return filepath.Base(result[i].Directory) < filepath.Base(result[j].Directory) })
 	return result, nil
+}
+
+// CoverageProblems 检查一组镜头是否构成一条完整、不重不漏的时间轴。
+//
+// 这条规则本来只写在 PROMPT 里，靠编排 agent 自己复核：
+// 「所有镜头 scene.json 中 duration_seconds 之和应等于最后一条字幕结束时间
+// 减第一条字幕开始时间，误差不超过 0.1 秒」。规则是纯可判定的，却没有任何
+// 机器检查——漏掉一镜或某镜时长写错，要等全部渲染完拼接时才发现，
+// 而那时每一镜都已经烧掉一次完整的 AI CLI 调用。
+//
+// srtSpan 传 0 表示不比对字幕跨度，只检查镜头集合自身（编号唯一、时长有效）。
+func CoverageProblems(scenes []scene.Scene, srtSpan, tolerance float64) []string {
+	var problems []string
+	if len(scenes) == 0 {
+		return append(problems, "没有找到任何镜头")
+	}
+	seen := make(map[string]string, len(scenes))
+	total := 0.0
+	for _, s := range scenes {
+		if previous, duplicate := seen[s.ID]; duplicate {
+			problems = append(problems, fmt.Sprintf("镜头编号重复：%s 同时出现在 %s 和 %s",
+				s.ID, filepath.Base(previous), filepath.Base(s.Directory)))
+			continue
+		}
+		seen[s.ID] = s.Directory
+		total += s.DurationSeconds
+	}
+	if srtSpan > 0 && math.Abs(total-srtSpan) > tolerance {
+		problems = append(problems, fmt.Sprintf(
+			"镜头总时长与字幕跨度不符：镜头合计 %.3f 秒，字幕跨度 %.3f 秒，相差 %.3f 秒（容差 %.3f）",
+			total, srtSpan, math.Abs(total-srtSpan), tolerance))
+	}
+	return problems
 }
 
 type Runner func(context.Context, scene.Scene) error

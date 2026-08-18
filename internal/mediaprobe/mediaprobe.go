@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/chouheiwa/articale-to-motion/internal/envutil"
+	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 )
 
 // VideoStream 是视频流的实测规格。
@@ -179,6 +180,35 @@ func orUnknown(value string) string {
 		return "未知"
 	}
 	return value
+}
+
+// Report 是一次校验的机器可读结果。
+//
+// 与 schedule.Report 同样的取向：调用方应当读这份 JSON 判断结果，
+// 而不是解析给人看的中文输出。字段一旦发布就不再删改，只做向后兼容的追加。
+type Report struct {
+	SchemaVersion int    `json:"schema_version"`
+	Path          string `json:"path"`
+	// OK 只由 Problems 决定。Hints 不影响判定。
+	OK       bool     `json:"ok"`
+	Media    Media    `json:"media"`
+	Problems []string `json:"problems"`
+	// Hints 是值得人看一眼、但不构成失败的观察项。
+	// 混进 Problems 会让「提示」把退出码变成非 0，调用方就得靠字符串匹配区分。
+	Hints     []string    `json:"hints,omitempty"`
+	FrameZero *FrameStats `json:"frame_zero,omitempty"`
+}
+
+// ReportSchemaVersion 是 Report 的结构版本。
+const ReportSchemaVersion = 1
+
+// WriteJSON 原子写出报告。
+func (r Report) WriteJSON(path string) error {
+	body, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return err
+	}
+	return fsutil.AtomicWrite(path, append(body, '\n'), 0o644)
 }
 
 // --- ffprobe / ffmpeg 调用 ---
@@ -516,4 +546,135 @@ func firstLine(value string) string {
 		return "无输出"
 	}
 	return trimmed
+}
+
+// VerifyOptions 描述一次完整校验除规格比对外还要做哪些检查。
+//
+// 三项都默认关闭，因为它们的代价和 Probe 不在一个量级：
+// ExactFrames 与 Decode 都要完整解码一遍文件，CheckFrameZero 要解一帧。
+type VerifyOptions struct {
+	Spec Spec
+	// ExactFrames 用 CountFrames 解码统计精确帧数，取代容器声明的 nb_frames。
+	// 需要断言「总帧数等于冻结时间轴」时必须打开：容器声明可能缺失或不准。
+	ExactFrames bool
+	// Decode 完整解码一遍，确认文件没有截断或损坏。
+	Decode bool
+	// CheckFrameZero 检查第 0 帧是否是空白帧，对应 frame.md 的
+	// black_or_blank_frame_zero 禁令。
+	CheckFrameZero bool
+}
+
+// Verify 跑完整的校验流程并返回机器可读报告。
+//
+// 返回的 error 只表示「检查没跑成」（文件读不了、工具缺失），
+// 「检查跑了但不合格」体现为 Report.OK 为 false 和 Problems 非空——
+// 两者对调用方的含义完全不同，混在一起会让退出码失去区分度。
+func (t Toolchain) Verify(path string, opts VerifyOptions) (Report, error) {
+	if err := opts.Spec.Validate(); err != nil {
+		return Report{}, err
+	}
+	media, err := t.Probe(path)
+	if err != nil {
+		return Report{}, err
+	}
+	report := Report{SchemaVersion: ReportSchemaVersion, Path: path, Media: media}
+
+	if opts.ExactFrames {
+		frames, err := t.CountFrames(path)
+		if err != nil {
+			return Report{}, err
+		}
+		// 用精确值覆盖容器声明，让 Check 与报告读到的是同一个数。
+		media.Video.NBFrames = frames
+		report.Media = media
+	}
+	report.Problems = opts.Spec.Check(media)
+
+	if opts.Decode {
+		if err := t.Decode(path); err != nil {
+			report.Problems = append(report.Problems, err.Error())
+		}
+	}
+	if opts.CheckFrameZero {
+		stats, err := t.FrameStats(path, 0)
+		if err != nil {
+			return Report{}, err
+		}
+		report.FrameZero = &stats
+		if stats.Blank() {
+			report.Problems = append(report.Problems,
+				fmt.Sprintf("第 0 帧是空白帧，不能作为封面：灰度均值 %.1f、标准差 %.2f", stats.Mean, stats.StdDev))
+		} else if stats.Dark() {
+			// 只提示不判失败：深色背景配浅色标题是常见设计。
+			report.Hints = append(report.Hints,
+				fmt.Sprintf("第 0 帧整体偏暗（灰度均值 %.1f），确认标题在目标平台可读", stats.Mean))
+		}
+	}
+	report.OK = len(report.Problems) == 0
+	return report, nil
+}
+
+// ExtractedFrame 是一次抽帧的结果。
+type ExtractedFrame struct {
+	AtSeconds float64    `json:"at_seconds"`
+	Image     string     `json:"image"`
+	Stats     FrameStats `json:"stats"`
+	Blank     bool       `json:"blank"`
+	Dark      bool       `json:"dark"`
+}
+
+// FrameReport 是一次抽帧检查的机器可读结果。
+type FrameReport struct {
+	SchemaVersion int              `json:"schema_version"`
+	Path          string           `json:"path"`
+	OK            bool             `json:"ok"`
+	Frames        []ExtractedFrame `json:"frames"`
+	Problems      []string         `json:"problems"`
+	Hints         []string         `json:"hints,omitempty"`
+}
+
+// WriteJSON 原子写出抽帧报告。
+func (r FrameReport) WriteJSON(path string) error {
+	body, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return err
+	}
+	return fsutil.AtomicWrite(path, append(body, '\n'), 0o644)
+}
+
+// ExtractFrames 按给定时间点批量抽帧到 destDir，并统计每帧的灰度分布。
+//
+// 抽帧本身不判定对错——画面对不对只有能看图的一方说了算。这个方法的职责是
+// 把「渲染完的 mp4」变成「可以逐张看的 PNG」，顺带把纯色帧这种机器能判的
+// 情况标出来，省得靠人眼去发现一张全黑的图。
+func (t Toolchain) ExtractFrames(path string, atSeconds []float64, destDir string) (FrameReport, error) {
+	report := FrameReport{SchemaVersion: ReportSchemaVersion, Path: path}
+	for _, at := range atSeconds {
+		image := filepath.Join(destDir, fmt.Sprintf("frame-%s.png", strings.ReplaceAll(formatSecondsShort(at), ".", "_")))
+		if err := t.ExtractFrame(path, at, image); err != nil {
+			return FrameReport{}, err
+		}
+		stats, err := t.FrameStats(path, at)
+		if err != nil {
+			return FrameReport{}, err
+		}
+		frame := ExtractedFrame{AtSeconds: at, Image: image, Stats: stats, Blank: stats.Blank(), Dark: stats.Dark()}
+		report.Frames = append(report.Frames, frame)
+		if frame.Blank {
+			report.Problems = append(report.Problems,
+				fmt.Sprintf("%.3f 秒处是空白帧：灰度均值 %.1f、标准差 %.2f（%s）", at, stats.Mean, stats.StdDev, image))
+		} else if frame.Dark {
+			report.Hints = append(report.Hints,
+				fmt.Sprintf("%.3f 秒处整体偏暗（灰度均值 %.1f），确认内容可读（%s）", at, stats.Mean, image))
+		}
+	}
+	report.OK = len(report.Problems) == 0
+	return report, nil
+}
+
+// formatSecondsShort 生成用于文件名的时间戳，去掉尾随零。
+func formatSecondsShort(value float64) string {
+	text := strconv.FormatFloat(value, 'f', 3, 64)
+	text = strings.TrimRight(text, "0")
+	return strings.TrimSuffix(text, ".")
 }
