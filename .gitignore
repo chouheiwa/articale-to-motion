@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+# AGENTS.md 在很多机器的全局 gitignore 里（通常是当成 agent 生成的临时文件）。
+# 本仓库的 AGENTS.md 是仓库自己的开发规则文档，必须版本化，所以显式反向排除。
+!AGENTS.md
 /am
 /dist/
 /coverage.out

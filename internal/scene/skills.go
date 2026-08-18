@@ -170,12 +170,6 @@ func ResolveSkill(renderer, sceneDir string, environ map[string]string, desc Ski
 	return "", nil
 }
 
-// ResolveSkillsDir 返回本机装有 AnimationSkillName 的技能目录。
-// 保留用于只关心动效技能的调用点。
-func ResolveSkillsDir(renderer, sceneDir string, environ map[string]string) (string, error) {
-	return ResolveSkill(renderer, sceneDir, environ, RegisteredSkills[0])
-}
-
 // ResolveAllSkills 解析所有注册技能，返回 name → 绝对路径的映射。
 // 未找到的技能不出现 in map 中（不是报错）。
 func ResolveAllSkills(renderer, sceneDir string, environ map[string]string) (map[string]string, error) {

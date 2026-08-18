@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	assets "github.com/chouheiwa/articale-to-motion"
@@ -406,11 +407,15 @@ AI CLI 调用。这类失败要先改提示词或时长声明再重跑。
 					initial[item.ID] = schedule.Outcome(status, reason)
 				}
 			}
+			// 并发镜头共用同一个输出目标，必须串行化写入：scene.Run 会往这里写
+			// 阶段消息和警告，多个 worker 同时 Fprintln 到一个非并发安全的 writer
+			// 是实打实的数据竞争，写 os.Stdout 时则表现为几镜的进度输出互相交错。
+			progress := &syncWriter{writer: stdout}
 			report := schedule.RunAll(cmd.Context(), scenes, jobs, retries, func(ctx context.Context, s scene.Scene) error {
 				if outcome, ok := initial[s.ID]; ok {
 					return outcome
 				}
-				err := scene.Run(ctx, s, cfg, envutil.IsUnsafe(unsafe), currentEnvironment(), stdout, tolerance)
+				err := scene.Run(ctx, s, cfg, envutil.IsUnsafe(unsafe), currentEnvironment(), progress, tolerance)
 				// 产物规格不符是确定性的：同样的提示词和渲染器重跑只会得到同样的产物。
 				// 不在这里截断的话，每个规格不符的镜头都要白烧 retries 次 AI CLI 调用。
 				var verification *scene.VerificationError
@@ -713,3 +718,20 @@ type exitError struct {
 }
 
 func (e *exitError) Error() string { return e.message + "（退出码 " + strconv.Itoa(e.code) + "）" }
+
+// syncWriter 把多个 goroutine 的写入串行化。
+//
+// am scene run-all 并发渲染时，每个镜头的 scene.Run 都往同一个 writer 写阶段
+// 消息。fmt.Fprintln 对单个字符串参数只做一次 Write，所以加锁就足以保证整行
+// 不被切开；没有锁的话，写 bytes.Buffer 这类非并发安全的 writer 是数据竞争，
+// 写 os.Stdout 则表现为几镜的进度输出互相交错。
+type syncWriter struct {
+	mu     sync.Mutex
+	writer io.Writer
+}
+
+func (s *syncWriter) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.writer.Write(p)
+}

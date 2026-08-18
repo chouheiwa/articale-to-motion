@@ -22,12 +22,25 @@ func installSkill(t *testing.T, dir string) string {
 	return dir
 }
 
-func TestResolveSkillsDirPrefersExplicitEnvironment(t *testing.T) {
+// resolveAnimationSkill 是这组测试的入口。
+//
+// 测的是 ResolveSkill 的目录解析逻辑，用动效技能作为样本——它是唯一同时要求
+// SKILL.md 和 rules-index.md 两个文件的技能，覆盖面最广。
+func resolveAnimationSkill(renderer, sceneDir string, environ map[string]string) (string, error) {
+	for _, desc := range RegisteredSkills {
+		if desc.Name == AnimationSkillName {
+			return ResolveSkill(renderer, sceneDir, environ, desc)
+		}
+	}
+	panic("动效技能不在注册表里")
+}
+
+func TestResolveAnimationSkillPrefersExplicitEnvironment(t *testing.T) {
 	home := t.TempDir()
 	installSkill(t, filepath.Join(home, ".claude", "skills"))
 	explicit := installSkill(t, filepath.Join(t.TempDir(), "custom"))
 
-	got, err := ResolveSkillsDir("claude", t.TempDir(), map[string]string{"HOME": home, SkillsDirEnv: explicit})
+	got, err := resolveAnimationSkill("claude", t.TempDir(), map[string]string{"HOME": home, SkillsDirEnv: explicit})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,12 +49,12 @@ func TestResolveSkillsDirPrefersExplicitEnvironment(t *testing.T) {
 	}
 }
 
-func TestResolveSkillsDirRejectsInvalidExplicitEnvironment(t *testing.T) {
+func TestResolveAnimationSkillRejectsInvalidExplicitEnvironment(t *testing.T) {
 	home := t.TempDir()
 	installSkill(t, filepath.Join(home, ".claude", "skills"))
 
 	// 显式配置错了必须报错，而不是悄悄回退到家目录里那份能用的安装。
-	_, err := ResolveSkillsDir("claude", t.TempDir(), map[string]string{"HOME": home, SkillsDirEnv: t.TempDir()})
+	_, err := resolveAnimationSkill("claude", t.TempDir(), map[string]string{"HOME": home, SkillsDirEnv: t.TempDir()})
 	if err == nil {
 		t.Fatal("expected an error for an explicitly configured but invalid skills directory")
 	}
@@ -50,7 +63,7 @@ func TestResolveSkillsDirRejectsInvalidExplicitEnvironment(t *testing.T) {
 	}
 }
 
-func TestResolveSkillsDirFindsProjectScopeByWalkingUp(t *testing.T) {
+func TestResolveAnimationSkillFindsProjectScopeByWalkingUp(t *testing.T) {
 	root := t.TempDir()
 	project := installSkill(t, filepath.Join(root, ".claude", "skills"))
 	sceneDir := filepath.Join(root, "episodes", "episode-03", "scenes", "scene-002")
@@ -58,7 +71,7 @@ func TestResolveSkillsDirFindsProjectScopeByWalkingUp(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := ResolveSkillsDir("claude", sceneDir, map[string]string{"HOME": t.TempDir()})
+	got, err := resolveAnimationSkill("claude", sceneDir, map[string]string{"HOME": t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,13 +80,13 @@ func TestResolveSkillsDirFindsProjectScopeByWalkingUp(t *testing.T) {
 	}
 }
 
-func TestResolveSkillsDirProjectScopeBeatsHomeScope(t *testing.T) {
+func TestResolveAnimationSkillProjectScopeBeatsHomeScope(t *testing.T) {
 	home := t.TempDir()
 	installSkill(t, filepath.Join(home, ".claude", "skills"))
 	root := t.TempDir()
 	project := installSkill(t, filepath.Join(root, ".claude", "skills"))
 
-	got, err := ResolveSkillsDir("claude", root, map[string]string{"HOME": home})
+	got, err := resolveAnimationSkill("claude", root, map[string]string{"HOME": home})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +95,7 @@ func TestResolveSkillsDirProjectScopeBeatsHomeScope(t *testing.T) {
 	}
 }
 
-func TestResolveSkillsDirPerRendererHomeLocation(t *testing.T) {
+func TestResolveAnimationSkillPerRendererHomeLocation(t *testing.T) {
 	cases := map[string]string{
 		"claude":    ".claude/skills",
 		"codex":     ".codex/skills",
@@ -97,7 +110,7 @@ func TestResolveSkillsDirPerRendererHomeLocation(t *testing.T) {
 			// 另一个渲染器的目录也存在，确保按 renderer 而不是按存在性挑。
 			installSkill(t, filepath.Join(home, ".cursor", "skills"))
 
-			got, err := ResolveSkillsDir(renderer, t.TempDir(), map[string]string{"HOME": home})
+			got, err := resolveAnimationSkill(renderer, t.TempDir(), map[string]string{"HOME": home})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -108,11 +121,11 @@ func TestResolveSkillsDirPerRendererHomeLocation(t *testing.T) {
 	}
 }
 
-func TestResolveSkillsDirFallsBackToPortableLocation(t *testing.T) {
+func TestResolveAnimationSkillFallsBackToPortableLocation(t *testing.T) {
 	home := t.TempDir()
 	want := installSkill(t, filepath.Join(home, ".agents", "skills"))
 
-	got, err := ResolveSkillsDir("codex", t.TempDir(), map[string]string{"HOME": home})
+	got, err := resolveAnimationSkill("codex", t.TempDir(), map[string]string{"HOME": home})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +134,7 @@ func TestResolveSkillsDirFallsBackToPortableLocation(t *testing.T) {
 	}
 }
 
-func TestResolveSkillsDirPrefersRendererDirWhenProjectSitsInsideHome(t *testing.T) {
+func TestResolveAnimationSkillPrefersRendererDirWhenProjectSitsInsideHome(t *testing.T) {
 	// 本项目就长这样：项目根在 $HOME 之下，且家目录同时装了通用的 .agents/skills。
 	// 向上遍历必须不能在 $HOME 那一层先命中通用目录。
 	home := t.TempDir()
@@ -132,7 +145,7 @@ func TestResolveSkillsDirPrefersRendererDirWhenProjectSitsInsideHome(t *testing.
 		t.Fatal(err)
 	}
 
-	got, err := ResolveSkillsDir("opencode", sceneDir, map[string]string{"HOME": home})
+	got, err := resolveAnimationSkill("opencode", sceneDir, map[string]string{"HOME": home})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +154,7 @@ func TestResolveSkillsDirPrefersRendererDirWhenProjectSitsInsideHome(t *testing.
 	}
 }
 
-func TestResolveSkillsDirIgnoresIncompleteInstall(t *testing.T) {
+func TestResolveAnimationSkillIgnoresIncompleteInstall(t *testing.T) {
 	home := t.TempDir()
 	// 只有 SKILL.md 没有 rules-index.md：提示词引用的文件不存在，必须当作未找到。
 	partial := filepath.Join(home, ".claude", "skills", AnimationSkillName)
@@ -150,7 +163,7 @@ func TestResolveSkillsDirIgnoresIncompleteInstall(t *testing.T) {
 	}
 	os.WriteFile(filepath.Join(partial, "SKILL.md"), []byte("x"), 0o644)
 
-	got, err := ResolveSkillsDir("claude", t.TempDir(), map[string]string{"HOME": home})
+	got, err := resolveAnimationSkill("claude", t.TempDir(), map[string]string{"HOME": home})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,8 +172,8 @@ func TestResolveSkillsDirIgnoresIncompleteInstall(t *testing.T) {
 	}
 }
 
-func TestResolveSkillsDirReturnsEmptyWhenAbsent(t *testing.T) {
-	got, err := ResolveSkillsDir("claude", t.TempDir(), map[string]string{"HOME": t.TempDir()})
+func TestResolveAnimationSkillReturnsEmptyWhenAbsent(t *testing.T) {
+	got, err := resolveAnimationSkill("claude", t.TempDir(), map[string]string{"HOME": t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,11 +182,11 @@ func TestResolveSkillsDirReturnsEmptyWhenAbsent(t *testing.T) {
 	}
 }
 
-func TestResolveSkillsDirUnknownRendererStillUsesPortableLocation(t *testing.T) {
+func TestResolveAnimationSkillUnknownRendererStillUsesPortableLocation(t *testing.T) {
 	home := t.TempDir()
 	want := installSkill(t, filepath.Join(home, ".agents", "skills"))
 
-	got, err := ResolveSkillsDir("some-future-tool", t.TempDir(), map[string]string{"HOME": home})
+	got, err := resolveAnimationSkill("some-future-tool", t.TempDir(), map[string]string{"HOME": home})
 	if err != nil {
 		t.Fatal(err)
 	}

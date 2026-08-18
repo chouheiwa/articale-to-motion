@@ -1,0 +1,79 @@
+name: HyperFrames version drift
+
+# 固定版本不自动前进是刻意的：技能内容变化会直接改变成片动效，升级必须人工比对。
+# 但"不自动升级"不等于"不知道有新版"——过去唯一的发现途径是有人碰巧去看上游仓库。
+#
+# 这个 job 只负责告知：发现上游有更新就失败，让它在 Actions 里显眼。
+# 它不改任何文件，也不参与 PR 门禁。
+on:
+  schedule:
+    # 每周一 03:00 UTC。频率取低是因为这是提醒而不是门禁。
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: 读取仓库固定的版本
+        id: pinned
+        run: |
+          set -euo pipefail
+          # internal/cli/cli.go 的 hyperframesVersion 是唯一来源。
+          version="$(grep -oE 'hyperframesVersion = "[0-9]+\.[0-9]+\.[0-9]+"' internal/cli/cli.go \
+            | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
+          if [ -z "$version" ]; then
+            echo "没能从 internal/cli/cli.go 解析出 hyperframesVersion" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "仓库固定版本：$version"
+
+      - name: 读取上游最新版本
+        id: upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest="$(gh api repos/heygen-com/hyperframes/releases/latest --jq '.tag_name' \
+            | sed 's/^v//')"
+          if [ -z "$latest" ]; then
+            echo "没能读到上游最新 release" >&2
+            exit 1
+          fi
+          echo "version=$latest" >> "$GITHUB_OUTPUT"
+          echo "上游最新版本：$latest"
+
+      - name: 比对
+        run: |
+          set -euo pipefail
+          pinned="${{ steps.pinned.outputs.version }}"
+          latest="${{ steps.upstream.outputs.version }}"
+          if [ "$pinned" = "$latest" ]; then
+            echo "已是最新：$pinned"
+            exit 0
+          fi
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## HyperFrames 有新版本
+
+          | | 版本 |
+          |---|---|
+          | 仓库固定 | \`$pinned\` |
+          | 上游最新 | \`$latest\` |
+
+          升级前必须人工比对，不要直接改常量：
+
+          1. 取两个版本的 \`skills/\` 树做 diff，确认动效 rule 的分类数与条数没变——
+             \`internal/scene/skills.go\` 的 \`animationPrompt\` 里写死了分类列表，
+             没有任何测试能守住它与上游 \`rules-index.md\` 的一致性。
+          2. 比对 \`fontData.generated.ts\` 的字节数，确认自动内联字体清单没变，
+             并同步 \`internal/validate\` 的 \`autoEmbeddedFonts\` 注释。
+          3. 改 \`internal/cli/cli.go\` 的 \`hyperframesVersion\`，它是唯一来源。
+          EOF
+          echo "::error::HyperFrames 已发布 $latest，仓库仍固定在 $pinned"
+          exit 1
