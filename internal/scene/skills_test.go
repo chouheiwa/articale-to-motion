@@ -385,3 +385,60 @@ func TestBuildPromptDegradesToSkillNamesWhenNothingInstalled(t *testing.T) {
 		}
 	}
 }
+
+// TestHyperFramesCLIPromptForbidsRemoteAndSkillMutatingCommands 守着两条承重禁令。
+//
+// 上游 hyperframes-cli 技能覆盖 cloud / cloudrun / lambda / publish 等远端渲染
+// 路径，以及 skills / upgrade 这类会改动已装技能的命令。把技能路径注入提示词
+// 就等于把这些命令一并推到渲染器面前：
+//
+//   - 远端渲染绕开本机的确定性前提，产物规格与本地渲染不保证一致。
+//   - 改动已装技能会顶掉 am 固定的版本，影响的是同项目的其他镜头，
+//     而且失败会晚到成片阶段才暴露。
+//
+// 这两条只存在于我们自己写的提示词片段里，上游不会替我们守。
+func TestHyperFramesCLIPromptForbidsRemoteAndSkillMutatingCommands(t *testing.T) {
+	for _, dir := range []string{"", "/proj/.agents/skills"} {
+		section := hyperFramesCLIPrompt(dir)
+		for _, forbidden := range []string{"cloud", "lambda", "publish", "skills", "upgrade"} {
+			if !strings.Contains(section, forbidden) {
+				t.Errorf("skillsDir=%q 时，CLI 提示词没有点名禁止的命令 %q：\n%s", dir, forbidden, section)
+			}
+		}
+		if !strings.Contains(section, "本机渲染") {
+			t.Errorf("skillsDir=%q 时，CLI 提示词没有要求本机渲染：\n%s", dir, section)
+		}
+	}
+}
+
+// TestHyperFramesCorePromptRefusesWholeVideoPlanning：上游 core 技能同时覆盖
+// 建子项目与 STORYBOARD.md / SCRIPT.md 计划格式，那是整片工作流的东西。
+// 分镜由上层决定并已写进 scene.json，渲染器照那套走会产出计划文件并试图自己
+// 排布多镜头，直接违反单镜头契约。
+func TestHyperFramesCorePromptRefusesWholeVideoPlanning(t *testing.T) {
+	for _, dir := range []string{"", "/proj/.agents/skills"} {
+		section := hyperFramesCorePrompt(dir)
+		for _, want := range []string{"STORYBOARD", "SCRIPT", "子项目", "一个 composition"} {
+			if !strings.Contains(section, want) {
+				t.Errorf("skillsDir=%q 时，core 提示词缺少 %q：\n%s", dir, want, section)
+			}
+		}
+	}
+}
+
+// TestUpstreamSkillPromptsDegradeGracefully：解析不到目录时必须退回按技能名
+// 引用。写死路径会在别的机器上指向不存在的位置，直接空掉则等于技能没注册。
+func TestUpstreamSkillPromptsDegradeGracefully(t *testing.T) {
+	for _, desc := range RegisteredSkills {
+		if desc.Source != SourceUpstream {
+			continue
+		}
+		fallback := desc.PromptSection("")
+		if !strings.Contains(fallback, desc.Name) {
+			t.Errorf("%s 的兜底片段没有点名技能：%s", desc.Name, fallback)
+		}
+		if strings.Contains(fallback, "/") && strings.Contains(fallback, "skills/") {
+			t.Errorf("%s 的兜底片段里写死了路径：%s", desc.Name, fallback)
+		}
+	}
+}

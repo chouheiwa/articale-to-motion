@@ -30,9 +30,8 @@ func TestEveryRegisteredSkillIsEmbedded(t *testing.T) {
 		t.Fatalf("取共享素材：%v", err)
 	}
 	for _, desc := range scene.RegisteredSkills {
-		if desc.Name == scene.AnimationSkillName {
-			// 动效技能由 am init 联网装 HyperFrames 官方版本，不随二进制下发。
-			continue
+		if desc.Source != scene.SourceEmbedded {
+			continue // 上游技能由 am init 安装，不随二进制下发
 		}
 		for _, required := range desc.RequiredFiles {
 			path := skillTreeRoot + "/" + desc.Name + "/" + required
@@ -61,8 +60,8 @@ func TestBuiltinSkillsAreDocumentedInProjectRules(t *testing.T) {
 	}
 	rules := string(body)
 	for _, desc := range scene.RegisteredSkills {
-		if desc.Name == scene.AnimationSkillName {
-			continue
+		if desc.Source != scene.SourceEmbedded {
+			continue // 上游技能由 am init 安装，不在这份下发规则的职责范围内
 		}
 		if !strings.Contains(rules, desc.Name) {
 			t.Errorf("%s 没有提到内置技能 %s：新增内置技能必须同步这份下发规则", RulesTemplate, desc.Name)
@@ -107,8 +106,8 @@ func TestDeliveredSkillTreeIsDiscoverableFromSceneDirectory(t *testing.T) {
 	// HOME 指向一个没装任何技能的空目录，确保命中的是项目级而非家目录级。
 	environ := map[string]string{"HOME": t.TempDir()}
 	for _, desc := range scene.RegisteredSkills {
-		if desc.Name == scene.AnimationSkillName {
-			continue
+		if desc.Source != scene.SourceEmbedded {
+			continue // 上游技能由 am init 联网安装，Initialize 不产出它们
 		}
 		dir, err := scene.ResolveSkill("claude", sceneDir, environ, desc)
 		if err != nil {
@@ -215,5 +214,56 @@ func forEachSkillFile(t *testing.T, check func(path string, text string)) {
 	}
 	if visited == 0 {
 		t.Fatal("技能树里一个文件都没遍历到，检查 embed 指令")
+	}
+}
+
+// TestUpstreamSkillsAreNotVendoredIntoTheEmbeddedTree 是上一条的反面门禁。
+//
+// 把上游技能拷进嵌入树能让 TestEveryRegisteredSkillIsEmbedded 变绿，
+// 但那会留下一份永远追不上上游的陈旧副本：am init 装的是固定版本的真品，
+// 嵌入树里那份不参与任何升级流程，两者悄悄分叉后没有任何检查能发现。
+// 上游技能只能由 am init 安装，不得进 assets/。
+func TestUpstreamSkillsAreNotVendoredIntoTheEmbeddedTree(t *testing.T) {
+	shared, err := assets.Shared()
+	if err != nil {
+		t.Fatalf("取共享素材：%v", err)
+	}
+	checked := 0
+	for _, desc := range scene.RegisteredSkills {
+		if desc.Source != scene.SourceUpstream {
+			continue
+		}
+		checked++
+		path := skillTreeRoot + "/" + desc.Name
+		if _, err := fs.Stat(shared, path); err == nil {
+			t.Errorf("上游技能 %s 被拷进了嵌入树（%s）：它不参与升级流程，会与上游悄悄分叉",
+				desc.Name, path)
+		}
+	}
+	if checked == 0 {
+		t.Fatal("没有任何上游来源的注册技能，这条门禁形同虚设")
+	}
+}
+
+// TestEverySkillHasAPromptSection：注册了却不注入提示词等于没注册——
+// 技能装进项目，渲染器却不知道它存在。
+func TestEverySkillHasAPromptSection(t *testing.T) {
+	for _, desc := range scene.RegisteredSkills {
+		if desc.PromptSection == nil {
+			t.Errorf("技能 %s 缺少 PromptSection", desc.Name)
+			continue
+		}
+		resolved := desc.PromptSection("/tmp/skills")
+		if !strings.Contains(resolved, desc.Name) {
+			t.Errorf("技能 %s 的提示词片段没有点名自己：%s", desc.Name, resolved)
+		}
+		// 解析不到目录时必须退回按名字引用，不能写死本机路径或直接空掉。
+		fallback := desc.PromptSection("")
+		if strings.TrimSpace(fallback) == "" {
+			t.Errorf("技能 %s 在未解析到目录时产出空片段", desc.Name)
+		}
+		if strings.Contains(fallback, "/tmp/skills") {
+			t.Errorf("技能 %s 的兜底片段里泄漏了路径", desc.Name)
+		}
 	}
 }

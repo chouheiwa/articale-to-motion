@@ -44,14 +44,33 @@ go vet ./...
 
 上游产物里出现符号链接时直接报错而不是照搬：那些链接指回临时 HOME，搬进项目后会成为静默失效的空技能。受保护技能名从嵌入树现读（`assets.BuiltinSkills`），新增内置技能自动受保护，不会被上游同名技能覆盖。
 
-新增一个技能要动的地方：
+技能分两种来源，`SkillDescriptor.Source` 是它们的分水岭——不是元数据，而是契约：缺失补救、升级方式和守护测试全都不同。
+
+| 来源 | 谁装 | 能否进嵌入树 |
+|---|---|---|
+| `SourceEmbedded` | 随二进制下发，`project.Initialize` 写进项目 | **必须**在 `assets/shared/.agents/skills/` |
+| `SourceUpstream` | `am init` 按固定版本从上游装进项目 | **禁止**——那会留一份永远追不上上游的陈旧副本 |
+
+两条门禁互为反面：`TestEveryRegisteredSkillIsEmbedded` 查前者在不在嵌入树，`TestUpstreamSkillsAreNotVendoredIntoTheEmbeddedTree` 查后者在不在。把上游技能拷进 `assets/` 能让第一条变绿，但会被第二条抓住。
+
+新增一个**内置**技能要动的地方：
 
 | 位置 | 作用 |
 |---|---|
 | `assets/shared/.agents/skills/<name>/SKILL.md` | 技能本体，`SKILL.md` 是必需文件 |
 | `assets.go` 的 `//go:embed` 清单 | 已含 `assets/shared/.agents`，新技能自动覆盖 |
-| `internal/scene/skills.go` 的 `RegisteredSkills` | 追加一条描述符 |
+| `internal/scene/skills.go` 的 `RegisteredSkills` | 追加描述符，`Source: SourceEmbedded` |
 | 同文件的 `<name>Prompt` 函数 | 该技能注入镜头提示词的片段 |
+| `assets/shared/templates/project-rules.md` | 下发规则要点名它，有门禁强制 |
+
+新增一个**上游**技能只要在 `RegisteredSkills` 加一条 `Source: SourceUpstream` 的描述符加提示词片段——它已经被 `am init` 装进项目了，注册只是让 `am` 把绝对路径和用法边界写进渲染提示词。
+
+注册上游技能时要收窄范围，上游技能的职责范围通常比单镜头渲染大得多：
+
+- `hyperframes-core` 同时覆盖建子项目与 `STORYBOARD.md` / `SCRIPT.md` 计划格式，那是整片工作流。分镜由上层决定并已写进 `scene.json`，不收窄的话渲染器会产出计划文件并试图自己排布多镜头。
+- `hyperframes-cli` 覆盖 `cloud` / `cloudrun` / `lambda` / `publish` 远端渲染路径，以及 `skills` / `upgrade` 这类改动已装技能的命令。前者绕开本机确定性前提，后者会顶掉固定版本、影响同项目其他镜头。
+
+这两条禁令只存在于我们自己写的提示词片段里，上游不会替我们守，所以 `skills_test.go` 有对应的门禁盯着。**入口技能 `hyperframes` 刻意不注册**：它的职责是「选择并安装 owning workflow」，会把渲染器往整片制作上带。
 
 `internal/project/skilltree_test.go` 守着这条链：注册了但没随二进制下发、下发了但镜头目录找不到、技能目录缺 `SKILL.md`，都会失败。**这些失败必须修，不能豁免**——`ResolveSkill` 按设计在找不到技能时不报错只降级，没有这道门就会一路静默到成片质量变差才被发现。
 

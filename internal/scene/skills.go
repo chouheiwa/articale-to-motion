@@ -26,6 +26,12 @@ const (
 // AnimationSkillName 是承载全部动效知识的技能目录名。
 const AnimationSkillName = "hyperframes-animation"
 
+// HyperFramesCoreSkillName 是组合 HTML 的授权契约技能目录名。
+const HyperFramesCoreSkillName = "hyperframes-core"
+
+// HyperFramesCLISkillName 是 HyperFrames CLI 用法技能目录名。
+const HyperFramesCLISkillName = "hyperframes-cli"
+
 // AlgorithmicArtSkillName 是生成式艺术技能目录名。
 const AlgorithmicArtSkillName = "algorithmic-art"
 
@@ -33,9 +39,27 @@ const AlgorithmicArtSkillName = "algorithmic-art"
 const TextToLottieSkillName = "text-to-lottie"
 
 // SkillDescriptor 描述一个可自动发现的技能。
+// SkillSource 说明技能是怎么进到用户项目里的。
+//
+// 这不是元数据而是契约：两类技能的缺失补救方式、升级方式和守护测试都不同。
+// 过去只有动效技能一个例外，靠在测试里按名字特判绕过；再加第二个上游技能时
+// 那种写法就会崩，所以把来源直接写进描述符。
+type SkillSource uint8
+
+const (
+	// SourceEmbedded 随 am 二进制下发，由 project.Initialize 写进项目。
+	// 这类技能必须存在于 assets/shared/.agents/skills/ 里。
+	SourceEmbedded SkillSource = iota
+	// SourceUpstream 由 am init 按固定版本从上游安装进项目。
+	// 这类技能不得进嵌入树——那会留下一份永远追不上上游的陈旧副本。
+	SourceUpstream
+)
+
 type SkillDescriptor struct {
 	// Name 是技能目录名。
 	Name string
+	// Source 说明技能来自嵌入树还是上游安装。
+	Source SkillSource
 	// RequiredFiles 是技能被视为「完整安装」所必须存在的文件列表。
 	// 至少包含 SKILL.md；动效技能额外要求 rules-index.md。
 	RequiredFiles []string
@@ -49,16 +73,31 @@ type SkillDescriptor struct {
 var RegisteredSkills = []SkillDescriptor{
 	{
 		Name:          AnimationSkillName,
+		Source:        SourceUpstream,
 		RequiredFiles: []string{skillManifestFile, rulesIndexFile},
 		PromptSection: animationPrompt,
 	},
 	{
+		Name:          HyperFramesCoreSkillName,
+		Source:        SourceUpstream,
+		RequiredFiles: []string{skillManifestFile},
+		PromptSection: hyperFramesCorePrompt,
+	},
+	{
+		Name:          HyperFramesCLISkillName,
+		Source:        SourceUpstream,
+		RequiredFiles: []string{skillManifestFile},
+		PromptSection: hyperFramesCLIPrompt,
+	},
+	{
 		Name:          AlgorithmicArtSkillName,
+		Source:        SourceEmbedded,
 		RequiredFiles: []string{skillManifestFile},
 		PromptSection: algorithmicArtPrompt,
 	},
 	{
 		Name:          TextToLottieSkillName,
+		Source:        SourceEmbedded,
 		RequiredFiles: []string{skillManifestFile},
 		PromptSection: textToLottiePrompt,
 	},
@@ -235,6 +274,48 @@ func animationPrompt(skillsDir string) string {
 }
 
 // algorithmicArtPrompt 是生成式艺术技能的提示词片段。
+// hyperFramesCorePrompt 指向组合 HTML 的授权契约。
+//
+// 上游 SKILL.md 的原话是 "Read before writing composition HTML"——它定义
+// data-* 时间属性、class="clip"、track 结构和确定性渲染规则，写组合前不读
+// 就只能靠猜，而猜错的表现往往是渲染成功但时间轴不对。
+//
+// 同时要收窄范围：该技能还覆盖建子项目和 STORYBOARD.md / SCRIPT.md 计划格式，
+// 那是整片工作流的东西。分镜由 am 决定、已经写进 scene.json，渲染器照着那套
+// 走会产出计划文件并试图自己排布多镜头，直接违反单镜头契约。
+func hyperFramesCorePrompt(skillsDir string) string {
+	reference := fmt.Sprintf("- 写组合 HTML 前必须读 %s 技能。\n"+
+		"  （本机未能定位该技能目录，请使用你自身的技能加载机制载入。）\n",
+		HyperFramesCoreSkillName)
+	if skillsDir != "" {
+		reference = fmt.Sprintf("- 写组合 HTML 前必须读 %s 技能。本机该技能目录为：\n    %s\n",
+			HyperFramesCoreSkillName, filepath.Join(skillsDir, HyperFramesCoreSkillName))
+	}
+	return "组合规范（强制）：\n" + reference +
+		"  重点是 data-* 时间属性、class=\"clip\"、track 结构与确定性渲染规则。\n" +
+		"- 本镜头只产出一个 composition。不建子项目，不写 STORYBOARD.md / SCRIPT.md 计划文件——" +
+		"分镜由上层决定并已写进 scene.json，你只负责这一镜。\n"
+}
+
+// hyperFramesCLIPrompt 指向 CLI 用法，并把可用命令收窄到本地渲染与检查。
+//
+// 上游该技能覆盖 cloud / cloudrun / lambda / publish 等远端渲染路径，以及
+// skills / upgrade 这类会改动已装技能的命令。前者会把镜头送去云端渲染，绕开
+// 本机的确定性前提；后者会顶掉 am 固定的技能版本——两类都是执行契约明令禁止的。
+func hyperFramesCLIPrompt(skillsDir string) string {
+	reference := fmt.Sprintf("- CLI 的命令与排错方式见 %s 技能。\n"+
+		"  （本机未能定位该技能目录，请使用你自身的技能加载机制载入。）\n",
+		HyperFramesCLISkillName)
+	if skillsDir != "" {
+		reference = fmt.Sprintf("- CLI 的命令与排错方式见 %s 技能。本机该技能目录为：\n    %s\n",
+			HyperFramesCLISkillName, filepath.Join(skillsDir, HyperFramesCLISkillName))
+	}
+	return "渲染命令（强制）：\n" + reference +
+		"- 只用本地渲染与检查相关的命令（render、check、preview）。\n" +
+		"- 禁止 cloud、cloudrun、lambda、publish 等远端渲染路径：本镜头必须在本机渲染。\n" +
+		"- 禁止 skills、upgrade 以及任何会改动已装技能的命令：版本已固定，改动会影响其他镜头。\n"
+}
+
 func algorithmicArtPrompt(skillsDir string) string {
 	if skillsDir != "" {
 		skill := filepath.Join(skillsDir, AlgorithmicArtSkillName)
