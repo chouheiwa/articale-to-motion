@@ -38,7 +38,7 @@ const Version = "1.0.0"
 // 没变，并同步 internal/validate 的 autoEmbeddedFonts 注释。
 //
 // 这里是唯一来源：命令行、错误信息与 --help 都从它取值，避免三处字面量各自漂移。
-const hyperframesVersion = "0.7.108"
+const hyperframesVersion = "0.8.1"
 
 func currentEnvironment() map[string]string {
 	return envutil.EnvMap()

@@ -34,7 +34,7 @@ cd my-video
 
 非交互环境（CI、管道）必须显式传入 `--canvas`，不会静默取默认值。
 
-`am init` 不覆盖内容不同的已有文件。默认执行 `npx --yes hyperframes@0.7.108 skills`；离线或 CI 环境可使用 `--skip-hyperframes`。
+`am init` 不覆盖内容不同的已有文件。默认执行 `npx --yes hyperframes@0.8.1 skills`；离线或 CI 环境可使用 `--skip-hyperframes`。
 
 初始化还会把二进制内置的技能树写到项目的 `.agents/skills/`，渲染工具会自动发现：
 

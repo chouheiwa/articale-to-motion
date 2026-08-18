@@ -34,7 +34,7 @@ Canvas is chosen once at init and written to `frame.md`. Built-in presets:
 
 Non-interactive environments (CI, pipes) must pass `--canvas` explicitly; there is no silent default.
 
-`am init` refuses to overwrite existing files with different content. By default it runs `npx --yes hyperframes@0.7.108 skills`; use `--skip-hyperframes` for offline or CI environments.
+`am init` refuses to overwrite existing files with different content. By default it runs `npx --yes hyperframes@0.8.1 skills`; use `--skip-hyperframes` for offline or CI environments.
 
 Initialization also writes the binary's built-in skill tree to the project's `.agents/skills/`, where the renderer discovers it automatically:
 
