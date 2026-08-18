@@ -11,29 +11,20 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/chouheiwa/articale-to-motion/internal/config"
 	"github.com/chouheiwa/articale-to-motion/internal/envutil"
+	"github.com/chouheiwa/articale-to-motion/internal/mediaprobe"
 	"github.com/chouheiwa/articale-to-motion/internal/tools"
 )
 
 const terminateGrace = 500 * time.Millisecond
 
 func resolveBinary(name, pathValue string) (string, error) {
-	if strings.ContainsRune(name, filepath.Separator) {
-		return name, nil
-	}
-	for _, dir := range filepath.SplitList(pathValue) {
-		candidate := filepath.Join(dir, name)
-		if info, err := os.Stat(candidate); err == nil && info.Mode().IsRegular() && info.Mode()&0o111 != 0 {
-			return candidate, nil
-		}
-	}
-	return "", fmt.Errorf("缺少必需工具：%s", name)
+	return envutil.LookPath(name, pathValue)
 }
 
 func environmentList(values map[string]string) []string {
@@ -142,6 +133,33 @@ func Run(ctx context.Context, s Scene, cfg config.Config, unsafe bool, baseEnv m
 	return VerifyOutput(s, baseEnv, tolerance)
 }
 
+// VerificationError 表示产物规格校验失败。
+//
+// 单独立一个类型是为了让调度层能把它和「渲染器崩了」区分开：规格不符是确定性的，
+// 同样的提示词和渲染器重跑只会得到同样不合规的产物，而每次重试都是一次完整的
+// AI CLI 调用。调用方用 errors.As 认出它之后应当交给 schedule.Fatal 停止重试。
+type VerificationError struct {
+	Output   string
+	Problems []string
+}
+
+func (e *VerificationError) Error() string {
+	if len(e.Problems) == 1 {
+		return fmt.Sprintf("产物不符合规格：%s —— %s", e.Output, e.Problems[0])
+	}
+	return fmt.Sprintf("产物不符合规格：%s\n  - %s", e.Output, strings.Join(e.Problems, "\n  - "))
+}
+
+// VerifyOutput 校验镜头产物是否符合执行契约。
+//
+// 检查画幅、帧率、时长和「必须静音无音轨」四项，缺一项都会让错误在成片阶段才暴露：
+//
+//   - 画幅：style_guide 声明了画布，渲染成别的尺寸无法靠后期规范化补救——
+//     把 720p 拉伸到 1080 是画质损失而不是格式统一。
+//   - 静音：镜头产物按契约就该无音轨，混音在后面的阶段统一做。
+//
+// 刻意不查编码和像素格式：PROMPT 第八阶段明确允许镜头产物规格不一致，
+// 由拼接前的规范化副本统一，在这里拦下会和那条既定流程打架。
 func VerifyOutput(s Scene, baseEnv map[string]string, tolerance float64) error {
 	if math.IsNaN(tolerance) || math.IsInf(tolerance, 0) || tolerance < 0 {
 		return fmt.Errorf("tolerance 必须是有限且非负的数字")
@@ -163,22 +181,28 @@ func VerifyOutput(s Scene, baseEnv map[string]string, tolerance float64) error {
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return fmt.Errorf("产物不得链接到镜头目录外：%s", s.Output)
 	}
-	ffprobe, err := resolveBinary("ffprobe", baseEnv["PATH"])
+	canvas, err := CanvasOf(s.Directory, s.StyleGuide)
 	if err != nil {
 		return err
 	}
-	probe := exec.Command(ffprobe, "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", path)
-	probe.Env = environmentList(baseEnv)
-	output, err := probe.CombinedOutput()
+	toolchain, err := mediaprobe.New(baseEnv)
 	if err != nil {
-		return fmt.Errorf("无法解码产物：%s（%s）", path, strings.TrimSpace(string(output)))
+		return err
 	}
-	actual, err := strconv.ParseFloat(strings.TrimSpace(string(output)), 64)
-	if err != nil || !isFinite(actual) {
-		return fmt.Errorf("ffprobe 未返回有效时长：%s", path)
+	media, err := toolchain.Probe(path)
+	if err != nil {
+		return err
 	}
-	if math.Abs(actual-s.DurationSeconds) > tolerance {
-		return fmt.Errorf("产物时长不符：期望 %.3f 秒，实测 %.3f 秒", s.DurationSeconds, actual)
+	spec := mediaprobe.Spec{
+		WidthPx:         canvas.WidthPx,
+		HeightPx:        canvas.HeightPx,
+		FPS:             canvas.FPS,
+		DurationSeconds: s.DurationSeconds,
+		Tolerance:       tolerance,
+		Audio:           mediaprobe.AudioAbsent,
+	}
+	if problems := spec.Check(media); len(problems) > 0 {
+		return &VerificationError{Output: s.Output, Problems: problems}
 	}
 	return nil
 }

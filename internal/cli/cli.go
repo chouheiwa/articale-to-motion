@@ -378,7 +378,14 @@ text 不得含 [[USER_MESSAGE]] 或 <scene-text> 定界标记，含则失败。
 				if outcome, ok := initial[s.ID]; ok {
 					return outcome
 				}
-				return scene.Run(ctx, s, cfg, envutil.IsUnsafe(unsafe), currentEnvironment(), stdout, tolerance)
+				err := scene.Run(ctx, s, cfg, envutil.IsUnsafe(unsafe), currentEnvironment(), stdout, tolerance)
+				// 产物规格不符是确定性的：同样的提示词和渲染器重跑只会得到同样的产物。
+				// 不在这里截断的话，每个规格不符的镜头都要白烧 retries 次 AI CLI 调用。
+				var verification *scene.VerificationError
+				if errors.As(err, &verification) {
+					return schedule.Fatal(err)
+				}
+				return err
 			})
 			fmt.Fprintln(stdout, report.Render())
 			if reportPath != "" {

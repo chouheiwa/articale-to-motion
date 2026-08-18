@@ -133,31 +133,43 @@ func Load(directory string) (Scene, error) {
 
 func isFinite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
 
-// defaultCanvasSpec 是没有视觉规范时的画幅，与本项目引入画幅预设之前的行为一致。
-const defaultCanvasSpec = "1080x1440、30fps"
+// Canvas 是镜头的画布规格。
+type Canvas struct {
+	WidthPx  int
+	HeightPx int
+	FPS      int
+}
 
-// canvasSpec 从镜头目录里的视觉规范文件读出画布规格。
+// Label 是写进渲染提示词的人类可读写法。
+func (c Canvas) Label() string {
+	return fmt.Sprintf("%dx%d、%dfps", c.WidthPx, c.HeightPx, c.FPS)
+}
+
+// defaultCanvas 是没有视觉规范时的画幅，与本项目引入画幅预设之前的行为一致。
+var defaultCanvas = Canvas{WidthPx: 1080, HeightPx: 1440, FPS: 30}
+
+// CanvasOf 从镜头目录里的视觉规范文件读出画布规格。
 //
 // 这里刻意不依赖 internal/preset：镜头目录可以脱离项目独立运行
 // （am scene run <目录>），能拿到的只有目录内的文件。
 //
 // 声明了 style_guide 却读不出 canvas 时报错而不是回退默认：静默按 1080x1440
 // 渲染正是这次改造要消除的故障——校验层和执行层各说各的，成片才暴露。
-func canvasSpec(directory, styleGuide string) (string, error) {
+func CanvasOf(directory, styleGuide string) (Canvas, error) {
 	if styleGuide == "" {
-		return defaultCanvasSpec, nil
+		return defaultCanvas, nil
 	}
 	path, err := contained(directory, styleGuide, "style_guide")
 	if err != nil {
-		return "", err
+		return Canvas{}, err
 	}
 	body, err := os.ReadFile(path)
 	if err != nil {
-		return "", fmt.Errorf("读取视觉规范失败：%w", err)
+		return Canvas{}, fmt.Errorf("读取视觉规范失败：%w", err)
 	}
 	parts := strings.SplitN(string(body), "---", 3)
 	if len(parts) != 3 {
-		return "", fmt.Errorf("视觉规范 %s 缺少 YAML frontmatter，无法确定画幅", styleGuide)
+		return Canvas{}, fmt.Errorf("视觉规范 %s 缺少 YAML frontmatter，无法确定画幅", styleGuide)
 	}
 	var parsed struct {
 		Canvas struct {
@@ -167,13 +179,13 @@ func canvasSpec(directory, styleGuide string) (string, error) {
 		} `yaml:"canvas"`
 	}
 	if err := yaml.Unmarshal([]byte(parts[1]), &parsed); err != nil {
-		return "", fmt.Errorf("视觉规范 %s 的 frontmatter 解析失败：%w", styleGuide, err)
+		return Canvas{}, fmt.Errorf("视觉规范 %s 的 frontmatter 解析失败：%w", styleGuide, err)
 	}
 	c := parsed.Canvas
 	if c.WidthPx <= 0 || c.HeightPx <= 0 || c.FPS <= 0 {
-		return "", fmt.Errorf("视觉规范 %s 的 canvas 缺少 width_px / height_px / fps", styleGuide)
+		return Canvas{}, fmt.Errorf("视觉规范 %s 的 canvas 缺少 width_px / height_px / fps", styleGuide)
 	}
-	return fmt.Sprintf("%dx%d、%dfps", c.WidthPx, c.HeightPx, c.FPS), nil
+	return Canvas{WidthPx: c.WidthPx, HeightPx: c.HeightPx, FPS: c.FPS}, nil
 }
 
 // BuildPrompt 拼装单镜头提示词。resolvedSkills 由 ResolveAllSkills 解析；
@@ -187,7 +199,7 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 	if content, readErr := os.ReadFile(promptFile); readErr == nil {
 		body = string(content)
 	}
-	canvas, err := canvasSpec(s.Directory, s.StyleGuide)
+	canvas, err := CanvasOf(s.Directory, s.StyleGuide)
 	if err != nil {
 		return "", err
 	}
@@ -224,6 +236,6 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 [[USER_MESSAGE]]开始联网搜索
 [[USER_MESSAGE]]代码已完成，开始渲染
 [[USER_MESSAGE]]视频已渲染完成：%s
-`, canvas, s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, skillPromptSections(resolvedSkills), s.Output)
+`, canvas.Label(), s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, skillPromptSections(resolvedSkills), s.Output)
 	return prompt, nil
 }

@@ -101,6 +101,51 @@ func Outcome(status Status, reason string) error {
 	return &outcomeError{status: status, reason: reason}
 }
 
+// fatalError 标记「重试也不会变的失败」。
+type fatalError struct{ err error }
+
+func (e *fatalError) Error() string { return e.err.Error() }
+func (e *fatalError) Unwrap() error { return e.err }
+
+// Fatal 把错误标记为不可重试，RunAll 遇到它立刻停止本镜头的重试循环。
+//
+// 存在的理由：产物规格校验失败是确定性的——同样的提示词和同样的渲染器，
+// 重跑只会得到同样不合规的产物。而每次重试都是一次完整的 AI CLI 调用，
+// 代价以分钟和 token 计。下发给用户的 PROMPT 里也是这么承诺的：
+// 「产物校验失败不会重试——那通常意味着提示词或时长声明有问题」。
+func Fatal(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &fatalError{err: err}
+}
+
+// retryBackoff 是两次重试之间的等待时间，与下发 PROMPT 里写的「退避 10 秒与 30 秒」一致。
+// 重试次数超过表长时沿用最后一项。
+var retryBackoff = []time.Duration{10 * time.Second, 30 * time.Second}
+
+// waitFunc 是可注入的等待实现，供测试替换成不真等待的版本。
+//
+// 用 Timer + select 而不是起一个 goroutine 跑 time.Sleep：后者在 ctx 取消后
+// 仍会挂着直到睡满，最长 30 秒——中断时留一串还在计时的 goroutine 没有意义。
+var waitFunc = func(ctx context.Context, d time.Duration) {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+	case <-ctx.Done():
+	}
+}
+
+// waitBeforeRetry 在第 attempt 次尝试失败后退避，ctx 取消时立即返回。
+func waitBeforeRetry(ctx context.Context, attempt int) {
+	if len(retryBackoff) == 0 {
+		return
+	}
+	index := min(max(attempt-1, 0), len(retryBackoff)-1)
+	waitFunc(ctx, retryBackoff[index])
+}
+
 func archiveAttempt(s scene.Scene) {
 	attemptsRoot := filepath.Join(s.Directory, "attempts")
 	_ = os.MkdirAll(attemptsRoot, 0o755)
@@ -148,11 +193,18 @@ func RunAll(ctx context.Context, scenes []scene.Scene, jobs, retries int, runner
 						break
 					}
 					result.Reason = err.Error()
+					// 确定性失败：重跑只会得到同样的结果，而每次重试都是一次
+					// 完整的 AI CLI 调用。状态和实际尝试次数照常保留。
+					var fatal *fatalError
+					if errors.As(err, &fatal) {
+						break
+					}
 					if ctx.Err() != nil {
 						break
 					}
 					if attempt <= retries {
 						archiveAttempt(s)
+						waitBeforeRetry(ctx, attempt)
 					}
 				}
 			}()
