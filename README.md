@@ -93,15 +93,39 @@ am --unsafe run
 
 `--unsafe` 会传递给嵌套镜头任务。安全模式需要额外传递的环境变量通过 `AM_PASSTHROUGH_ENV=NAME1,NAME2` 显式列出。
 
+## 视觉检查与拼接
+
+渲染成功不等于画面正确：文字压在图形上看不清、中文字体静默回退成方框、动画在中途就停住，这些都能拿到退出码 0。抽帧看图是唯一能提前发现它们的手段。
+
+```bash
+# 抽帧供视觉验收，--at 支持秒数、百分比与 end
+am scene frames scenes/scene-001 --at 0,50%,end
+am scene frames scenes/scene-001 --at 0 --check-blank   # 空白封面直接判失败
+
+# 按镜头顺序拼成静音母版，规格一致时全程 -c copy
+am concat scenes/ --out production/silent-master.mp4 --dry-run
+am concat scenes/ --out production/silent-master.mp4
+```
+
+`am concat` 不提供重定时能力。分辨率或帧率与母版不符时直接失败并要求回镜头工程重渲染，而不是缩放或改帧率——前者损失画质，后者会动到时间轴。
+
 ## 校验与归档
 
 ```bash
 am validate publish publish.md --project-root .
 am validate style --project-root .
 am validate style --project-root . --regenerate-examples  # 需要 rsvg-convert 与 magick
+
+# 成片机器验收：画幅、帧率、编码、像素格式、帧数、音轨一次全查，不符项一次列全
+am validate video production/silent-master.mp4 --silent --decode
+am validate video final.mp4 --audio --expect-frames 8340 --check-frame-zero \
+  --report-json production/final-check.json
+
 am archive --dry-run
 am archive
 ```
+
+`--expect-frames` 与 `--decode` 会完整解码一遍，代价与文件长度成正比，所以默认关闭。判断结果读 `--report-json` 落盘的文件，不要解析终端输出。
 
 归档在共享文件有修改或存在 ignored 文件时拒绝执行。成功后单片文件连同 SHA-256 清单移到仓库外归档目录，工作区 detach 到冻结的 `main` 提交。
 

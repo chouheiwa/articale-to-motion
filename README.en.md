@@ -83,15 +83,40 @@ Existing outputs are skipped; inputs newer than the output mark it as stale — 
 
 AI CLIs run in project-scoped safe mode by default. `am --unsafe run` explicitly restores bypass/auto-approval behavior and should only be used for trusted projects. Extra environment variables in safe mode must be named in `AM_PASSTHROUGH_ENV`.
 
+## Inspect frames and concatenate
+
+A successful render is not a correct picture: text can be unreadable against the artwork, CJK glyphs can silently fall back to boxes, an animation can freeze halfway — all of that still exits 0. Extracting frames and looking at them is the only way to catch it early.
+
+```bash
+# Extract frames for visual review; --at takes seconds, percentages, and end
+am scene frames scenes/scene-001 --at 0,50%,end
+am scene frames scenes/scene-001 --at 0 --check-blank   # a blank cover frame fails
+
+# Concatenate scenes in order into a silent master, stream-copied when specs match
+am concat scenes/ --out production/silent-master.mp4 --dry-run
+am concat scenes/ --out production/silent-master.mp4
+```
+
+`am concat` deliberately offers no retiming. A resolution or frame-rate mismatch fails and asks you to re-render the scene rather than scaling or resampling — the former loses quality, the latter moves the timeline.
+
 ## Validate, archive, and develop
 
 ```bash
 am validate publish publish.md --project-root .
 am validate style --project-root .
 am validate style --project-root . --regenerate-examples  # requires rsvg-convert and magick
+
+# Machine acceptance: canvas, frame rate, codec, pixel format, frame count, audio
+# — all checked at once, with every mismatch reported in a single pass
+am validate video production/silent-master.mp4 --silent --decode
+am validate video final.mp4 --audio --expect-frames 8340 --check-frame-zero \
+  --report-json production/final-check.json
+
 am archive --dry-run
 am archive
 ```
+
+`--expect-frames` and `--decode` decode the whole file, so they cost time proportional to its length and are off by default. Read the file written by `--report-json` to decide what happened; do not parse the terminal output.
 
 ## Development
 

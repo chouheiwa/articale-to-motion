@@ -24,6 +24,17 @@ jobs:
         with:
           go-version: '1.25.8'
           cache: true
+      # mediaprobe / concat 的集成测试要真实的 ffmpeg 和 ffprobe。
+      # 不装的话它们会自行跳过——测试仍然"通过"，但覆盖率会掉到门禁线以下，
+      # 而且真正在跑外部命令的那部分代码就再没被验证过。
+      - name: Install ffmpeg
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            brew install ffmpeg
+          else
+            sudo apt-get update && sudo apt-get install -y ffmpeg
+          fi
+      - run: ffmpeg -version | head -1
       - run: go test -race ./...
 
   generated-assets:
@@ -45,6 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - uses: actions/setup-go@v6
         with:
           go-version: '1.25.8'

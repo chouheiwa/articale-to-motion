@@ -282,7 +282,11 @@ scenes/
 - 保留 `render-<scene>.user.log`。
 - 阶段消息至少覆盖需求与素材检查、联网搜索、代码完成开始渲染、MP4 渲染完成。
 
-用 `am scene run-all scenes/ --report-json production/run-report.json` 一次性调度。已有合格产物的镜头会被跳过；输入比产物新的镜头会被跳过并警告，需要重渲染时用 `am scene run <镜头目录>`。渲染器非零退出自动重试并把失败证据保留在 `attempts/attempt-NN/`；产物校验失败不重试。
+用 `am scene run-all scenes/ --srt transcription.srt --strict-coverage --report-json production/run-report.json` 一次性调度。已有合格产物的镜头会被跳过；输入比产物新的镜头会被跳过并警告，需要重渲染时用 `am scene run <镜头目录>`。渲染器非零退出自动重试（退避 10 秒与 30 秒）并把失败证据保留在 `attempts/attempt-NN/`；产物校验失败不重试。
+
+`--srt` 加 `--strict-coverage` 在开始渲染前核对镜头编号唯一性与「镜头总时长等于字幕跨度」。务必带上：这条规则本来就写在第五阶段，但漏掉一镜等到拼接时才发现的话，每一镜都已经烧掉一次完整的渲染调用。
+
+产物校验查画幅、帧率、时长和「必须无音轨」四项，画幅取自 `frame.md`。不符时回镜头工程重渲染，不要在后面的阶段缩放补救。
 
 `--report-json` 落盘的报告是判断结果的依据，不要去解析终端上的中文汇总。每个镜头一条记录，字段为 `scene_id`、`status`（`succeeded` / `skipped` / `stale` / `failed`）、`attempts`、`seconds`、`reason`；顶层还有 `counts`、`exit_code` 和 `interrupted`。被中断时报告照常落盘，据 `interrupted` 与各镜头 `status` 判断哪些还需要重跑。
 
@@ -313,6 +317,12 @@ scenes/
 - 对第 0 帧、转场开始帧和转场进行中的代表帧截图检查。
 - 眼镜、连线、图标、人物或其他核心视觉隐喻必须检查几何形状、对齐和语义是否正确。
 
+抽帧用 `am scene frames <镜头目录> --out production/visual-qc/<镜头编号> --report-json production/visual-qc/<镜头编号>.json`，不要自己拼 FFmpeg。`--at` 接受秒数、百分比和 `end`，可混用；`end` 取时长减一帧，直接用时长会超出末帧，FFmpeg 会返回成功却什么都不输出。
+
+第 0 帧要做封面时加 `--at 0 --check-blank`，空白帧直接判失败。判定阈值刻意保守，只拦几乎完全均匀的画面：深色背景配浅色标题是常见设计，偏暗但有内容的帧只进报告的 `hints`，不影响退出码。
+
+命令只负责把 MP4 变成可以逐张打开看的 PNG，并标出纯色帧这种机器能判的情况。画面对不对要你自己看图判断——上面列的几何、对齐和语义检查没有任何机器替代。
+
 把截图、检查结果和修复记录保存在 `production/visual-qc/`。视觉未通过时，只重渲染相关镜头，不重做已冻结的配音和其他镜头。
 
 视觉验收不能只看静态构图，还必须检查：
@@ -325,21 +335,21 @@ scenes/
 
 ## 第八阶段：规范化和拼接静音母版
 
-拼接前逐镜头使用 FFprobe 检查：
+用 `am concat scenes/ --out production/silent-master.mp4` 完成规范化和拼接。先跑一次 `--dry-run` 看有哪些镜头规格不一致，再正式执行。
 
-- {{CANVAS}}。
-- 30fps。
-- H.264、`yuv420p`。
-- 统一色彩信息。
-- 时长和帧数符合 `scene-plan.json`。
-- 静音且没有音轨。
-- 可完整解码。
+这条命令按镜头目录名字典序拼接，规格一致时全程 `-c copy` 不重新编码；只有编码或像素格式与目标不同的片段会先生成规范化副本，渲染工具的原始 MP4 保留在原处。拼完会自证时长等于各片段之和、无音轨、画幅与帧率符合目标。
 
-规格不一致时生成规范化副本，保留渲染工具的原始 MP4。然后按镜头顺序拼接为 `production/silent-master.mp4`。
+规范化只用于编码、像素格式和封装统一，不承担语义重定时。分辨率或帧率不符时命令会直接失败并要求回镜头工程重渲染——缩放会损失画质，改帧率会动到时间轴。禁止用 `setpts`、整体变速或抽帧复制帧让镜头追赶配音；命令本身不提供这些能力，也不要绕过它自己拼 FFmpeg 去做。
 
-规范化只用于编码、像素格式、色彩和封装统一，不得承担语义重定时。禁止通过 `setpts` 或改变帧率让镜头追赶配音；源时间轴有误时必须回到镜头工程重渲染。
+只有一个镜头时同样用这条命令。母版生成后跑：
 
-只有一个镜头时，也必须复制或规范化为 `production/silent-master.mp4`。验证静音母版总帧数等于 `timing-report.json` 的总帧数。
+```bash
+am validate video production/silent-master.mp4 --silent --decode \
+  --expect-frames <timing-report.json 的总帧数> \
+  --report-json production/silent-master-check.json
+```
+
+`--expect-frames` 会完整解码精确统计帧数，容器声明的 `nb_frames` 可能缺失或不准，不能用来断言时间轴。`--decode` 发现截断和损坏：`moov` 在文件头时，截断一半的文件照样能读出正确规格。判断结果读 `--report-json` 落盘的文件，不要解析终端输出。
 
 ## 第九阶段：选择 BGM 和 SFX
 
@@ -396,11 +406,18 @@ scenes/
 
 ### 机器检查
 
-- 视频为 {{CANVAS}}、30fps、H.264、`yuv420p`。
-- 视频总帧数等于冻结时间轴的总帧数。
-- 音频为 48kHz 双声道，解码采样数和节目终点正确。
-- 音视频都能完整解码。
-- 第 0 帧封面可读且没有黑帧。
+画幅、帧率、编码、像素格式、总帧数、音轨规格、可完整解码和第 0 帧封面这几项由一条命令完成，不要自己拼 FFprobe：
+
+```bash
+am validate video <候选成片> --audio --expect-frames <冻结时间轴总帧数> \
+  --decode --check-frame-zero --report-json production/final-check.json
+```
+
+不符项会一次全部列出。判断结果读 `--report-json` 落盘的报告，`ok` 为 `false` 时 `problems` 数组里是全部不符项，`hints` 里是值得看一眼但不构成失败的观察（例如第 0 帧偏暗）。
+
+命令覆盖不到、仍需另行确认的：
+
+- 音频解码采样数和节目终点正确。
 - 字幕、镜头和音效 cue 没有越界。
 - 最终响度和峰值合格。
 - 输入、候选、素材、日志和检查报告的 SHA-256 绑定一致。
