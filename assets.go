@@ -43,3 +43,25 @@ func Preset(id string) (fs.FS, error) {
 	}
 	return sub, nil
 }
+
+// BuiltinSkills 列出随二进制下发的技能名。
+//
+// 从嵌入树现读而不是写死一份清单：新增内置技能只要放进
+// assets/shared/.agents/skills/ 就自动受保护，不会因为漏改这里而被上游同名
+// 技能悄悄覆盖掉本仓库的 fork。
+func BuiltinSkills() (map[string]bool, error) {
+	entries, err := fs.ReadDir(Files, "assets/shared/.agents/skills")
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]bool, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			out[entry.Name()] = true
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("内置技能树是空的：assets/shared/.agents/skills")
+	}
+	return out, nil
+}

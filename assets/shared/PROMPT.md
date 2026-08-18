@@ -31,11 +31,9 @@
 - `assets/fonts/`：把视觉规范 `typography.font_files` 声明的字体文件按相同相对路径复制进来。渲染机是一台干净的无头 Chrome，不装任何系统字体，中文字形只能由这些自带文件提供；字体栈里没有 `@font-face` 的字体族会静默回退，本地看着正常、成片排版却是错的。
 - 渲染器锁定文件：固定 HyperFrames 版本、禁止升级或改动已装技能、禁止读取 `.env`、禁止改动 `scene.json` 的执行契约。文件名取决于该镜头所用渲染工具会自动读取的项目级指令文件（例如 `claude` 读 `CLAUDE.md`），按所选工具各自的约定命名。
 
-技能有两个来源。HyperFrames 技能由 `am init` 从固定的官方版本安装，缺失时停止执行并运行
-`npx --yes hyperframes@0.8.1 skills`；`text-to-lottie`、`algorithmic-art` 随 `am` 二进制下发到项目的
-`.agents/skills/`，缺失时重跑 `am init` 补齐，联网重装 HyperFrames 补不回它们。两者都不得从其他项目或本机私有目录复制。
+全部技能都在项目根的 `.agents/skills/` 下，由 `am init` 一次装齐：HyperFrames 官方技能按固定版本安装，`text-to-lottie` 与 `algorithmic-art` 随 `am` 二进制下发。技能缺失时重跑 `am init` 补齐，不要自己跑 `npx hyperframes skills`——那会装到本机 HOME 而不是项目里，绕过版本固定。也不得从其他项目或本机目录复制。
 
-锁定文件如果限制「只在本镜头目录内工作」，必须给两条技能路径都留读取例外，它们都由 `am` 写进渲染提示词：本机 HyperFrames 技能目录（项目之外），以及项目根下的 `.agents/skills/`（在项目内但在镜头目录之外）。少了前者，渲染工具会拒读动效 rule 索引，动画退化成只有淡入和位移；少了后者不报错，只是该用内置技能的地方不用。
+锁定文件如果限制「只在本镜头目录内工作」，必须给项目根的 `.agents/skills/` 留读取例外——它在项目内，但在镜头目录之外，由 `am` 写进渲染提示词。少了这条例外，渲染工具会拒读动效 rule 索引，动画退化成只有淡入和位移。
 
 用 `am scene run scenes/scene-001` 执行单个镜头。渲染器从仓库配置解析，无需显式传递；解析不到会直接报错，不存在静默回退。命令会在启动渲染前打印这一镜实际使用的渲染器及其来源（仓库配置或 `scene.json` 覆盖），把这一行记进执行日志。
 

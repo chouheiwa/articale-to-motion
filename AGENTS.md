@@ -30,7 +30,19 @@ go vet ./...
 
 `assets/shared/.agents/skills/<name>/` 是随 `am init` 下发到用户项目根 `.agents/skills/` 的技能树。`scene.ResolveSkill` 从镜头目录逐级向上找 `.agents/skills`，落到项目根就能被发现，用户无需另行安装。
 
-`hyperframes-animation` 不在这里——它由 `am init` 跑 `npx hyperframes@<版本> skills` 装官方版本。这棵树只放本仓库自带的技能。
+`hyperframes-animation` 等官方技能不在这棵树里，但**落点相同**：`am init` 通过 `internal/hyperframes` 把它们按固定版本装进同一个 `.agents/skills/`。这棵源树只放本仓库自带的技能。
+
+官方技能不能直接跑 `npx hyperframes skills` 装——上游安装器只认 `homedir()`，没有任何选项能改落点（`skills update --dir` 的帮助原文写着 "scopes the prune, not the install"）。装在机器级会让版本固定名存实亡：一台机器只有一份技能，项目 A 固定 0.8.1、项目 B 固定 0.7.108 时谁后初始化谁说了算。
+
+`internal/hyperframes` 的做法是在项目外开一个临时 HOME 让上游安装器照常工作，再把产出搬进项目。三个细节是承重的，改动前先读那里的注释：
+
+| 细节 | 不这么做会怎样 |
+|---|---|
+| 用 `node -e process.execPath` 解析真实 npx | asdf / nvm / volta 的 shim 靠 HOME 找 node，改写 HOME 后直接报 `unknown command: npx` |
+| 接回 `npm_config_cache` | 缓存写进临时 HOME，每个项目重新下载整包 |
+| 接回 `npm_config_userconfig` | 读不到用户 `.npmrc`，私有 registry、代理和鉴权全丢，公司内网装不上 |
+
+上游产物里出现符号链接时直接报错而不是照搬：那些链接指回临时 HOME，搬进项目后会成为静默失效的空技能。受保护技能名从嵌入树现读（`assets.BuiltinSkills`），新增内置技能自动受保护，不会被上游同名技能覆盖。
 
 新增一个技能要动的地方：
 

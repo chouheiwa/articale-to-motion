@@ -6,7 +6,7 @@ ArticleToMotion 是面向 macOS 和 Linux 的竖屏 MG 视频生产 CLI。它可
 
 ▶ [观看 ArticleToMotion 宣传视频（MP4，4 分 47 秒）](https://github.com/chouheiwa/articale-to-motion/blob/main/docs/article-to-motion-tutorial.mp4)
 
-Go 版本以单个 `am` 二进制发布，不依赖 Python。项目 Prompt、发布模板和视觉规范由二进制内置，HyperFrames 技能在初始化时从固定官方版本安装。
+Go 版本以单个 `am` 二进制发布，不依赖 Python。项目 Prompt、发布模板和视觉规范由二进制内置；HyperFrames 技能在初始化时按固定官方版本装进项目，项目因此自包含——整个目录拷到另一台机器就能渲染。
 
 ## 安装
 
@@ -34,7 +34,9 @@ cd my-video
 
 非交互环境（CI、管道）必须显式传入 `--canvas`，不会静默取默认值。
 
-`am init` 不覆盖内容不同的已有文件。默认执行 `npx --yes hyperframes@0.8.1 skills`；离线或 CI 环境可使用 `--skip-hyperframes`。
+`am init` 不覆盖内容不同的已有文件。默认联网安装固定版本 0.8.1 的 HyperFrames 官方技能到项目的 `.agents/skills/`，与随二进制下发的 `text-to-lottie`、`algorithmic-art` 同处一个目录；离线或 CI 环境可使用 `--skip-hyperframes`。
+
+技能装进项目而不是 HOME，是因为版本固定只有这样才成立：上游安装器只认 `homedir`，一台机器上只有一份技能，项目 A 固定 0.8.1、项目 B 固定 0.7.108 时谁后初始化谁说了算。安装全程不写用户 HOME——上游安装器在项目外的临时目录里运行，产物再搬进项目。
 
 初始化还会把二进制内置的技能树写到项目的 `.agents/skills/`，渲染工具会自动发现：
 

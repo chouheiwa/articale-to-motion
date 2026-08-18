@@ -19,6 +19,7 @@ import (
 	"github.com/chouheiwa/articale-to-motion/internal/archive"
 	"github.com/chouheiwa/articale-to-motion/internal/config"
 	"github.com/chouheiwa/articale-to-motion/internal/envutil"
+	"github.com/chouheiwa/articale-to-motion/internal/hyperframes"
 	"github.com/chouheiwa/articale-to-motion/internal/preset"
 	"github.com/chouheiwa/articale-to-motion/internal/project"
 	"github.com/chouheiwa/articale-to-motion/internal/scene"
@@ -153,8 +154,16 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 不覆盖内容不同的已有文件：目标已存在且字节不同就整体失败并回滚，不做合并。
 字节相同则视为已存在并跳过，因此对同一画幅重复执行是幂等的，可安全用于补齐缺失文件。
 
-默认联网执行 npx --yes hyperframes@` + hyperframesVersion + ` skills 安装官方动效技能；
-离线或 CI 用 --skip-hyperframes 跳过。该开关不影响内置技能树，它随二进制下发。`,
+默认联网安装固定版本 ` + hyperframesVersion + ` 的 HyperFrames 官方技能，
+装进项目的 .agents/skills/，与内置技能树同一个目录。离线或 CI 用
+--skip-hyperframes 跳过；该开关不影响内置技能树，它随二进制下发。
+
+技能装进项目而不是装进 HOME，是因为版本固定只有这样才成立：上游安装器只认
+homedir，一台机器上只有一份技能，项目 A 固定 0.8.1、项目 B 固定 0.7.108 时
+谁后初始化谁说了算。装进项目还让项目自包含——整个目录拷到另一台机器就能渲染。
+安装全程不写用户 HOME：上游安装器在项目外的临时目录里运行，产物再搬进项目。
+
+上游技能与内置技能重名时保留内置版本并告警，不会覆盖本仓库 fork 过的技能。`,
 		Example: `  # 交互选择画幅
   am init my-video
 
@@ -194,11 +203,24 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 				fmt.Fprintln(stdout, "警告：已跳过 HyperFrames 技能安装")
 				return nil
 			}
-			pinned := "hyperframes@" + hyperframesVersion
-			npx := exec.Command("npx", "--yes", pinned, "skills")
-			npx.Dir, npx.Stdout, npx.Stderr = target, stdout, stderr
-			if err := npx.Run(); err != nil {
-				return fmt.Errorf("项目文件已写入，但 HyperFrames 技能安装失败；可在项目目录重试 npx --yes %s skills: %w", pinned, err)
+			builtin, err := assets.BuiltinSkills()
+			if err != nil {
+				return err
+			}
+			installed, err := hyperframes.Install(cmd.Context(), hyperframes.Options{
+				ProjectDir: target,
+				Version:    hyperframesVersion,
+				Env:        currentEnvironment(),
+				Protected:  builtin,
+				Output:     stderr,
+			})
+			if err != nil {
+				return fmt.Errorf("项目文件已写入，但 HyperFrames 技能安装失败：%w", err)
+			}
+			fmt.Fprintf(stdout, "HyperFrames %s 技能已装入 %s（%d 个）\n",
+				hyperframesVersion, hyperframes.SkillsSubdir, len(installed.Installed))
+			for _, name := range installed.Protected {
+				fmt.Fprintf(stderr, "警告：上游技能 %s 与内置技能重名，已保留内置版本\n", name)
 			}
 			return nil
 		},
