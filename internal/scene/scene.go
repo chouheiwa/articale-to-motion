@@ -224,6 +224,7 @@ func validateCast(s Scene) error {
 		onStage[actor.ID] = true
 	}
 	prevEnd := math.Inf(-1)
+	prevIndex := -1
 	for i, beat := range c.Beats {
 		if beat.Speaker == "" {
 			return fmt.Errorf("cast.beats[%d] 缺少 speaker", i)
@@ -237,10 +238,16 @@ func validateCast(s Scene) error {
 		if !onStage[beat.Speaker] {
 			return fmt.Errorf("cast.beats[%d] 的 speaker %q 不在台上", i, beat.Speaker)
 		}
+		// 乱序（后一拍 start 早于前一拍 start）与重叠（后一拍 start 落进前一拍
+		// [start,end) 区间）用同一个判断拦：只要后一拍的 start 没有不小于前一拍
+		// 的 end，两种情况都成立。错误信息把两拍的下标和各自的 start/end 都带
+		// 上，不用回翻 JSON 就能定位到具体是哪两拍、哪种问题。
 		if beat.Start < prevEnd-floatEps {
-			return fmt.Errorf("cast.beats 未按 start 递增排列或与前一拍重叠：第 %d 拍", i)
+			return fmt.Errorf("cast.beats 未按 start 递增排列或与前一拍重叠：第 %d 拍 [%v, %v] 与第 %d 拍 [%v, %v]",
+				prevIndex, c.Beats[prevIndex].Start, c.Beats[prevIndex].End, i, beat.Start, beat.End)
 		}
 		prevEnd = beat.End
+		prevIndex = i
 	}
 	return nil
 }

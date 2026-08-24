@@ -161,13 +161,13 @@ func writeSceneWithCast(t *testing.T, castJSON string) string {
 }
 
 func TestLoadAcceptsSceneWithoutCast(t *testing.T) {
+	// brief 原文这里的 transcript 字段写的是 transcription.srt（项目实际生产
+	// 约定的文件名，见 assets/shared/PROMPT.md），但与本文件 writeScene 固定
+	// 写出的 transcript.srt 撞车——这处不一致是 brief 的笔误，细节见
+	// task-12-report.md。改成 transcript.srt 以复用 writeScene 已经写好的
+	// 文件，避免目录里同时存在两个字幕文件造成的费解，测试语义不变。
 	dir := writeScene(t, `{"id":"scene-001","duration_seconds":4,"output":"scene-001.mp4",
-"transcript":"transcription.srt","text":"一句话"}`)
-	// writeScene 固定写出 transcript.srt；这条用例的 payload 按项目实际约定
-	// （见 assets/shared/PROMPT.md）用的是 transcription.srt，这里补上同名文件。
-	if err := os.WriteFile(filepath.Join(dir, "transcription.srt"), []byte("1\n00:00:00,000 --> 00:00:01,000\ntest\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+"transcript":"transcript.srt","text":"一句话"}`)
 	s, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -215,6 +215,12 @@ func TestLoadRejectsBadCast(t *testing.T) {
 "beats":[{"speaker":"zhaocai","start":0,"end":2}]}`, "zhaocai"},
 		{"view 未声明", `{"pack_dir":"cast","ground_y":0.78,
 "on_stage":[{"id":"heiwa","x":0.3,"pose":"idle","facing":"right","view":"back"}],"beats":[]}`, "back"},
+		{"beats 重叠", `{"pack_dir":"cast","ground_y":0.78,
+"on_stage":[{"id":"heiwa","x":0.3,"pose":"idle","facing":"right"}],
+"beats":[{"speaker":"heiwa","start":0,"end":3},{"speaker":"heiwa","start":2,"end":3.5}]}`, "重叠"},
+		{"beats 乱序", `{"pack_dir":"cast","ground_y":0.78,
+"on_stage":[{"id":"heiwa","x":0.3,"pose":"idle","facing":"right"}],
+"beats":[{"speaker":"heiwa","start":3,"end":3.5},{"speaker":"heiwa","start":0,"end":1}]}`, "递增"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
