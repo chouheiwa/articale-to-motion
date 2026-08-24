@@ -1,8 +1,12 @@
 package dialogue
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
+	"strings"
+
+	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 )
 
 // isFinite 检查浮点数是否有限（既不是 NaN 也不是 ±Inf）。
@@ -89,4 +93,45 @@ func Rebuild(plan Plan, measured []float64) (Result, error) {
 		cursor += duration + float64(segment.GapAfterMs)/1000
 	}
 	return result, nil
+}
+
+// WriteSRT 写出标准 SRT。
+//
+// 刻意不带说话人：SRT 没有说话人字段，塞前缀会进成片字幕，塞注释各家播放器
+// 行为不一。说话人映射走 dialogue.json。
+func WriteSRT(path string, lines []Line) error {
+	if len(lines) == 0 {
+		return fsutil.AtomicWrite(path, []byte{}, 0o644)
+	}
+
+	var builder strings.Builder
+	for i, line := range lines {
+		fmt.Fprintf(&builder, "%d\n%s --> %s\n%s\n",
+			line.SRTIndex, clock(line.StartSeconds), clock(line.EndSeconds), line.Text)
+		// 最后一行不加空行
+		if i < len(lines)-1 {
+			builder.WriteString("\n")
+		}
+	}
+	return fsutil.AtomicWrite(path, []byte(builder.String()), 0o644)
+}
+
+// clock 把秒转成 SRT 的 HH:MM:SS,mmm。四舍五入到毫秒，不截断：
+// 截断会让每一行都提前最多 1ms，累积起来是可见的字幕偏移。
+func clock(seconds float64) string {
+	total := int64(math.Round(seconds * 1000))
+	if total < 0 {
+		total = 0
+	}
+	ms := total % 1000
+	total /= 1000
+	return fmt.Sprintf("%02d:%02d:%02d,%03d", total/3600, total%3600/60, total%60, ms)
+}
+
+func (r Result) WriteJSON(path string) error {
+	body, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return err
+	}
+	return fsutil.AtomicWrite(path, append(body, '\n'), 0o644)
 }

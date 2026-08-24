@@ -2,6 +2,8 @@ package dialogue
 
 import (
 	"math"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -88,5 +90,67 @@ func TestRebuildRejects(t *testing.T) {
 				t.Errorf("错误 = %v，期望含 %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestWriteSRTFormat(t *testing.T) {
+	result, err := Rebuild(samplePlan(), []float64{4.32, 1.08})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "transcription-production.srt")
+	if err := WriteSRT(path, result.Lines); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "1\n00:00:00,000 --> 00:00:02,140\n第一句\n\n" +
+		"2\n00:00:02,140 --> 00:00:04,320\n第二句\n\n" +
+		"3\n00:00:04,420 --> 00:00:05,500\n等一下\n"
+	if string(body) != want {
+		t.Errorf("SRT =\n%q\n期望\n%q", body, want)
+	}
+}
+
+// SRT 里不得出现说话人：会进成片字幕。
+func TestWriteSRTHasNoSpeaker(t *testing.T) {
+	result, _ := Rebuild(samplePlan(), []float64{4.32, 1.08})
+	path := filepath.Join(t.TempDir(), "a.srt")
+	if err := WriteSRT(path, result.Lines); err != nil {
+		t.Fatal(err)
+	}
+	body, _ := os.ReadFile(path)
+	for _, speaker := range []string{"heiwa", "zhaocai"} {
+		if strings.Contains(string(body), speaker) {
+			t.Errorf("SRT 里出现了说话人 %s", speaker)
+		}
+	}
+}
+
+func TestResultWriteJSONOmitsText(t *testing.T) {
+	result, _ := Rebuild(samplePlan(), []float64{4.32, 1.08})
+	path := filepath.Join(t.TempDir(), "dialogue.json")
+	if err := result.WriteJSON(path); err != nil {
+		t.Fatal(err)
+	}
+	body, _ := os.ReadFile(path)
+	if strings.Contains(string(body), "第一句") {
+		t.Error("dialogue.json 不该带字幕正文，正文的真相是 SRT")
+	}
+	if !strings.Contains(string(body), `"speaker": "zhaocai"`) {
+		t.Errorf("dialogue.json 缺说话人：%s", body)
+	}
+}
+
+func TestWriteSRTEmptyLines(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "empty.srt")
+	if err := WriteSRT(path, []Line{}); err != nil {
+		t.Fatal(err)
+	}
+	body, _ := os.ReadFile(path)
+	if len(body) != 0 {
+		t.Errorf("空 lines 应该写出空文件，但得到 %q", body)
 	}
 }
