@@ -70,7 +70,7 @@ func TestRenderSVGReportsRendererFailure(t *testing.T) {
 
 func TestContactSheetRequiresImageMagick(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
-	if err := ContactSheet([]string{"a.png"}, "out.png", "405x540", "#D5DEEB"); err == nil {
+	if err := ContactSheet([]string{"a.png"}, "out.png", "405x540", "#D5DEEB", "4x1"); err == nil {
 		t.Fatal("缺少 magick 时应报错")
 	}
 }

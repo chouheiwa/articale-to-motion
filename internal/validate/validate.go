@@ -593,7 +593,7 @@ func RegenerateExamples(projectRoot string, output io.Writer) error {
 	contactPath := filepath.Join(outputDir, "contact-sheet.png")
 	const thumbnailWidthPx = 405
 	thumb := fmt.Sprintf("%dx%d", thumbnailWidthPx, thumbnailWidthPx*active.Canvas.HeightPx/active.Canvas.WidthPx)
-	if err := styleimage.ContactSheet(pngPaths, contactPath, thumb, colors["structure_line"].(string)); err != nil {
+	if err := styleimage.ContactSheet(pngPaths, contactPath, thumb, colors["structure_line"].(string), "4x1"); err != nil {
 		return err
 	}
 	fmt.Fprintf(output, "generated %s\n", filepath.ToSlash(filepath.Join("assets", "style-guide", "examples", "contact-sheet.png")))

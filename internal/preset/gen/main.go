@@ -192,7 +192,7 @@ func renderExamples(dir string, p preset.Preset, out io.Writer) error {
 		pngPaths = append(pngPaths, pngPath)
 	}
 	thumb := fmt.Sprintf("%dx%d", thumbnailWidthPx, thumbnailWidthPx*p.Canvas.HeightPx/p.Canvas.WidthPx)
-	if err := styleimage.ContactSheet(pngPaths, filepath.Join(examples, "contact-sheet.png"), thumb, "#D5DEEB"); err != nil {
+	if err := styleimage.ContactSheet(pngPaths, filepath.Join(examples, "contact-sheet.png"), thumb, "#D5DEEB", "4x1"); err != nil {
 		return err
 	}
 	fmt.Fprintln(out, "generated", filepath.ToSlash(filepath.Join("assets", "presets", p.ID, "assets", "style-guide", "examples", "contact-sheet.png")))

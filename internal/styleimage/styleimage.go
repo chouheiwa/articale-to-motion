@@ -34,13 +34,17 @@ func RenderSVG(svgPath, pngPath string) error {
 
 // ContactSheet 把若干张 PNG 拼成一张概览图。
 // 这一步的输入已经是位图，ImageMagick 的 montage 没有上面那个问题。
-func ContactSheet(pngPaths []string, outputPath, geometry, background string) error {
+//
+// tile 必须由调用方按图片数量算好传入（如 "4x1"、"4x3"）：montage 在图片数
+// 超过 tile 容量时不报错，而是静默产出 out-0.png、out-1.png 多个文件，
+// outputPath 那个路径根本不存在。这里不设默认值，逼调用方自己算。
+func ContactSheet(pngPaths []string, outputPath, geometry, background, tile string) error {
 	magick, err := exec.LookPath("magick")
 	if err != nil {
 		return fmt.Errorf("需要 ImageMagick 的 `magick` 命令")
 	}
 	args := append([]string{"montage"}, pngPaths...)
-	args = append(args, "-thumbnail", geometry, "-tile", "4x1", "-geometry", geometry+"+10+10",
+	args = append(args, "-thumbnail", geometry, "-tile", tile, "-geometry", geometry+"+10+10",
 		"-background", background, outputPath)
 	if out, err := exec.Command(magick, args...).CombinedOutput(); err != nil {
 		return fmt.Errorf("ImageMagick 生成 contact sheet 失败: %w: %s", err, strings.TrimSpace(string(out)))
