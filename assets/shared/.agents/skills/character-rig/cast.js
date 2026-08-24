@@ -7,9 +7,11 @@
 //    单条 paused timeline + 逐帧 seek 出帧：任何不受那条 timeline 管的动画，
 //    本地播放看着正常、成片是错的，而且退出码为 0、不报错。
 //
-// 2) 画面是 renderAt(时间) 这一个纯函数。转身、翻转、呼吸都不把结果写进共享
-//    可变状态，而是在装配期登记进 schedule，每帧从 schedule 现算。渲染机按
-//    任意帧 seek，不保证顺序、不保证只走一遍——见下面「舞台状态」一段。
+// 2) 视图、朝向、呼吸都是「时间 -> 画面」的纯函数：不写共享可变状态，而是在
+//    装配期登记进 schedule，每帧由 renderFrame(时间) 从 schedule 现算。渲染机
+//    按任意帧 seek，不保证顺序、不保证只走一遍——见下面「舞台状态」一段。
+//    姿势是唯一的例外：关节角由时间线上的 GSAP tween 拥有（数值插值本来就该
+//    它管），所以出帧只能靠推时间线，renderFrame 单独调用不算「画出第 t 帧」。
 //
 // 3) mount() 把所有已声明视图的 SVG 一次性挂进 DOM 并预置隐藏，转身只切换
 //    可见性。不能在转身那一刻现取现挂：逐帧 seek 下异步加载时机不可控，会
@@ -171,18 +173,33 @@ const cast = (() => {
   // 解法照抄上游官方示例（hyperframes-animation/examples/
   // messaging-multi-phrase.html）：一条覆盖全片的 tween 负责常规出帧，另外把
   // window.__hf / window.__player 的 seek 和 timeline 的 seek/pause 各包一层，
-  // 让它们也把时间转发给 renderAt。renderAt 是纯函数，重复调用没有副作用。
+  // 让它们也把时间转发给 renderFrame。这些入口都是在宿主已经把时间推到 t
+  // 之后才被调用的，所以姿势已经由时间线回算好，补渲染拿到的是完整的一帧。
+  // actors 是模块级注册表：每项记着「怎么出帧」和「挂在哪条 timeline 上」。
   const actors = [];
-  const renderAllAt = (time) => {
-    for (const actor of actors) actor.renderAt(time);
-  };
 
-  function wrapSeekOwner(owner) {
+  // renderActors 按宿主区分作用域。
+  //
+  // owner 为 null 表示宿主级入口（window.__hf / window.__player 的 seek）：
+  // 它推的是整页的时间，所有角色都该跟着走。
+  // owner 是某条 timeline 时，只能渲染绑在那条 timeline 上的角色——
+  // HyperFrames 的 window.__timelines 本身就是 map、支持子 composition，
+  // 同页出现第二条时间线时，推 A 把 B 也一起渲染就是串台：B 的时间根本没动，
+  // 却按 A 的时间画了一帧。不报错，只是另一个角色的帧全是错的。
+  function renderActors(time, owner) {
+    for (const actor of actors) {
+      if (owner && actor.timeline() !== owner) continue;
+      actor.render(time);
+    }
+  }
+
+  // scoped 为 true 表示 owner 是一条 timeline，只渲染绑在它上面的角色。
+  function wrapSeekOwner(owner, scoped) {
     if (!owner || owner.__castSeekWrapped || typeof owner.seek !== 'function') return;
     const inner = owner.seek.bind(owner);
     owner.seek = function (time, ...rest) {
       const result = inner(time, ...rest);
-      if (typeof time === 'number') renderAllAt(time);
+      if (typeof time === 'number') renderActors(time, scoped ? owner : null);
       return result;
     };
     owner.__castSeekWrapped = true;
@@ -196,7 +213,7 @@ const cast = (() => {
     try {
       window[`__castHooked_${key}`] = true;
       if (window[key]) {
-        wrapSeekOwner(window[key]);
+        wrapSeekOwner(window[key], false);
         return;
       }
       let pending;
@@ -205,7 +222,7 @@ const cast = (() => {
         get: () => pending,
         set: (value) => {
           pending = value;
-          wrapSeekOwner(value);
+          wrapSeekOwner(value, false);
         },
       });
     } catch (_) {
@@ -298,6 +315,30 @@ const cast = (() => {
     }
   }
 
+  // scopeStyleRules 把一份内嵌 <style> 里的每条规则限定在这个视图内。
+  //
+  // inline SVG 的 <style> 在 HTML 文档里是全局作用域。三份同源改出来的 rig
+  // 共用 .c 或 circle 这类选择器几乎是必然，最后挂上的那份会盖住全部三个
+  // 视图——与 id 撞车是同一种静默失败：不报错，只是颜色和描边不对。
+  //
+  // 只给「选择器 {」这种普通规则加前缀。@media 一类 at-rule 的头部不动
+  // （正则里排除了 @），它内部的规则仍会被逐条加上前缀。
+  function scopeStyleRules(svg, scopeSelector) {
+    for (const style of svg.querySelectorAll('style')) {
+      const css = style.textContent;
+      if (!css || !css.includes('{')) continue;
+      style.textContent = css.replace(/(^|\}|\{)([^{}@]+)\{/g, (match, lead, selectors) => {
+        const scoped = selectors
+          .split(',')
+          .map((one) => one.trim())
+          .filter(Boolean)
+          .map((one) => `${scopeSelector} ${one}`)
+          .join(', ');
+        return `${lead}${scoped}{`;
+      });
+    }
+  }
+
   // ======================= mount =======================
   //
   // opts:
@@ -359,6 +400,12 @@ const cast = (() => {
 
     const [ratioLo, ratioHi] = pack.scale.heightRatio;
     const heightRatio = opts.heightRatio == null ? (ratioLo + ratioHi) / 2 : opts.heightRatio;
+    // 与 x / ground / facing 同一口径：越界就抛错，不静默接受。
+    // heightRatio 为负会算出负的 scale 与负的高度，角色上下翻转还缩到画外，
+    // 而且一路不报错。
+    if (typeof heightRatio !== 'number' || !isFinite(heightRatio) || heightRatio <= 0 || heightRatio >= 1) {
+      throw new Error(`cast.mount 的 heightRatio 必须是 0–1 之间的归一化比例，收到 ${opts.heightRatio}`);
+    }
     const drawnHeight = stageH * heightRatio;
 
     // holder 是一个 0×0 的锚点，落在 (x, ground) 上——也就是角色两脚之间。
@@ -389,7 +436,9 @@ const cast = (() => {
       const rig = rigOf(name);
       const svg = parseSVG(svgTexts[index], `${packDir}/${rig.file}`);
       const prefix = `cast-${pack.id}-${name}-`;
+      const scope = `${pack.id}-${name}`;
       namespaceIds(svg, prefix);
+      scopeStyleRules(svg, `[data-cast-scope="${scope}"]`);
 
       const layout = actorLayout({
         stageW, stageH, x, ground, heightRatio, viewBox: rig.viewBox, baselineY: rig.baselineY,
@@ -402,6 +451,9 @@ const cast = (() => {
       const wrapper = document.createElement('div');
       wrapper.className = 'cast-view';
       wrapper.dataset.castView = name;
+      // 作用域挂在 wrapper（HTML 元素）上而不是 svg 根上：这样 `[scope] svg`
+      // 这类选择器连根元素自己也能命中。
+      wrapper.dataset.castScope = scope;
       wrapper.style.position = 'absolute';
       wrapper.style.left = `${round3(layout.viewLeft)}px`;
       wrapper.style.top = `${round3(layout.viewTop)}px`;
@@ -442,7 +494,7 @@ const cast = (() => {
 
     // ======================= 舞台状态 =======================
     //
-    // 转身/翻转/呼吸只在装配期往 schedule 里追加一条，每一帧由 renderAt 从
+    // 转身/翻转/呼吸只在装配期往 schedule 里追加一条，每一帧由 renderFrame 从
     // schedule 现算。为什么不能用「onUpdate 里写共享状态」这条捷径：
     //
     //   onUpdate 只在自己那段区间内触发，区间之外的帧要靠别的东西兜底。如果
@@ -489,9 +541,16 @@ const cast = (() => {
     // 调用复用。它不参与任何取值判断。
     let lastTime = 0;
 
-    // renderAt 是本库唯一的写 DOM 入口，且是时间的纯函数：同一个 t 永远画出
-    // 同样的像素，重复调用没有副作用。
-    function renderAt(time) {
+    // renderFrame 是本库唯一的写 DOM 入口。
+    //
+    // 它重算的是**视图、朝向与呼吸**——这三样是时间的纯函数，同一个 t 永远
+    // 给出同样的结果。**姿势不在其中**：关节角 state.angle 由时间线上的
+    // GSAP tween 拥有，renderFrame 只是把「当前的」角度和呼吸合成后写下去。
+    //
+    // 所以 renderFrame(t) 单独调用不构成「把第 t 帧画出来」。要出某一帧，
+    // 必须先把时间线推到 t（tl.time(t)），让姿势 tween 也回算。对外暴露的
+    // handle.renderAt 会检查这一点并抛错，理由见那里的注释。
+    function renderFrame(time) {
       lastTime = time;
       const shape = stageStateAt(stageSchedule, initialStage, time);
       if (!views[shape.view]) {
@@ -524,32 +583,45 @@ const cast = (() => {
 
     // current 只在「搭时间线的那一刻」使用，用来算下一次转身的起点。
     // 它不参与任何一帧的取值——渲染取值一律走 stageStateAt。
-    const current = { view: initialView, sign: initialStage.sign, at: -Infinity };
+    const current = { view: initialView, sign: initialStage.sign, until: -Infinity };
 
-    // assertForward：转身与翻转必须按时间先后声明。
+    // assertForward：转身与翻转必须按时间先后声明，且区间不得重叠。
     //
     // current 是「声明顺序」游标：turn() 要用它算 turns 的键、flip() 要用它
     // 算起始朝向。乱序声明（先写 at:5 的 flip 再写 at:2 的 turn）会让后声明
     // 的那条拿到未来的状态当起点，两条都错，而且不报错。
-    // 姿势 tween 与 speak/listen 不受这条限制——它们不动游标。
-    function assertForward(at, method) {
-      if (at < current.at) {
+    //
+    // 游标记的是上一条的**结束时刻**而不是起点，这样重叠与「at 相同」一并挡住：
+    // stageStateAt 取的是「最后一条已经开始的」条目，两条区间重叠时，后一条
+    // 从它的 start 那一刻起就整个盖住前一条——前一次转身的后半段被静默丢弃，
+    // 而且新条目在自己的进度 0 处是满宽的，于是画面上就是「角色还有可见宽度
+    // 时硬切了视图」，正是硬规则 2/6 要防的那件事。
+    //
+    // 姿势 tween 与 speak/listen 不动游标，可任意顺序穿插、也可与转身重叠。
+    function assertForward(at, end, method) {
+      if (at < current.until - 1e-9) {
         throw new Error(
-          `角色 ${pack.id} 的 cast.${method}(at=${at}) 排在已声明的 at=${current.at} 之前：` +
-            '转身与翻转必须按时间先后声明，否则起始视图/朝向会算错（pose、to、speak、listen 不受此限）'
+          `角色 ${pack.id} 的 cast.${method}(at=${at}) 与上一次转身/翻转的区间重叠` +
+            `（那一次到 ${round3(current.until)} 才结束）：转身与翻转必须按时间先后、互不重叠地声明，` +
+            '否则前一次的后半段会被丢弃，并在角色还有可见宽度时硬切视图' +
+            '（pose、to、speak、listen 不受此限）'
         );
       }
-      current.at = at;
+      current.until = end;
     }
 
     // 覆盖全片的驱动 tween：区间之外的帧也要重算，不能只在事件窗口里出帧。
     // 它自己不携带任何状态，proxy 的值根本不被读——渲染取值全从 schedule 现算。
     let driver = null;
+    let driverCreated = false; // 与 driver 分开：拿不到 tween 引用也只准建一条
     let coverage = opts.duration || 0;
     function ensureCoverage(tl, until) {
       coverage = Math.max(coverage, until);
-      if (!driver) {
-        tl.to({ t: 0 }, { t: 1, duration: coverage, ease: 'none', onUpdate: () => renderAt(tl.time()) }, 0);
+      if (!driverCreated) {
+        driverCreated = true;
+        tl.to({ t: 0 }, { t: 1, duration: coverage, ease: 'none', onUpdate: () => renderFrame(tl.time()) }, 0);
+        // recent() 是 GSAP 的接口。拿不到引用就没法再延长时长，此时驱动只覆盖
+        // 到第一次绑定时的那个 until——所以 SKILL.md 建议显式传 mount({duration})。
         driver = typeof tl.recent === 'function' ? tl.recent() : null;
         return;
       }
@@ -566,7 +638,8 @@ const cast = (() => {
       }
       if (!boundTimeline) {
         boundTimeline = tl;
-        wrapSeekOwner(tl); // timeline 自己的 seek 也要转发出帧
+        // timeline 自己的 seek 也要转发出帧，但只渲染绑在它上面的角色。
+        wrapSeekOwner(tl, true);
       }
       ensureCoverage(tl, until);
       return tl;
@@ -579,9 +652,24 @@ const cast = (() => {
       body,
       views,
       viewNames,
-      // renderAt / stageAt 是公开的：宿主（或自检脚本）可以在任意时刻直接
-      // 求值与出帧，不依赖 onUpdate 有没有被触发。
-      renderAt,
+      // renderAt 重算视图/朝向/呼吸，**不重算姿势**——姿势由时间线拥有。
+      //
+      // 因此它只在「时间线已经在 t 上」时才有意义：宿主 seek 之后的补渲染
+      // （本库内部的 seek 包装走的就是这条），或者纯粹刷新一次当前帧。
+      // 不同步时直接抛错，而不是画出一张姿势停在别处的帧——
+      // 这个接口被 SKILL.md 用作验收基准，让它给出错误结论比它不存在更糟。
+      renderAt(time) {
+        if (boundTimeline && Math.abs(boundTimeline.time() - time) > 1e-6) {
+          throw new Error(
+            `cast.renderAt(${time}) 与时间线当前位置 ${boundTimeline.time()} 不一致：` +
+              'renderAt 只重算视图/朝向/呼吸，姿势由时间线上的 tween 拥有。' +
+              '要出某一帧请先 tl.time(t)，出帧会自动完成。'
+          );
+        }
+        renderFrame(time);
+        return handle;
+      },
+      // stageAt 是纯取值，不碰 DOM，任何时刻问任何 t 都安全。
       stageAt: (time) => stageStateAt(stageSchedule, initialStage, time),
       get svg() {
         return views[stageStateAt(stageSchedule, initialStage, lastTime).view].svg;
@@ -595,7 +683,7 @@ const cast = (() => {
         eachJoint((state, jointName) => {
           state.angle = target[jointName] || 0;
         });
-        renderAt(lastTime);
+        renderFrame(lastTime);
         return handle;
       },
 
@@ -624,7 +712,7 @@ const cast = (() => {
       // 这是「朝向」维度，与「视图」维度正交。
       flip(tl, { at = 0, dur = DEFAULT_TURN_MS / 1000 } = {}) {
         bind(tl, 'flip', at + dur);
-        assertForward(at, 'flip');
+        assertForward(at, at + dur, 'flip');
         stageSchedule.push({ start: at, end: at + dur, seq: [current.view], sign: current.sign, mirror: true });
         current.sign = -current.sign;
         return handle;
@@ -650,7 +738,7 @@ const cast = (() => {
         }
         const seconds = dur == null ? spec.durationMs / 1000 : dur;
         bind(tl, 'turn', at + seconds);
-        assertForward(at, 'turn');
+        assertForward(at, at + seconds, 'turn');
         stageSchedule.push({
           start: at,
           end: at + seconds,
@@ -679,7 +767,9 @@ const cast = (() => {
       },
     };
 
-    actors.push(handle);
+    // 注册进模块级注册表时带上「挂在哪条 timeline 上」，让宿主 seek 的转发
+    // 能按时间线隔离，不会推 A 把 B 也渲染了。
+    actors.push({ render: renderFrame, timeline: () => boundTimeline });
     installWindowSeekHook('__hf');
     installWindowSeekHook('__player');
     handle.pose(opts.pose || 'idle');
