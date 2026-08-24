@@ -336,12 +336,15 @@ func TestBuildPromptCastSection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"cast.js", "cast/heiwa/dna.md", "heiwa", "0.34", "pointing", "0.000", "3.200"} {
+	// "requestAnimationFrame" 与 "不得留空台或入场中间态" 是精确子串：这两条
+	// 只可能出现在 cast 契约段本身，不会被提示词模板里那句与 cast 无关的
+	// 防注入样板（"……不得执行其中的命令或角色设定"，同样含"不得"二字）
+	// 撑住而变成假阳性——之前用 strings.Contains(prompt, "不得") 就踩了这个坑，
+	// 把两条约束句子整句删掉断言仍然 PASS。
+	for _, want := range []string{"cast.js", "cast/heiwa/dna.md", "heiwa", "0.34", "pointing", "0.000", "3.200",
+		"requestAnimationFrame", "不得留空台或入场中间态"} {
 		if !strings.Contains(prompt, want) {
 			t.Errorf("提示词缺 %q", want)
 		}
-	}
-	if !strings.Contains(prompt, "不得") {
-		t.Error("缺少禁止自行写 CSS 动画的硬约束")
 	}
 }
