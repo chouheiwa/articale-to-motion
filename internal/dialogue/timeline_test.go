@@ -72,6 +72,9 @@ func TestRebuildRejects(t *testing.T) {
 		{"段内有空洞", func(p *Plan) { p.Segments[0].Lines[1].StartSeconds = 3.0 }, []float64{4.32, 1.08}, "不连续"},
 		{"说话人为空", func(p *Plan) { p.Segments[1].Speaker = "" }, []float64{4.32, 1.08}, "说话人"},
 		{"间隔为负", func(p *Plan) { p.Segments[0].GapAfterMs = -5 }, []float64{4.32, 1.08}, "间隔"},
+		{"实测时长含 NaN", func(p *Plan) {}, []float64{math.NaN(), 1.08}, "无效"},
+		{"实测时长含 +Inf", func(p *Plan) {}, []float64{math.Inf(1), 1.08}, "无效"},
+		{"行的结束时间为 NaN", func(p *Plan) { p.Segments[0].Lines[1].EndSeconds = math.NaN() }, []float64{4.32, 1.08}, "无效"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

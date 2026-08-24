@@ -5,6 +5,9 @@ import (
 	"math"
 )
 
+// isFinite 检查浮点数是否有限（既不是 NaN 也不是 ±Inf）。
+func isFinite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
+
 // Rebuild 用实测时长把各段拼成全局时间轴。
 //
 // 段内行时间按 实测时长 / 声明时长 等比拉伸：TTS 声明的段内时间戳与实际
@@ -34,10 +37,16 @@ func Rebuild(plan Plan, measured []float64) (Result, error) {
 			return Result{}, fmt.Errorf("第 %d 段没有字幕行", i+1)
 		}
 		duration := measured[i]
+		if !isFinite(duration) {
+			return Result{}, fmt.Errorf("第 %d 段的实测时长无效：%v", i+1, duration)
+		}
 		if duration <= 0 {
 			return Result{}, fmt.Errorf("第 %d 段的实测时长无效：%v", i+1, duration)
 		}
 		declared := segment.Lines[len(segment.Lines)-1].EndSeconds
+		if !isFinite(declared) {
+			return Result{}, fmt.Errorf("第 %d 段声明的时长无效：%v", i+1, declared)
+		}
 		if declared <= 0 {
 			return Result{}, fmt.Errorf("第 %d 段声明的时长无效：%v", i+1, declared)
 		}
@@ -45,6 +54,12 @@ func Rebuild(plan Plan, measured []float64) (Result, error) {
 
 		previousEnd := 0.0
 		for j, line := range segment.Lines {
+			if !isFinite(line.StartSeconds) {
+				return Result{}, fmt.Errorf("第 %d 段第 %d 行的起始时间无效：%v", i+1, j+1, line.StartSeconds)
+			}
+			if !isFinite(line.EndSeconds) {
+				return Result{}, fmt.Errorf("第 %d 段第 %d 行的结束时间无效：%v", i+1, j+1, line.EndSeconds)
+			}
 			if line.EndSeconds <= line.StartSeconds {
 				return Result{}, fmt.Errorf("第 %d 段第 %d 行时间倒挂：[%v, %v]", i+1, j+1, line.StartSeconds, line.EndSeconds)
 			}
