@@ -5,6 +5,7 @@
 package cast
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,29 +28,29 @@ var idPattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 // 不做跨 provider 映射：MiniMax 的 speed/pitch 与百炼的 rate/instruction
 // 参数名和取值域都不同，硬映射必然错。各家的字段各自可空。
 type Voice struct {
-	VoiceID     string   `yaml:"voiceId"`
-	Speed       *float64 `yaml:"speed"`
-	Rate        *float64 `yaml:"rate"`
-	Pitch       *float64 `yaml:"pitch"`
-	Volume      *float64 `yaml:"volume"`
-	Instruction string   `yaml:"instruction"`
+	VoiceID     string   `yaml:"voiceId" json:"voiceId"`
+	Speed       *float64 `yaml:"speed" json:"speed"`
+	Rate        *float64 `yaml:"rate" json:"rate"`
+	Pitch       *float64 `yaml:"pitch" json:"pitch"`
+	Volume      *float64 `yaml:"volume" json:"volume"`
+	Instruction string   `yaml:"instruction" json:"instruction"`
 }
 
 // Joint 是一个可动关节。Pivot 用 viewBox 的 user unit 绝对坐标。
 type Joint struct {
-	Pivot  [2]float64 `yaml:"pivot"`
-	Rotate [2]float64 `yaml:"rotate"`
+	Pivot  [2]float64 `yaml:"pivot" json:"pivot"`
+	Rotate [2]float64 `yaml:"rotate" json:"rotate"`
 }
 
 type Rig struct {
-	File      string           `yaml:"file"`
-	ViewBox   [4]float64       `yaml:"viewBox"`
-	BaselineY float64          `yaml:"baselineY"`
-	Joints    map[string]Joint `yaml:"joints"`
+	File      string           `yaml:"file" json:"file"`
+	ViewBox   [4]float64       `yaml:"viewBox" json:"viewBox"`
+	BaselineY float64          `yaml:"baselineY" json:"baselineY"`
+	Joints    map[string]Joint `yaml:"joints" json:"joints"`
 }
 
 type Scale struct {
-	HeightRatio [2]float64 `yaml:"heightRatio"`
+	HeightRatio [2]float64 `yaml:"heightRatio" json:"heightRatio"`
 }
 
 // Pose 是关节名到角度的映射，缺省的关节取 0。
@@ -59,15 +60,15 @@ type Pose map[string]float64
 const IdlePose = "idle"
 
 type Pack struct {
-	Dir     string           `yaml:"-"`
-	Schema  string           `yaml:"schema"`
-	ID      string           `yaml:"id"`
-	Name    string           `yaml:"name"`
-	Summary string           `yaml:"summary"`
-	Voice   map[string]Voice `yaml:"voice"`
-	Rig     Rig              `yaml:"rig"`
-	Scale   Scale            `yaml:"scale"`
-	Poses   map[string]Pose  `yaml:"poses"`
+	Dir     string           `yaml:"-" json:"-"`
+	Schema  string           `yaml:"schema" json:"schema"`
+	ID      string           `yaml:"id" json:"id"`
+	Name    string           `yaml:"name" json:"name"`
+	Summary string           `yaml:"summary" json:"summary"`
+	Voice   map[string]Voice `yaml:"voice" json:"voice"`
+	Rig     Rig              `yaml:"rig" json:"rig"`
+	Scale   Scale            `yaml:"scale" json:"scale"`
+	Poses   map[string]Pose  `yaml:"poses" json:"poses"`
 }
 
 // ParsePack 只解析并校验 character.yaml 本身，不碰 rig.svg。
@@ -154,4 +155,25 @@ func Load(dir string) (Pack, error) {
 			pack.ID, pack.Rig.File, len(problems), strings.Join(problems, "\n  - "))
 	}
 	return pack, nil
+}
+
+// WriteJSON 把角色包序列化成 character.json，写进 dir。
+//
+// 驱动库 cast.js 要在浏览器里读角色包：渲染机是干净的无头 Chrome，CSP 下引不进
+// YAML 解析库，手写 YAML 子集解析器纯属埋雷。character.yaml 仍是人工编辑的
+// 唯一真相源，character.json 是每次校验（am cast new/add/validate）都重新
+// 生成的产物，用 JSON.parse 读。
+//
+// 直接 json.MarshalIndent 序列化 Pack 本身，不手工拼 JSON：以后 Pack 加字段，
+// JSON 自动跟上，不会有人忘记同步两处。Dir 字段带 json:"-"，它是本机绝对
+// 路径，不该进产物。
+func (p Pack) WriteJSON(dir string) error {
+	body, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		return fmt.Errorf("序列化角色包 %s 失败：%w", p.ID, err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "character.json"), body, 0o644); err != nil {
+		return fmt.Errorf("写出 character.json 失败：%w", err)
+	}
+	return nil
 }
