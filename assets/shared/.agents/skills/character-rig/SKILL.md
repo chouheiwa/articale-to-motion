@@ -143,9 +143,16 @@ heiwa.listen(tl, { from: 4.52, to: 5.60 });
 
 `mount` 是 `async` 的，**必须 await 完再建后面的 tween**；舞台元素必须已经有布局尺寸（`clientWidth/clientHeight` 非 0），否则会抛错而不是静默摆错位置。
 
-`x` / `ground` / `heightRatio` 超出 0–1、`facing` 不是 `'left'` / `'right'`、姿势或视图名没声明过
-——全部立刻抛错，不做静默 clamp 也不回退默认值。位置写错要在第一次跑的时候响，而不是等看成片时
-才发现角色贴在画边；`heightRatio` 为负更隐蔽，它会算出负的缩放，角色上下翻转还缩到画外。
+参数一律校验后再用，不做静默 clamp、也不回退默认值——位置写错要在第一次跑的时候响，而不是等看
+成片时才发现角色贴在画边（`heightRatio` 为负更隐蔽：它会算出负的缩放，角色上下翻转还缩到画外）。
+三个数值参数的区间不完全相同，因为含义不同：
+
+| 参数 | 合法区间 | 为什么 |
+|---|---|---|
+| `x` / `ground` | 闭区间 `[0, 1]` | 0 和 1 就是画面边缘，把角色贴边是合法构图 |
+| `heightRatio` | 开区间 `(0, 1)` | 与 `character.yaml` 的 `scale.heightRatio` 同口径（`am cast validate` 要求 `0 < lo < hi < 1`）；0 是没有高度，1 是顶天立地 |
+
+`facing` 不是 `'left'` / `'right'`、姿势或视图名没声明过，同样立刻抛错。
 
 ### 尺寸与站位怎么算的
 
@@ -260,8 +267,17 @@ cast.pure.pinchScaleAtPhase  // 压扁曲线等取值函数，可直接单独求
 - **多视图的 SVG id 撞车。** 三张 rig 往往是同一张图改出来的，渐变/遮罩/滤镜的 id 大概率重名；三份 SVG 同时在文档里时，`url(#grad)` 一律解析到文档中第一个匹配元素。`cast.js` 会在挂载时给每个视图的 id 加 `cast-<id>-<view>-` 前缀并同步改写引用——所以**不要用 `#j-head` 这类选择器从 CSS 或 JS 直接命中 rig 内部元素**，走 handle 提供的接口。
 - **rig.svg 里的 `<style>` 会泄漏到别的视图。** inline SVG 的 `<style>` 在 HTML 文档里是全局
   作用域，三份同源改出来的 rig 共用 `.c` 或 `circle` 这类选择器几乎是必然，最后挂上的那份会盖住
-  全部三个视图。`cast.js` 在挂载时给每条规则加上 `[data-cast-scope="<id>-<view>"]` 前缀来隔离，
-  但**别依赖它写出更绕的选择器**——rig 的样式越简单越好，能用属性就别用 `<style>`。
+  全部三个视图。`cast.js` 在挂载时给每条规则加上 `[data-cast-scope="<id>-<view>"]` 前缀来隔离。
+
+  这个改写是按「选择器 `{`」切分的正则，不是 CSS 解析器，所以 rig 的 `<style>` 里**不允许**两样
+  东西，遇到会直接抛错（而不是悄悄改坏）：
+
+  | 不允许 | 为什么 | 改成 |
+  |---|---|---|
+  | CSS 注释 `/* … */` | 注释里的花括号会被当成规则边界，整段样式报废 | 删掉 |
+  | 选择器里的引号，如 `[title="a,b"]` | 按逗号拆分选择器时会把引号里的逗号也拆开 | 用 class |
+
+  总之 rig 的样式越简单越好，能用属性（`fill="…"`）就别用 `<style>`。
 - **SVG 是 XML，属性必须带值。** `<text data-no-mirror>` 在 HTML 里合法，在 SVG 里是解析错误，
   `cast.js` 会直接抛「不是合法 SVG」。写成 `data-no-mirror="true"`。
 - **舞台没有定位上下文。** `cast.mount` 会在舞台是 `position: static` 时把它改成 `relative`；但如果舞台本身尺寸是 0（还没布局、或用了 `display: contents`），会直接抛错。

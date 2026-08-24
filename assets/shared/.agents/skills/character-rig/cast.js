@@ -186,10 +186,19 @@ const cast = (() => {
   // HyperFrames 的 window.__timelines 本身就是 map、支持子 composition，
   // 同页出现第二条时间线时，推 A 把 B 也一起渲染就是串台：B 的时间根本没动，
   // 却按 A 的时间画了一帧。不报错，只是另一个角色的帧全是错的。
+  //
+  // 出帧的时间**取角色自己那条 timeline 的 time()，不用 seek 的入参**。
+  // 入参是宿主的单位与坐标系，本库无从假设：宿主若按毫秒 seek
+  // （animejs 适配器就是毫秒口径），入参会比时间线的真实时间大三个数量级。
+  // 而这个包装跑在宿主自己的 seek 之后，是这一帧的最后一个写入者——用错了
+  // 单位就不是「偶尔错一帧」，而是每一帧都被覆盖成错的，角色全程冻在终态、
+  // 不报错。timeline 的 time() 是本库唯一认得的坐标系，schedule 里的时间也
+  // 都在这个坐标系里。
   function renderActors(time, owner) {
     for (const actor of actors) {
       if (owner && actor.timeline() !== owner) continue;
-      actor.render(time);
+      const timeline = actor.timeline();
+      actor.render(timeline ? timeline.time() : time);
     }
   }
 
@@ -323,11 +332,33 @@ const cast = (() => {
   //
   // 只给「选择器 {」这种普通规则加前缀。@media 一类 at-rule 的头部不动
   // （正则里排除了 @），它内部的规则仍会被逐条加上前缀。
-  function scopeStyleRules(svg, scopeSelector) {
+  //
+  // 这是按「选择器 {」切分的正则改写，不是 CSS 解析器，有两类输入会被它悄悄
+  // 改坏——都不是臆想出来的极端写法，而是随手就能写出的东西：
+  //
+  //   [title="a,b"]{…}     选择器按逗号拆分时，把引号里的逗号也当成了分隔符，
+  //                        产出 [title="a, [scope] b"]，规则从此不再命中；
+  //   /* { */ .a{fill:red} 注释里的花括号被当成规则边界，整段 CSS 报废。
+  //
+  // 与其改坏了不吭声，不如在这里拦住：rig 的样式本就该极简，改用 class、
+  // 删掉注释都是几秒钟的事，而静默失效的样式要到看成片时才发现。
+  function scopeStyleRules(svg, scopeSelector, label) {
     for (const style of svg.querySelectorAll('style')) {
       const css = style.textContent;
       if (!css || !css.includes('{')) continue;
+      if (css.includes('/*')) {
+        throw new Error(
+          `${label} 的 <style> 里有 CSS 注释：视图作用域改写按「选择器 {」切分，` +
+            '注释里的花括号会把规则切错、整段样式失效。请删掉 rig 样式里的注释。'
+        );
+      }
       style.textContent = css.replace(/(^|\}|\{)([^{}@]+)\{/g, (match, lead, selectors) => {
+        if (/["']/.test(selectors)) {
+          throw new Error(
+            `${label} 的 <style> 选择器 ${selectors.trim()} 里有引号：视图作用域改写会按逗号拆分选择器，` +
+              '引号里的内容会被一起改掉。请改用 class 选择器。'
+          );
+        }
         const scoped = selectors
           .split(',')
           .map((one) => one.trim())
@@ -438,7 +469,7 @@ const cast = (() => {
       const prefix = `cast-${pack.id}-${name}-`;
       const scope = `${pack.id}-${name}`;
       namespaceIds(svg, prefix);
-      scopeStyleRules(svg, `[data-cast-scope="${scope}"]`);
+      scopeStyleRules(svg, `[data-cast-scope="${scope}"]`, `${packDir}/${rig.file}`);
 
       const layout = actorLayout({
         stageW, stageH, x, ground, heightRatio, viewBox: rig.viewBox, baselineY: rig.baselineY,
@@ -660,10 +691,18 @@ const cast = (() => {
       // 这个接口被 SKILL.md 用作验收基准，让它给出错误结论比它不存在更糟。
       renderAt(time) {
         if (boundTimeline && Math.abs(boundTimeline.time() - time) > 1e-6) {
+          // 最常见的成因不是「调用者搞错了时间」，而是时间线根本到不了 t：
+          // GSAP 会把 time(t) 钳到 duration()，于是 t 超出时间线长度时，
+          // 位置永远对不上。这种情况下只报「位置不一致」会把人引向错误的方向，
+          // 所以先点名真实原因。
+          const beyond = time > boundTimeline.duration() + 1e-6;
           throw new Error(
-            `cast.renderAt(${time}) 与时间线当前位置 ${boundTimeline.time()} 不一致：` +
-              'renderAt 只重算视图/朝向/呼吸，姿势由时间线上的 tween 拥有。' +
-              '要出某一帧请先 tl.time(t)，出帧会自动完成。'
+            `cast.renderAt(${time}) 与时间线当前位置 ${round3(boundTimeline.time())} 不一致：` +
+              (beyond
+                ? `时间线总长只有 ${round3(boundTimeline.duration())} 秒，time(${time}) 被钳住了。` +
+                  '给 cast.mount({ duration: 镜头时长 }) 让驱动 tween 覆盖到片尾，或检查镜头内容是否真有这么长。'
+                : 'renderAt 只重算视图/朝向/呼吸，姿势由时间线上的 tween 拥有。' +
+                  '要出某一帧请先 tl.time(t)，出帧会自动完成。')
           );
         }
         renderFrame(time);
