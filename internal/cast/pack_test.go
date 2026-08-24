@@ -97,3 +97,34 @@ func TestVoiceForMissingProvider(t *testing.T) {
 		t.Fatalf("minimax 应该有音色：%v", err)
 	}
 }
+
+func TestLoadAggregatesRigProblems(t *testing.T) {
+	dir := writePack(t, goodYAML)
+	bad := strings.Replace(goodSVG, "</svg>", `<animate attributeName="opacity"/><script>1</script></svg>`, 1)
+	if err := os.WriteFile(filepath.Join(dir, "rig.svg"), []byte(bad), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Load(dir)
+	if err == nil {
+		t.Fatal("期望报错")
+	}
+	for _, want := range []string{"animate", "script"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("错误信息 = %v，期望含 %q（应一次列出全部问题）", err, want)
+		}
+	}
+}
+
+func TestLoadAcceptsGoodPack(t *testing.T) {
+	dir := writePack(t, goodYAML)
+	if err := os.WriteFile(filepath.Join(dir, "rig.svg"), []byte(goodSVG), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pack, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pack.ID != "heiwa" {
+		t.Errorf("id = %q", pack.ID)
+	}
+}

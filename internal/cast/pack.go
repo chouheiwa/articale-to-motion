@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -139,4 +140,18 @@ func (p Pack) VoiceFor(provider string) (Voice, error) {
 		return Voice{}, fmt.Errorf("角色 %s 的 %s 音色缺少 voiceId", p.ID, provider)
 	}
 	return voice, nil
+}
+
+// Load 解析角色包并校验 rig，是外部唯一该用的入口。
+func Load(dir string) (Pack, error) {
+	pack, err := ParsePack(dir)
+	if err != nil {
+		return Pack{}, err
+	}
+	problems := ValidateRig(filepath.Join(dir, pack.Rig.File), pack.Rig)
+	if len(problems) > 0 {
+		return Pack{}, fmt.Errorf("角色包 %s 的 %s 有 %d 处问题：\n  - %s",
+			pack.ID, pack.Rig.File, len(problems), strings.Join(problems, "\n  - "))
+	}
+	return pack, nil
 }
