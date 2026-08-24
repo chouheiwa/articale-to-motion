@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -190,5 +191,109 @@ func TestCastPreviewGeneratesContactSheet(t *testing.T) {
 	}
 	if !strings.Contains(out, "cast-preview") {
 		t.Errorf("输出应指出 contact sheet 路径，实际：%s", out)
+	}
+}
+
+// writeMultiViewCastPack 在 dir 下手写一个带 views/turns 的三视图角色包：
+// 默认视图 front，加 three-quarter、side 两个。三个 rig 文件内容相同，
+// 本测试只关心 CLI 输出是否逐视图报了路径，不关心 pivot 取值（那是
+// internal/cast 单测的职责）。
+func writeMultiViewCastPack(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	yamlBody := `schema: cast/v1
+id: heiwa
+name: 黑娃
+summary: 多视图预览的 CLI 测试夹具
+voice:
+  minimax: { voiceId: "v-1", speed: 0.98, pitch: 0 }
+rig:
+  file: rig.svg
+  viewBox: [0, 0, 400, 520]
+  baselineY: 512
+  joints:
+    head:     { pivot: [200, 168], rotate: [-18, 18] }
+    frontLeg: { pivot: [176, 330], rotate: [-40, 55] }
+scale:
+  heightRatio: [0.22, 0.32]
+poses:
+  idle: {}
+  pointing: { frontLeg: 48, head: -6 }
+views:
+  three-quarter:
+    file: rig-tq.svg
+    viewBox: [0, 0, 400, 520]
+    baselineY: 512
+    joints:
+      head:     { pivot: [186, 170], rotate: [-22, 22] }
+      frontLeg: { pivot: [168, 332], rotate: [-40, 55] }
+  side:
+    file: rig-side.svg
+    viewBox: [0, 0, 400, 520]
+    baselineY: 512
+    joints:
+      head:     { pivot: [172, 174], rotate: [-26, 26] }
+      frontLeg: { pivot: [160, 334], rotate: [-45, 60] }
+turns:
+  front->side: { via: [three-quarter], durationMs: 200 }
+`
+	if err := os.WriteFile(filepath.Join(dir, "character.yaml"), []byte(yamlBody), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520">
+  <g id="j-head"><circle cx="200" cy="168" r="60" fill="#fff" stroke="#000" stroke-width="6"/></g>
+  <g id="j-frontLeg"><path d="M176 330 L176 420" stroke="#000" stroke-width="6"/></g>
+</svg>`
+	for _, name := range []string{"rig.svg", "rig-tq.svg", "rig-side.svg"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(svg), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// TestCastPreviewPrintsEveryView 是修复轮 1 补的用例：am cast preview 的
+// 逐视图打印是多视图功能唯一的用户可见面，internal/cast 的单测再充分也
+// 盖不住"CLI 把三个视图的路径挤成一行""只打印了第一个视图""打印了但视图名
+// 丢了"这几种 CLI 层特有的坏法——它们都不影响 cast.Preview 本身的返回值，
+// 只会在 RunE 里把 map 拼接成字符串这一步出岔子。
+//
+// 断言故意做成"每个视图各占一行、且这一行同时含视图名与它自己的 contact
+// sheet 文件名"：把 newCastPreviewCommand 里的 RunE 改成只打印
+// viewNames[0] 那一个，或者把三行拼成一行输出，这个测试都必须挂掉。
+func TestCastPreviewPrintsEveryView(t *testing.T) {
+	if _, err := exec.LookPath("rsvg-convert"); err != nil {
+		t.Skip("需要 rsvg-convert，本机未安装")
+	}
+	if _, err := exec.LookPath("magick"); err != nil {
+		t.Skip("需要 ImageMagick 的 magick 命令，本机未安装")
+	}
+
+	root := t.TempDir()
+	writeMultiViewCastPack(t, filepath.Join(root, "cast", "heiwa"))
+
+	out, err := runCLI(t, root, "cast", "preview", filepath.Join("cast", "heiwa"))
+	if err != nil {
+		t.Fatalf("cast preview 失败：%v（%s）", err, out)
+	}
+
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("输出应恰好 3 行，每个视图一行，实际 %d 行：%q", len(lines), out)
+	}
+
+	for _, view := range []string{"front", "three-quarter", "side"} {
+		wantSheet := fmt.Sprintf("heiwa-%s-contact-sheet.png", view)
+		found := false
+		for _, line := range lines {
+			if strings.Contains(line, "视图 "+view+"）") && strings.Contains(line, wantSheet) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("输出缺视图 %s 对应的一行（应同时含视图名与 %q）：%s", view, wantSheet, out)
+		}
 	}
 }

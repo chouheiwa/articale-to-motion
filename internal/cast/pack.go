@@ -275,6 +275,17 @@ func (p Pack) VoiceFor(provider string) (Voice, error) {
 // 动画不代表另外两个也有问题。把问题按视图分组聚合进同一个错误里一次报出
 // 全部，而不是每个视图各自的错误信息里不点名是哪个视图——不然三个视图都
 // 报"rig 有问题"，人不知道该改哪个文件。
+//
+// 错误信息按"角色包 -> 视图 -> 具体问题"三层列出，每往下一层多缩进 4 个
+// 空格。bulletIndentN 把这层关系落成命名常量，而不是把 "\n  - "、
+// "\n      - " 这种缩进散落在两处字符串字面量里靠肉眼对齐——以后要加第四层
+// （比如按 SVG 元素再细分问题），照着加一个
+// bulletIndent4 = bulletIndent3 + "    " 就行，不用重新数空格核对两层是否对齐。
+const (
+	bulletIndent2 = "\n  - "     // 第二层：角色包下面按视图分组
+	bulletIndent3 = "\n      - " // 第三层：分组内的具体问题，比第二层多缩进 4 格
+)
+
 func Load(dir string) (Pack, error) {
 	pack, err := ParsePack(dir)
 	if err != nil {
@@ -290,12 +301,12 @@ func Load(dir string) (Pack, error) {
 		if len(problems) == 0 {
 			continue
 		}
-		groups = append(groups, fmt.Sprintf("视图 %s（%s）有 %d 处问题：\n      - %s",
-			viewName, rig.File, len(problems), strings.Join(problems, "\n      - ")))
+		groups = append(groups, fmt.Sprintf("视图 %s（%s）有 %d 处问题：%s%s",
+			viewName, rig.File, len(problems), bulletIndent3, strings.Join(problems, bulletIndent3)))
 	}
 	if len(groups) > 0 {
-		return Pack{}, fmt.Errorf("角色包 %s 的 rig 校验未通过：\n  - %s",
-			pack.ID, strings.Join(groups, "\n  - "))
+		return Pack{}, fmt.Errorf("角色包 %s 的 rig 校验未通过：%s%s",
+			pack.ID, bulletIndent2, strings.Join(groups, bulletIndent2))
 	}
 	return pack, nil
 }
