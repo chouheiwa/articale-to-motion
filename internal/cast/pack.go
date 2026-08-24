@@ -269,16 +269,33 @@ func (p Pack) VoiceFor(provider string) (Voice, error) {
 	return voice, nil
 }
 
-// Load 解析角色包并校验 rig，是外部唯一该用的入口。
+// Load 解析角色包并校验每一个视图的 rig，是外部唯一该用的入口。
+//
+// 逐视图校验、逐视图报错：三个视图的 rig 各自独立成图，一个视图混进自走
+// 动画不代表另外两个也有问题。把问题按视图分组聚合进同一个错误里一次报出
+// 全部，而不是每个视图各自的错误信息里不点名是哪个视图——不然三个视图都
+// 报"rig 有问题"，人不知道该改哪个文件。
 func Load(dir string) (Pack, error) {
 	pack, err := ParsePack(dir)
 	if err != nil {
 		return Pack{}, err
 	}
-	problems := ValidateRig(filepath.Join(dir, pack.Rig.File), pack.Rig)
-	if len(problems) > 0 {
-		return Pack{}, fmt.Errorf("角色包 %s 的 %s 有 %d 处问题：\n  - %s",
-			pack.ID, pack.Rig.File, len(problems), strings.Join(problems, "\n  - "))
+	var groups []string
+	for _, viewName := range pack.ViewNames() {
+		rig, err := pack.View(viewName)
+		if err != nil {
+			return Pack{}, err
+		}
+		problems := ValidateRig(filepath.Join(dir, rig.File), rig)
+		if len(problems) == 0 {
+			continue
+		}
+		groups = append(groups, fmt.Sprintf("视图 %s（%s）有 %d 处问题：\n      - %s",
+			viewName, rig.File, len(problems), strings.Join(problems, "\n      - ")))
+	}
+	if len(groups) > 0 {
+		return Pack{}, fmt.Errorf("角色包 %s 的 rig 校验未通过：\n  - %s",
+			pack.ID, strings.Join(groups, "\n  - "))
 	}
 	return pack, nil
 }

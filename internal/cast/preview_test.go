@@ -21,8 +21,24 @@ func loadedPack(t *testing.T) Pack {
 	return pack
 }
 
+func loadedMultiViewPack(t *testing.T) Pack {
+	t.Helper()
+	dir := writePack(t, viewsYAML)
+	// 本测试只关心 pivot 来自哪个视图的声明，三个 rig 文件内容相同即可。
+	for _, name := range []string{"rig.svg", "rig-tq.svg", "rig-side.svg"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(goodSVG), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pack, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pack
+}
+
 func TestPoseSVGAppliesRotationAtPivot(t *testing.T) {
-	body, err := PoseSVG(loadedPack(t), "pointing")
+	body, err := PoseSVG(loadedPack(t), DefaultView, "pointing")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +52,7 @@ func TestPoseSVGAppliesRotationAtPivot(t *testing.T) {
 }
 
 func TestPoseSVGIdleHasNoRotation(t *testing.T) {
-	body, err := PoseSVG(loadedPack(t), "idle")
+	body, err := PoseSVG(loadedPack(t), DefaultView, "idle")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,8 +62,42 @@ func TestPoseSVGIdleHasNoRotation(t *testing.T) {
 }
 
 func TestPoseSVGUnknownPose(t *testing.T) {
-	if _, err := PoseSVG(loadedPack(t), "flying"); err == nil || !strings.Contains(err.Error(), "flying") {
+	if _, err := PoseSVG(loadedPack(t), DefaultView, "flying"); err == nil || !strings.Contains(err.Error(), "flying") {
 		t.Fatalf("期望报未知姿势，得到 %v", err)
+	}
+}
+
+func TestPoseSVGUsesRequestedViewPivot(t *testing.T) {
+	pack := loadedMultiViewPack(t)
+	body, err := PoseSVG(pack, "side", "pointing")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// side 视图的 frontLeg pivot 是 [160, 334]，不是默认视图的 [176, 330]。
+	if !strings.Contains(body, "rotate(48 160 334)") {
+		t.Errorf("side 视图未使用自己的 pivot：%s", body)
+	}
+}
+
+func TestPreviewReturnsOneSheetPerView(t *testing.T) {
+	if _, err := exec.LookPath("rsvg-convert"); err != nil {
+		t.Skip("需要 rsvg-convert")
+	}
+	if _, err := exec.LookPath("magick"); err != nil {
+		t.Skip("需要 ImageMagick")
+	}
+	pack := loadedMultiViewPack(t)
+	sheets, err := Preview(pack, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sheets) != 3 {
+		t.Fatalf("contact sheet 数量 = %d，期望每个视图一张共 3 张", len(sheets))
+	}
+	for view, path := range sheets {
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("视图 %s 的 sheet 不存在：%v", view, err)
+		}
 	}
 }
 
@@ -84,9 +134,13 @@ func TestPreviewProducesContactSheetForManyPoses(t *testing.T) {
 		t.Fatalf("测试夹具姿势数应超过一行 4 张，实际 %d", len(pack.Poses))
 	}
 
-	sheet, err := Preview(pack, t.TempDir())
+	sheets, err := Preview(pack, t.TempDir())
 	if err != nil {
 		t.Fatalf("Preview: %v", err)
+	}
+	sheet, ok := sheets[DefaultView]
+	if !ok {
+		t.Fatalf("sheets 缺默认视图 %s：%+v", DefaultView, sheets)
 	}
 	if _, err := os.Stat(sheet); err != nil {
 		t.Fatalf("contact sheet 应存在于 %s：%v", sheet, err)
@@ -106,7 +160,7 @@ func TestPoseSVGInjectsRegardlessOfAttributeOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	body, err := PoseSVG(pack, "pointing")
+	body, err := PoseSVG(pack, DefaultView, "pointing")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +182,7 @@ func TestPoseSVGInjectsIntoSelfClosingJointGroup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	body, err := PoseSVG(pack, "pointing")
+	body, err := PoseSVG(pack, DefaultView, "pointing")
 	if err != nil {
 		t.Fatal(err)
 	}

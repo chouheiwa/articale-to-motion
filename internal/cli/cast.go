@@ -410,8 +410,9 @@ func newCastPreviewCommand(stdout io.Writer) *cobra.Command {
 		Use:   "preview PACK",
 		Args:  exactArgs(1, "PACK"),
 		Short: "把角色包的每个命名姿势渲成一张验收图",
-		Long: `cast.Load 校验 PACK 后，把它声明的每个姿势渲成 PNG 并拼成一张
-contact sheet，写到 production/cast-preview/，供人眼验收关节角度是否合理。
+		Long: `cast.Load 校验 PACK 后，为它的每一个视图各自把声明的每个姿势渲成 PNG
+并拼成一张 contact sheet，写到 production/cast-preview/，供人眼验收关节
+角度是否合理。角色包只有默认视图时只会生成一张。
 
 依赖 rsvg-convert（渲染单张姿势）和 ImageMagick 的 magick（拼图），
 两者缺一都会失败并说明缺的是哪个命令。`,
@@ -422,11 +423,18 @@ contact sheet，写到 production/cast-preview/，供人眼验收关节角度是
 				return err
 			}
 			outDir := filepath.Join("production", "cast-preview")
-			sheet, err := cast.Preview(pack, outDir)
+			sheets, err := cast.Preview(pack, outDir)
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(stdout, "预览图已生成：%s\n", sheet)
+			viewNames := make([]string, 0, len(sheets))
+			for viewName := range sheets {
+				viewNames = append(viewNames, viewName)
+			}
+			sort.Strings(viewNames)
+			for _, viewName := range viewNames {
+				fmt.Fprintf(stdout, "预览图已生成（视图 %s）：%s\n", viewName, sheets[viewName])
+			}
 			return nil
 		},
 	}

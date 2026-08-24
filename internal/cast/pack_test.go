@@ -221,6 +221,28 @@ func TestParsePackRejectsViewProblems(t *testing.T) {
 	}
 }
 
+func TestLoadValidatesEveryViewRig(t *testing.T) {
+	dir := writePack(t, viewsYAML)
+	// 默认视图与 three-quarter 都合规，side 的 rig 里塞一个自走动画。
+	write := func(name, body string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tq := strings.Replace(goodSVG, `id="j-tail"`, `id="j-unused"`, 1)
+	write("rig.svg", goodSVG)
+	write("rig-tq.svg", tq)
+	write("rig-side.svg", strings.Replace(goodSVG, "</svg>", `<animate attributeName="opacity"/></svg>`, 1))
+
+	_, err := Load(dir)
+	if err == nil {
+		t.Fatal("期望报错")
+	}
+	if !strings.Contains(err.Error(), "side") || !strings.Contains(err.Error(), "animate") {
+		t.Errorf("错误信息 = %v，期望同时点出视图名 side 与 animate", err)
+	}
+}
+
 func TestViewNamesDedupesDefaultView(t *testing.T) {
 	// 手工构造 Pack，绕过 ParsePack 的"views 不得声明 front"校验，模拟测试
 	// fixture 或其它调用方直接拼 Pack 的场景。ViewNames() 自己必须保证
