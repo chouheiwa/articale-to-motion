@@ -146,11 +146,11 @@ func TestResultWriteJSONOmitsText(t *testing.T) {
 
 func TestWriteSRTEmptyLines(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "empty.srt")
-	if err := WriteSRT(path, []Line{}); err != nil {
-		t.Fatal(err)
+	err := WriteSRT(path, []Line{})
+	if err == nil {
+		t.Fatal("空 lines 应该返回错误")
 	}
-	body, _ := os.ReadFile(path)
-	if len(body) != 0 {
-		t.Errorf("空 lines 应该写出空文件，但得到 %q", body)
+	if !strings.Contains(err.Error(), "没有任何字幕行") {
+		t.Errorf("错误信息 = %v，期望含 '没有任何字幕行'", err)
 	}
 }

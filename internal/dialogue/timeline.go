@@ -101,7 +101,7 @@ func Rebuild(plan Plan, measured []float64) (Result, error) {
 // 行为不一。说话人映射走 dialogue.json。
 func WriteSRT(path string, lines []Line) error {
 	if len(lines) == 0 {
-		return fsutil.AtomicWrite(path, []byte{}, 0o644)
+		return fmt.Errorf("没有任何字幕行")
 	}
 
 	var builder strings.Builder
@@ -128,10 +128,15 @@ func clock(seconds float64) string {
 	return fmt.Sprintf("%02d:%02d:%02d,%03d", total/3600, total%3600/60, total%60, ms)
 }
 
+// WriteJSON 写出 dialogue.json。
+//
+// JSON 里不带字幕正文（Text 字段）：字幕正文的唯一真相是 SRT 文件。Line 的 Text
+// 被标记为 json:"-"，序列化时自动忽略。JSON 里只有说话人、时间戳和 SRT 索引，
+// 便于外部系统进行说话人识别和时间同步。
 func (r Result) WriteJSON(path string) error {
 	body, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("序列化对话数据失败：%w", err)
 	}
 	return fsutil.AtomicWrite(path, append(body, '\n'), 0o644)
 }
