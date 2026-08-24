@@ -75,6 +75,15 @@ func Analyze(toolchain mediaprobe.Toolchain, inputs []Input, target Target) (Pla
 		plan.TotalSeconds += media.DurationSeconds
 		video := media.Video
 
+		// mediaprobe.Probe 现在也放行纯音频文件（Video 可以是 nil）：观察阶段
+		// 不再替判定阶段拦掉这种输入。母版拼接的输入本该都是有画面的镜头产物，
+		// 混进一个没有视频流的文件说明上游渲染出了错，这里按 Blocking 处理，
+		// 而不是对 nil 的 video 取字段导致 panic。
+		if video == nil {
+			plan.Blocking = append(plan.Blocking, fmt.Sprintf(
+				"%s 没有视频流，无法作为母版片段——请回镜头工程重渲染", input.ID))
+			continue
+		}
 		if video.WidthPx != target.WidthPx || video.HeightPx != target.HeightPx {
 			plan.Blocking = append(plan.Blocking, fmt.Sprintf(
 				"%s 分辨率是 %s，母版要求 %dx%d——缩放会损失画质，请回镜头工程按正确画幅重渲染",

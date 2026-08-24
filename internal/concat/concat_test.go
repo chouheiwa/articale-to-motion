@@ -261,3 +261,26 @@ func TestAnalyzeReportsEmptyInput(t *testing.T) {
 		t.Errorf("空输入应当报出阻断问题：%v", plan.Blocking)
 	}
 }
+
+// mediaprobe.Probe 放行纯音频文件后，Video 可能为 nil。混进拼接输入的纯音频文件
+// 说明上游镜头渲染出了错，这里要落成一条 Blocking 记录而不是对 nil 的 Video 取
+// 字段导致 panic。
+func TestAnalyzeReportsAudioOnlyClipAsBlocking(t *testing.T) {
+	tc := toolchain(t)
+	dir := t.TempDir()
+	ffmpeg, _ := exec.LookPath("ffmpeg")
+	path := filepath.Join(dir, "audio-only.wav")
+	cmd := exec.Command(ffmpeg, "-v", "error", "-y",
+		"-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+		path)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("生成素材失败：%v\n%s", err, output)
+	}
+	plan, err := Analyze(tc, []Input{{ID: "scene-001", Path: path}}, target())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Blocking) != 1 || !strings.Contains(plan.Blocking[0], "scene-001") || !strings.Contains(plan.Blocking[0], "没有视频流") {
+		t.Errorf("纯音频输入应当报出阻断问题并点名 ID：%v", plan.Blocking)
+	}
+}

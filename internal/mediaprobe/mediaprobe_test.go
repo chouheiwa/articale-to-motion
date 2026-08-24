@@ -564,6 +564,36 @@ func TestVerifyExactFramesOverridesContainerDeclaration(t *testing.T) {
 	}
 }
 
+// parse 放行纯音频文件后 media.Video 可能是 nil。ExactFrames 会调用 CountFrames
+// 再回填 media.Video.NBFrames——对纯音频文件必须整段跳过这一步，直接落到
+// Spec.Check 给出「文件没有视频流」这条问题，而不是对 nil 的 Video 取字段 panic。
+func TestVerifyExactFramesOnAudioOnlyFileDoesNotPanic(t *testing.T) {
+	tc := toolchain(t)
+	ffmpeg := ffmpegFor(t)
+	path := filepath.Join(t.TempDir(), "audio-only.wav")
+	cmd := exec.Command(ffmpeg, "-v", "error", "-y",
+		"-f", "lavfi", "-i", "sine=frequency=440:duration=1", path)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("生成素材失败：%v\n%s", err, output)
+	}
+	report, err := tc.Verify(path, VerifyOptions{ExactFrames: true})
+	if err != nil {
+		t.Fatalf("纯音频文件不该返回 error，应当体现在 Problems 里：%v", err)
+	}
+	if report.OK {
+		t.Error("没有视频流应当判定失败")
+	}
+	found := false
+	for _, problem := range report.Problems {
+		if strings.Contains(problem, "没有视频流") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("Problems 里应当含「没有视频流」，实际 %v", report.Problems)
+	}
+}
+
 func TestVerifyFrameZeroBlankIsAProblemButDarkIsOnlyAHint(t *testing.T) {
 	tc := toolchain(t)
 

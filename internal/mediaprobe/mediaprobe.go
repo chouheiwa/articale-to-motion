@@ -584,7 +584,10 @@ func (t Toolchain) Verify(path string, opts VerifyOptions) (Report, error) {
 	}
 	report := Report{SchemaVersion: ReportSchemaVersion, Path: path, Media: media}
 
-	if opts.ExactFrames {
+	// media.Video == nil 时（纯音频文件）跳过整个精确帧数统计：既没有视频流
+	// 可数，硬调用 CountFrames 也只会拿到「未能统计出帧数」这种无意义的错误，
+	// 不如直接放行到下面的 Spec.Check，由它给出「文件没有视频流」这条可读问题。
+	if opts.ExactFrames && media.Video != nil {
 		frames, err := t.CountFrames(path)
 		if err != nil {
 			return Report{}, err
