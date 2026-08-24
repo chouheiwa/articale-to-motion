@@ -118,7 +118,10 @@ func TestLoadRejectsTranscriptSymlinkOutsideScene(t *testing.T) {
 
 // testCastYAML / testCastSVG 是本文件专用的最小角色包 fixture。
 // internal/cast 测试里的 goodYAML/goodSVG 不导出，这里按同样的最小契约
-// 重写一份，避免跨包 export 测试常量。
+// 重写一份，避免跨包 export 测试常量。pointing 姿势是本任务
+// （task-13，BuildPrompt cast 契约段）新增：TestBuildPromptCastSection
+// 需要一个 idle 之外的姿势名，用来断言契约段确实带出了 actor.Pose。
+// 只追加姿势，不改动已有的 idle 那一行，不影响任何既有测试。
 const testCastYAML = `schema: cast/v1
 id: heiwa
 name: 黑娃
@@ -135,6 +138,7 @@ scale:
   heightRatio: [0.22, 0.32]
 poses:
   idle: {}
+  pointing: {}
 `
 
 const testCastSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520">
@@ -297,5 +301,47 @@ func TestBuildPromptRejectsStyleGuideWithoutCanvas(t *testing.T) {
 				t.Fatal("坏掉的视觉规范应报错，而不是回退默认画幅")
 			}
 		})
+	}
+}
+
+// task-13-brief.md 原文这里的 transcript 字段写的是 transcription.srt，
+// 与 TestLoadAcceptsSceneWithoutCast 处同样的笔误（见该测试注释与
+// task-12-report.md）：writeScene 固定只写出 transcript.srt。改成
+// transcript.srt 以复用已写好的文件，测试语义不变。
+func TestBuildPromptOmitsCastSectionWhenNil(t *testing.T) {
+	dir := writeScene(t, `{"id":"scene-001","duration_seconds":4,"output":"scene-001.mp4",
+"transcript":"transcript.srt","text":"一句话"}`)
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(prompt, "cast.js") {
+		t.Error("单口播镜头的提示词不该出现角色契约")
+	}
+}
+
+func TestBuildPromptCastSection(t *testing.T) {
+	dir := writeSceneWithCast(t, `{"pack_dir":"cast","ground_y":0.78,
+"on_stage":[{"id":"heiwa","x":0.34,"pose":"pointing","facing":"right"}],
+"beats":[{"speaker":"heiwa","start":0,"end":3.2}]}`)
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"cast.js", "cast/heiwa/dna.md", "heiwa", "0.34", "pointing", "0.000", "3.200"} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("提示词缺 %q", want)
+		}
+	}
+	if !strings.Contains(prompt, "不得") {
+		t.Error("缺少禁止自行写 CSS 动画的硬约束")
 	}
 }
