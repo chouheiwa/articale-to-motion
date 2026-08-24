@@ -312,8 +312,13 @@ func parse(body []byte, path string) (Media, error) {
 			}
 		}
 	}
-	if media.Video == nil {
-		return Media{}, fmt.Errorf("%s 没有视频流", path)
+	// Video 和 Audio 都为 nil 说明 ffprobe 没认出任何可用流（通常是探测了非
+	// 媒体文件），这种情况才报错。纯音频文件（如 dialogue 的 TTS 片段/静音/
+	// 拼接产物）没有视频流是合法形态，Video 保持 nil 交给调用方按需处理——
+	// Spec.Check 早就按这个约定写了（v == nil 时报「文件没有视频流」而不是
+	// panic），只是 parse 一直没跟上，把这条合法路径提前堵死了。
+	if media.Video == nil && media.Audio == nil {
+		return Media{}, fmt.Errorf("%s 没有可识别的音视频流", path)
 	}
 	return media, nil
 }

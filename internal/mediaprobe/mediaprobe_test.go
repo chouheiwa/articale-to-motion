@@ -92,11 +92,26 @@ func TestParseHandlesMissingOptionalFields(t *testing.T) {
 	}
 }
 
-func TestParseRejectsFileWithoutVideoStream(t *testing.T) {
+func TestParseAllowsAudioOnlyFile(t *testing.T) {
+	// 纯音频文件是合法形态：dialogue 包的 TTS 片段、静音、拼接产物都没有视频流。
 	body := `{"streams":[{"codec_type":"audio","codec_name":"aac","sample_rate":"48000","channels":2}],
 	"format":{"duration":"1.0"}}`
-	if _, err := parse([]byte(body), "x.m4a"); err == nil {
-		t.Error("没有视频流的文件应当报错")
+	media, err := parse([]byte(body), "x.m4a")
+	if err != nil {
+		t.Fatalf("纯音频文件不该报错：%v", err)
+	}
+	if media.Video != nil {
+		t.Errorf("没有视频流时 Video 应当是 nil，实际 %+v", media.Video)
+	}
+	if media.Audio == nil || media.Audio.SampleRate != 48000 || media.Audio.Channels != 2 {
+		t.Errorf("音频流解析错误：%+v", media.Audio)
+	}
+}
+
+func TestParseRejectsFileWithoutAnyStream(t *testing.T) {
+	body := `{"streams":[],"format":{"duration":"1.0"}}`
+	if _, err := parse([]byte(body), "x.bin"); err == nil {
+		t.Error("没有任何音视频流的文件应当报错")
 	}
 }
 
