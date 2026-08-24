@@ -83,6 +83,8 @@
 
 稿件未确认时，不生成整条正式配音。
 
+项目根存在 `cast.yaml` 时，本次是多角色叙事项目，必须同时遵守 `PROMPT-CAST-ADDENDUM.md`，其中的分段 TTS 与时间线装配规程覆盖本文件第三、四阶段的对应条款。
+
 ## 第三阶段：TTS 和断句校对
 
 TTS 工具由 `article-to-motion.conf`（或环境变量 `TTS_PROVIDER`）决定，可选 `minimax` 或 `bailian`。两条路径的凭据、命令和时间戳获取方式不同，但断句检查、审核关卡和产物要求完全一致。

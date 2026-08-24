@@ -36,6 +36,7 @@ func TestInitializeWritesReusableSkeleton(t *testing.T) {
 	}
 	for _, name := range []string{
 		"PROMPT.md", "PROMPT-PRODUCTION.md", "article-to-motion.conf", ".env.example",
+		"PROMPT-CAST-ADDENDUM.md",
 		"frame.md", "templates/publish.md",
 		"docs/清晰系统蓝图-视频风格说明书.md",
 		"assets/fonts/noto-sans-sc-400.woff2",

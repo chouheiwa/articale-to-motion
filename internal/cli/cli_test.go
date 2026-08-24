@@ -295,3 +295,40 @@ func TestInitRequiresExplicitCanvasWhenNotInteractive(t *testing.T) {
 		t.Errorf("错误信息应提示传 --canvas，实际：%s", out.String())
 	}
 }
+
+func TestInitNarrationSoloHasNoRoster(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "solo")
+	if _, err := runCLI(t, root, "init", target, "--canvas", "vertical-3x4"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(target, "cast.yaml")); !os.IsNotExist(err) {
+		t.Error("单口播项目不该有 cast.yaml")
+	}
+}
+
+func TestInitNarrationCastWritesRoster(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "story")
+	if _, err := runCLI(t, root, "init", target, "--canvas", "vertical-3x4", "--narration", "cast"); err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(filepath.Join(target, "cast.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), "schema: cast/v1") {
+		t.Errorf("cast.yaml = %s", body)
+	}
+	// 附录随 shared 树无条件下发，两种模式都在。
+	if _, err := os.Stat(filepath.Join(target, "PROMPT-CAST-ADDENDUM.md")); err != nil {
+		t.Errorf("缺附录：%v", err)
+	}
+}
+
+func TestInitRejectsUnknownNarration(t *testing.T) {
+	root := t.TempDir()
+	if _, err := runCLI(t, root, "init", filepath.Join(root, "x"), "--canvas", "vertical-3x4", "--narration", "duet"); err == nil {
+		t.Fatal("期望拒绝未知叙事模式")
+	}
+}

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -17,8 +18,10 @@ import (
 
 	assets "github.com/chouheiwa/articale-to-motion"
 	"github.com/chouheiwa/articale-to-motion/internal/archive"
+	"github.com/chouheiwa/articale-to-motion/internal/cast"
 	"github.com/chouheiwa/articale-to-motion/internal/config"
 	"github.com/chouheiwa/articale-to-motion/internal/envutil"
+	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 	"github.com/chouheiwa/articale-to-motion/internal/hyperframes"
 	"github.com/chouheiwa/articale-to-motion/internal/preset"
 	"github.com/chouheiwa/articale-to-motion/internal/project"
@@ -40,6 +43,57 @@ const Version = "1.0.0"
 //
 // 这里是唯一来源：命令行、错误信息与 --help 都从它取值，避免三处字面量各自漂移。
 const hyperframesVersion = "0.8.1"
+
+// narrationSolo、narrationCast 是 am init --narration 的两个合法取值。
+//
+// solo 是默认的单口播模式，不写任何 cast 相关文件；cast 是多角色对话模式，
+// 会额外写出 cast.yaml 与 cast/，见 writeCastScaffold。
+const (
+	narrationSolo = "solo"
+	narrationCast = "cast"
+)
+
+// castInitGroundY、castInitGapMs 是 am init --narration cast 写出的 cast.yaml
+// 里 defaults 的取值，与 am cast add 新建 cast.yaml 时的默认值（castDefaultGroundY、
+// castDefaultGapMs，见 cast.go）保持一致，避免同一套默认值在两处各自维护、悄悄漂移。
+func castInitYAML() string {
+	return fmt.Sprintf(`schema: %s
+packs: []
+defaults:
+  ground_y: %g
+  gap_ms: { turn: %d, interject: %d }
+`, cast.SchemaVersion, castDefaultGroundY, castDefaultGapMs.Turn, castDefaultGapMs.Interject)
+}
+
+// writeCastScaffold 在 target 下写出 cast.yaml 并建出空的 cast/ 目录。
+//
+// packs 刻意留空：am init 刚建出的项目本来就还没有引入任何角色包，班底为空
+// 由 internal/cast.LoadRoster（允许空 packs）和后续的项目级发布前校验负责
+// 报告，不在这里塞占位角色，也不在这里判空报错——那会让「init 就是要建一个
+// 还没有角色的项目」这个正常状态被误判成错误。
+//
+// 与 project.Initialize 的幂等语义保持一致：cast.yaml 已存在且内容相同就
+// 跳过，内容不同就报错，不做静默覆盖或合并。
+func writeCastScaffold(target string) error {
+	castDir := filepath.Join(target, "cast")
+	if err := os.MkdirAll(castDir, 0o755); err != nil {
+		return fmt.Errorf("创建 %s 目录失败：%w", cast.RosterFile, err)
+	}
+	rosterPath := filepath.Join(target, cast.RosterFile)
+	body := []byte(castInitYAML())
+	if existing, err := os.ReadFile(rosterPath); err == nil {
+		if !bytes.Equal(existing, body) {
+			return fmt.Errorf("目标文件已存在且内容不同：%s", rosterPath)
+		}
+		return nil
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("检查 %s 失败：%w", rosterPath, err)
+	}
+	if err := fsutil.AtomicWrite(rosterPath, body, 0o644); err != nil {
+		return fmt.Errorf("写入 %s 失败：%w", rosterPath, err)
+	}
+	return nil
+}
 
 func currentEnvironment() map[string]string {
 	return envutil.EnvMap()
@@ -136,6 +190,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 
 	var skipHyperframes bool
 	var canvasID string
+	var narration string
 	initCmd := &cobra.Command{
 		Use:   "init [DIR]",
 		Short: "初始化一个可复现的视频项目",
@@ -163,7 +218,14 @@ homedir，一台机器上只有一份技能，项目 A 固定 0.8.1、项目 B �
 谁后初始化谁说了算。装进项目还让项目自包含——整个目录拷到另一台机器就能渲染。
 安装全程不写用户 HOME：上游安装器在项目外的临时目录里运行，产物再搬进项目。
 
-上游技能与内置技能重名时保留内置版本并告警，不会覆盖本仓库 fork 过的技能。`,
+上游技能与内置技能重名时保留内置版本并告警，不会覆盖本仓库 fork 过的技能。
+
+叙事模式由 --narration 一次性选定，默认 solo（单口播）。传 cast 会额外在
+项目根写 cast.yaml 并建出空的 cast/ 目录，进入多角色对话叙事模式；此时
+production 阶段的 TTS 与时间线装配规程改为遵守随项目下发的
+PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 packs 为空
+列表，这是预期状态：项目在第一次 am cast add / am cast new 之前本来就还
+没有可用角色。`,
 		Example: `  # 交互选择画幅
   am init my-video
 
@@ -174,9 +236,15 @@ homedir，一台机器上只有一份技能，项目 A 固定 0.8.1、项目 B �
   am init my-video --canvas vertical-3x4 --skip-hyperframes
 
   # 在当前目录补齐缺失的骨架文件（幂等）
-  am init --canvas vertical-3x4`,
+  am init --canvas vertical-3x4
+
+  # 多角色对话叙事：额外写出 cast.yaml 与 cast/
+  am init my-story --canvas vertical-3x4 --narration cast`,
 		Args: maxArgs(1, "DIR"),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if narration != narrationSolo && narration != narrationCast {
+				return fmt.Errorf("无效的 --narration: %s（可选：%s %s）", narration, narrationSolo, narrationCast)
+			}
 			target := "."
 			if len(args) == 1 {
 				target = args[0]
@@ -197,6 +265,11 @@ homedir，一台机器上只有一份技能，项目 A 固定 0.8.1、项目 B �
 			result, err := project.Initialize(target, shared, presetFiles)
 			if err != nil {
 				return err
+			}
+			if narration == narrationCast {
+				if err := writeCastScaffold(target); err != nil {
+					return fmt.Errorf("项目文件已写入，但写出 %s 失败：%w", cast.RosterFile, err)
+				}
 			}
 			fmt.Fprintf(stdout, "项目已初始化：%s（画幅 %s，新增 %d，未变 %d）\n", target, chosen.Label, result.Created, result.Unchanged)
 			if skipHyperframes {
@@ -227,6 +300,8 @@ homedir，一台机器上只有一份技能，项目 A 固定 0.8.1、项目 B �
 	}
 	initCmd.Flags().BoolVar(&skipHyperframes, "skip-hyperframes", false, "跳过联网安装 HyperFrames 官方技能；不影响随二进制下发的内置技能树")
 	initCmd.Flags().StringVar(&canvasID, "canvas", "", "画幅预设："+strings.Join(preset.IDs(), " | ")+"；不传则在终端里交互选择")
+	initCmd.Flags().StringVar(&narration, "narration", narrationSolo,
+		"叙事模式："+narrationSolo+"（单口播，默认） | "+narrationCast+"（多角色对话，额外写出 cast.yaml 与 cast/）")
 	root.AddCommand(initCmd)
 
 	configCmd := &cobra.Command{
