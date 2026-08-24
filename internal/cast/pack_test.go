@@ -220,3 +220,18 @@ func TestParsePackRejectsViewProblems(t *testing.T) {
 		})
 	}
 }
+
+func TestViewNamesDedupesDefaultView(t *testing.T) {
+	// 手工构造 Pack，绕过 ParsePack 的"views 不得声明 front"校验，模拟测试
+	// fixture 或其它调用方直接拼 Pack 的场景。ViewNames() 自己必须保证
+	// 不重复，不能指望调用方先过一遍 ParsePack。
+	pack := Pack{
+		ID:    "heiwa",
+		Rig:   Rig{File: "rig.svg"},
+		Views: map[string]Rig{DefaultView: {File: "dup.svg"}},
+	}
+	names := pack.ViewNames()
+	if len(names) != 1 || names[0] != DefaultView {
+		t.Errorf("ViewNames() = %v，期望去重后只有 [%s]", names, DefaultView)
+	}
+}

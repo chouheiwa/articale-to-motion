@@ -139,8 +139,8 @@ func ParsePack(dir string) (Pack, error) {
 				return Pack{}, fmt.Errorf("角色包 %s 姿势 %s 引用了未声明的关节 %s", pack.ID, poseName, jointName)
 			}
 			if angle < joint.Rotate[0] || angle > joint.Rotate[1] {
-				return Pack{}, fmt.Errorf("角色包 %s 姿势 %s 的关节 %s 角度 %v 超出区间 %v",
-					pack.ID, poseName, jointName, angle, joint.Rotate)
+				return Pack{}, fmt.Errorf("角色包 %s 姿势 %s 的关节 %s 角度 %v 在视图 %s 里超出区间 %v",
+					pack.ID, poseName, jointName, angle, DefaultView, joint.Rotate)
 			}
 			// 姿势跨视图共享，但关节是每视图独立声明的：同一个姿势换个视图，
 			// 用到的关节必须在那个视图里也存在，且角度落在那个视图自己的
@@ -232,12 +232,26 @@ func (p Pack) View(name string) (Rig, error) {
 	return view, nil
 }
 
-// ViewNames 返回全部视图名（含默认视图），已排序，便于确定性遍历。
+// ViewNames 返回全部视图名（含默认视图），去重后排序，便于确定性遍历。
+//
+// 去重是这个方法契约的一部分，不外包给调用方保证：ParsePack 会挡掉 views
+// 里出现 DefaultView 的写法，但调用方也可能绕过 ParsePack 直接手工构造
+// Pack（测试 fixture 就很常见），这时 Views 仍可能意外带上 DefaultView。
+// 不去重的话，下游按 ViewNames() 逐视图渲染或校验时会悄悄把同一个视图
+// 处理两遍，且不报错。
 func (p Pack) ViewNames() []string {
+	seen := make(map[string]bool, len(p.Views)+1)
 	names := make([]string, 0, len(p.Views)+1)
-	names = append(names, DefaultView)
-	for name := range p.Views {
+	add := func(name string) {
+		if seen[name] {
+			return
+		}
+		seen[name] = true
 		names = append(names, name)
+	}
+	add(DefaultView)
+	for name := range p.Views {
+		add(name)
 	}
 	sort.Strings(names)
 	return names
