@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/chouheiwa/articale-to-motion/internal/cast"
+	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -35,7 +36,13 @@ rig.svg（骨架图）。项目根的 cast.yaml 登记了哪些角色包属于�
 每次 new / add / validate 成功后都会在角色包目录里重新生成 character.json：
 它是 character.yaml 的等价 JSON，供驱动库 cast.js 在无头 Chrome 里用
 JSON.parse 读取——渲染机的 CSP 环境下引不进 YAML 解析库。character.yaml
-仍是人工编辑的唯一真相源，character.json 只是产物，不要手改。`,
+仍是人工编辑的唯一真相源，character.json 只是产物，不要手改。
+
+⚠️ 手改 character.yaml 后不会自动同步：character.json 只在 new / add /
+validate 成功时重新生成，am 不会比较两者的修改时间。手改完 yaml 却忘记跑一次
+am cast validate，渲染机读到的仍是旧 json——不会报错、不会警告，成片里角色
+的音色、姿势、关节范围仍是改动前的值，问题只会在肉眼比对渲染结果时才会
+发现。改完 character.yaml，一律先跑 am cast validate 再渲染。`,
 	}
 	cmd.AddCommand(newCastNewCommand(stdout))
 	cmd.AddCommand(newCastAddCommand(stdout))
@@ -63,6 +70,16 @@ func newCastNewCommand(stdout io.Writer) *cobra.Command {
 	}
 }
 
+// cleanupAndFail 在失败路径上删除 dir 并返回 cause；删除本身失败时把两个
+// 错误一起报出来，而不是用 `_ = os.RemoveAll(dir)` 吞掉——静默吞掉清理失败
+// 会在项目里留下残骸（半成品角色包）且完全没有提示。
+func cleanupAndFail(dir string, cause error) error {
+	if removeErr := os.RemoveAll(dir); removeErr != nil {
+		return fmt.Errorf("%w；此外回滚清理 %s 也失败，需要手动删除：%v", cause, dir, removeErr)
+	}
+	return cause
+}
+
 func runCastNew(stdout io.Writer, id string) error {
 	dir := filepath.Join("cast", id)
 	if entries, err := os.ReadDir(dir); err == nil && len(entries) > 0 {
@@ -78,18 +95,15 @@ func runCastNew(stdout io.Writer, id string) error {
 	}
 	for name, body := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
-			_ = os.RemoveAll(dir)
-			return fmt.Errorf("写入 %s 失败：%w", name, err)
+			return cleanupAndFail(dir, fmt.Errorf("写入 %s 失败：%w", name, err))
 		}
 	}
 	pack, err := cast.Load(dir)
 	if err != nil {
-		_ = os.RemoveAll(dir)
-		return fmt.Errorf("生成的骨架未通过自检，已回滚：%w", err)
+		return cleanupAndFail(dir, fmt.Errorf("生成的骨架未通过自检，已回滚：%w", err))
 	}
 	if err := pack.WriteJSON(dir); err != nil {
-		_ = os.RemoveAll(dir)
-		return err
+		return cleanupAndFail(dir, err)
 	}
 	fmt.Fprintf(stdout, "角色包骨架已生成：%s\n", dir)
 	fmt.Fprintln(stdout, "请在 character.yaml 里填入真实 voiceId、summary，并按需要调整 rig.svg 后再交付。")
@@ -180,22 +194,18 @@ func runCastAdd(stdout io.Writer, source string) error {
 		return fmt.Errorf("角色 %s 已存在于 %s，请先移除或换一个 id", pack.ID, dest)
 	}
 	if err := copyTree(source, dest); err != nil {
-		_ = os.RemoveAll(dest)
-		return fmt.Errorf("拷贝角色包失败：%w", err)
+		return cleanupAndFail(dest, fmt.Errorf("拷贝角色包失败：%w", err))
 	}
 	copied, err := cast.Load(dest)
 	if err != nil {
-		_ = os.RemoveAll(dest)
-		return fmt.Errorf("拷贝后的角色包无法通过自检：%w", err)
+		return cleanupAndFail(dest, fmt.Errorf("拷贝后的角色包无法通过自检：%w", err))
 	}
 	if err := copied.WriteJSON(dest); err != nil {
-		_ = os.RemoveAll(dest)
-		return err
+		return cleanupAndFail(dest, err)
 	}
 	relPath := filepath.ToSlash(dest)
 	if err := registerCastPack(".", relPath); err != nil {
-		_ = os.RemoveAll(dest)
-		return fmt.Errorf("更新 %s 失败：%w", cast.RosterFile, err)
+		return cleanupAndFail(dest, fmt.Errorf("更新 %s 失败：%w", cast.RosterFile, err))
 	}
 	fmt.Fprintf(stdout, "角色包已引入：%s（id=%s），并已登记进 %s\n", dest, pack.ID, cast.RosterFile)
 	return nil
@@ -231,10 +241,11 @@ func copyTree(src, dst string) error {
 		if err != nil {
 			return fmt.Errorf("读取 %s 失败：%w", path, err)
 		}
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-			return err
-		}
-		return os.WriteFile(target, body, 0o644)
+		// 复用 fsutil.AtomicWrite：先写临时文件再 rename，建目录也是它内部做的。
+		// 裸 os.WriteFile 不是原子的——进程被杀这类不走 error 返回路径的场景
+		// 会在 cast/<id>/ 下留半截文件，而 runCastAdd 的回滚逻辑只在 error
+		// 路径上触发，兜不住这种情况。
+		return fsutil.AtomicWrite(target, body, 0o644)
 	})
 }
 
@@ -285,7 +296,11 @@ func newCastValidateCommand(stdout io.Writer) *cobra.Command {
 cast.yaml 无关。
 
 任一角色包校验失败就返回非零退出码；问题按包分组打印，一次看到全部，不是
-修一个报一个。`,
+修一个报一个。
+
+校验通过顺带重新生成 character.json（渲染机实际读取的格式）。手改
+character.yaml 后如果没跑这条命令，character.json 就是旧的且不会有任何
+报错或警告——渲染机会静默用回旧值。改完 yaml，渲染前一律先跑一次。`,
 		Example: `  am cast validate
   am cast validate cast/heiwa cast/xiaoming`,
 		RunE: func(cmd *cobra.Command, args []string) error {
