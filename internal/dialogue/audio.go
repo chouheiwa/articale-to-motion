@@ -79,14 +79,38 @@ func (r Runner) Silence(ctx context.Context, dest string, ms int) error {
 }
 
 // Concat 按顺序拼接已规范化的片段，全程 -c copy。
+//
+// 契约：全部输入必须已经是 Normalize/Silence 产出的统一格式——48000Hz、单
+// 声道、pcm_s16le。Concat 自己不转码，格式不一致时 concat demuxer 不会报
+// 错，只会静默产出时长不可预期的结果（用哪个片段的采样率/声道数取决于
+// ffmpeg 内部实现细节，调用方看不出来），那正是漂移断言要拦的东西。所以
+// Concat 在拼接前会对每个输入探测一次格式，不满足直接返回中文错误并点名
+// 具体文件，而不是把这条前提留给调用方自己遵守的约定。
 func (r Runner) Concat(ctx context.Context, paths []string, dest string) error {
 	if len(paths) == 0 {
 		return fmt.Errorf("没有可拼接的音频片段")
 	}
+	for _, path := range paths {
+		if err := r.checkFormat(path); err != nil {
+			return err
+		}
+	}
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
-	listPath := filepath.Join(filepath.Dir(dest), ".am-dialogue-list.txt")
+	// 用 CreateTemp 拿一个进程内唯一的清单文件名：固定文件名在同一目录并发跑
+	// 多个 Concat 时会互相覆盖对方还没读完的清单。
+	listFile, err := os.CreateTemp(filepath.Dir(dest), ".am-dialogue-list-*.txt")
+	if err != nil {
+		return err
+	}
+	listPath := listFile.Name()
+	if err := listFile.Close(); err != nil {
+		os.Remove(listPath)
+		return err
+	}
+	defer os.Remove(listPath)
+
 	var list strings.Builder
 	for _, path := range paths {
 		absolute, err := filepath.Abs(path)
@@ -99,9 +123,33 @@ func (r Runner) Concat(ctx context.Context, paths []string, dest string) error {
 	if err := fsutil.AtomicWrite(listPath, []byte(list.String()), 0o644); err != nil {
 		return err
 	}
-	defer os.Remove(listPath)
 	return r.run(ctx, "拼接音频", "-v", "error", "-y",
 		"-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", dest)
+}
+
+// checkFormat 校验 path 是否符合 Normalize/Silence 产出的统一格式。
+// 保证「参与拼接的片段格式一致」这条前提本身不能只靠约定，得有代码守着。
+func (r Runner) checkFormat(path string) error {
+	media, err := r.toolchain.Probe(path)
+	if err != nil {
+		return err
+	}
+	if media.Audio == nil {
+		return fmt.Errorf("%s 没有音轨，无法参与拼接", path)
+	}
+	if media.Audio.SampleRate != sampleRate {
+		return fmt.Errorf("%s 采样率是 %dHz，拼接要求 %dHz：请先用 Normalize 统一格式",
+			path, media.Audio.SampleRate, sampleRate)
+	}
+	if media.Audio.Channels != channels {
+		return fmt.Errorf("%s 声道数是 %d，拼接要求 %d：请先用 Normalize 统一格式",
+			path, media.Audio.Channels, channels)
+	}
+	if !strings.EqualFold(media.Audio.Codec, codec) {
+		return fmt.Errorf("%s 音频编码是 %s，拼接要求 %s：请先用 Normalize 统一格式",
+			path, media.Audio.Codec, codec)
+	}
+	return nil
 }
 
 func firstLine(value string) string {

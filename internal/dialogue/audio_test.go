@@ -5,6 +5,7 @@ import (
 	"math"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/chouheiwa/articale-to-motion/internal/envutil"
@@ -103,5 +104,23 @@ func TestConcatDurationIsSumOfParts(t *testing.T) {
 	}
 	if math.Abs(media.DurationSeconds-1.7) > 0.005 {
 		t.Errorf("拼接总时长 = %v，期望 1.7", media.DurationSeconds)
+	}
+}
+// Concat 假定输入已经统一格式，自己不转码；格式不一致时 concat demuxer 不会
+// 报错，只会静默拼出错误的时长。这里故意跳过 Normalize，直接把两段规格不符
+// 目标格式（48000Hz/单声道）的源文件交给 Concat，断言拿到的是错误而不是一个
+// 时长不对的产物，并且错误信息能定位到具体文件。
+func TestConcatRejectsMismatchedFormat(t *testing.T) {
+	runner, _ := newTestRunner(t)
+	dir := t.TempDir()
+	a := tone(t, dir, "a.wav", 1.0)
+	b := tone(t, dir, "b.wav", 1.0)
+	out := filepath.Join(dir, "voice.wav")
+	err := runner.Concat(context.Background(), []string{a, b}, out)
+	if err == nil {
+		t.Fatal("格式不一致应当报错，而不是静默拼接出错误时长")
+	}
+	if !strings.Contains(err.Error(), a) {
+		t.Errorf("错误信息应当点名具体文件 %s：%v", a, err)
 	}
 }
