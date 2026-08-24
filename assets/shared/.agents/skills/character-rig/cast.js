@@ -7,9 +7,9 @@
 //    单条 paused timeline + 逐帧 seek 出帧：任何不受那条 timeline 管的动画，
 //    本地播放看着正常、成片是错的，而且退出码为 0、不报错。
 //
-// 2) 每个 onUpdate 只是「当前进度 -> 画面」的纯函数。不翻标志位、不做累积、
-//    不读上一帧。渲染机按任意帧 seek，不保证顺序、不保证只走一遍——靠
-//    「播过去了所以状态变了」的实现会给出乱掉的帧，而本地预览完全正常。
+// 2) 画面是 renderAt(时间) 这一个纯函数。转身、翻转、呼吸都不把结果写进共享
+//    可变状态，而是在装配期登记进 schedule，每帧从 schedule 现算。渲染机按
+//    任意帧 seek，不保证顺序、不保证只走一遍——见下面「舞台状态」一段。
 //
 // 3) mount() 把所有已声明视图的 SVG 一次性挂进 DOM 并预置隐藏，转身只切换
 //    可见性。不能在转身那一刻现取现挂：逐帧 seek 下异步加载时机不可控，会
@@ -35,21 +35,199 @@ const cast = (() => {
   const BREATH_RAMP = 0.12; // 进出场淡入淡出占比，保证区间两端幅度归零
   const BREATH_DEGREES = { head: 1.8, tail: 6.0, fallback: 1.0 };
   const BREATH_BOB_RATIO = 0.006; // 身体上下起伏，占角色绘制高度的比例
+  // 呼吸挑关节靠名字：角色包若把头关节叫 noggin 一类，会走 fallback 兜底
+  // （幅度更小的第一个关节）。SKILL.md 里写明了对关节命名的期望。
   const HEAD_JOINTS = /head|neck/i;
   const TAIL_JOINTS = /tail/i;
 
   const clamp = (value, lo, hi) => Math.min(hi, Math.max(lo, value));
   const round3 = (value) => Math.round(value * 1000) / 1000;
 
-  // requireTimeline 把「忘了传 timeline」变成一个响亮的错误。
-  // 这类错误如果放过去，动画要么完全不动、要么用别的机制跑起来，而成片错、
-  // 退出码 0 是这个项目最贵的失败模式。
+  // ======================= 纯函数区 =======================
+  //
+  // 这几个函数刻意提到模块作用域并通过 cast.pure 导出：它们是本库全部时间
+  // 相关取值的定义，而这个项目没有前端测试基建，静态审查与 node -e 断言是
+  // 唯一防线。放在 mount() 闭包里就没人能从外面对它们求值。
+
+  // pinchScaleAtPhase：转身的压扁量。phase 走 [0, segments]，零点落在半整数处。
+  const pinchScaleAtPhase = (phase) => Math.abs(Math.cos(Math.PI * phase));
+
+  // viewIndexAtPhase：转身走到 phase 时该显示第几个视图。
+  //
+  // round 让切换点正好落在 pinchScaleAtPhase 的零点上。两者必须共用同一个
+  // phase：错开一点点就会在角色还有可见宽度时换图，肉眼是「闪了一下换了张
+  // 图」而不是转身。
+  const viewIndexAtPhase = (phase, viewCount) => clamp(Math.round(phase), 0, viewCount - 1);
+
+  // mirrorScaleAtProgress：镜像翻转的 scaleX 系数，连续从 +1 走到 -1。
+  const mirrorScaleAtProgress = (local) => Math.cos(Math.PI * local);
+
+  // breathEnvelope：呼吸的进出场包络，区间两端为 0，中间为 1。
+  // 两端归零是为了 seek 出区间时呼吸干净地消失，不留残留角度。
+  const breathEnvelope = (local, ramp = BREATH_RAMP) => clamp(Math.min(local, 1 - local) / ramp, 0, 1);
+
+  // actorLayout：角色在舞台上的像素几何。
+  // 高度取 heightRatio × 舞台高度，左右中线对齐 x，脚底 baselineY 对齐 ground。
+  function actorLayout({ stageW, stageH, x, ground, heightRatio, viewBox, baselineY }) {
+    const [, vbY, vbW, vbH] = viewBox;
+    const drawnHeight = stageH * heightRatio;
+    const scale = drawnHeight / vbH;
+    return {
+      scale,
+      anchorLeft: stageW * x,
+      anchorTop: stageH * ground,
+      width: vbW * scale,
+      height: drawnHeight,
+      viewLeft: -(vbW * scale) / 2,
+      viewTop: -(baselineY - vbY) * scale,
+    };
+  }
+
+  // stageStateAt：某一时刻角色的视图与 scaleX，是 schedule 的纯函数。
+  //
+  // schedule 的每一条形如 { start, end, seq, sign, mirror }，按时间首尾相接：
+  // 每条的起始态等于上一条的结束态（装配期保证，见 assertForward）。所以只要
+  // 取「最后一条已经开始的」就够，不需要从头累积。
+  function stageStateAt(schedule, initial, time) {
+    let entry = null;
+    for (const candidate of schedule) {
+      if (candidate.start <= time && (!entry || candidate.start >= entry.start)) entry = candidate;
+    }
+    if (!entry) return initial;
+    const endSign = entry.mirror ? -entry.sign : entry.sign;
+    if (time >= entry.end) return { view: entry.seq[entry.seq.length - 1], sign: endSign };
+    const local = (time - entry.start) / (entry.end - entry.start);
+    if (entry.mirror) {
+      return { view: entry.seq[0], sign: entry.sign * mirrorScaleAtProgress(local) };
+    }
+    // 一次视图切换配一次压扁，N 个视图的路径压 N-1 次。这不是可调的节奏参数，
+    // 而是这套做法的定义：via 声明的中间视图必须在两次压扁之间真的被看见，
+    // 否则声明它就没有意义。想让每次压扁更从容，加长 durationMs。
+    const segments = Math.max(1, entry.seq.length - 1);
+    const phase = local * segments;
+    return {
+      view: entry.seq[viewIndexAtPhase(phase, entry.seq.length)],
+      sign: entry.sign * pinchScaleAtPhase(phase),
+    };
+  }
+
+  // breathStateAt：某一时刻的呼吸叠加量（每个关节的角度增量 + 身体起伏像素）。
+  // 区间之外一律返回 0。
+  function breathStateAt(schedule, targets, time, bobAmplitude) {
+    const value = { bobY: 0, joints: {} };
+    let entry = null;
+    for (const candidate of schedule) {
+      if (candidate.start <= time && time < candidate.end && (!entry || candidate.start >= entry.start)) {
+        entry = candidate;
+      }
+    }
+    if (!entry) return value;
+    const local = (time - entry.start) / (entry.end - entry.start);
+    const envelope = breathEnvelope(local);
+    const elapsed = time - entry.start;
+    for (const target of targets) {
+      value.joints[target.name] =
+        Math.sin(2 * Math.PI * (elapsed / target.period + target.phase)) *
+        target.degrees * entry.intensity * envelope;
+    }
+    value.bobY = Math.sin(2 * Math.PI * (elapsed / BREATH_PERIOD + 0.5)) * bobAmplitude * entry.intensity * envelope;
+    return value;
+  }
+
+  // breathTargetsFor：呼吸挑哪些关节、各自多大幅度。
+  //
+  // 刻意不做口型音素同步——这个画风是面无表情的简笔画，加嘴型会毁掉它；
+  // 「在说话」由头部起伏、呼吸和尾巴表达，speak 与 listen 的差别只是幅度。
+  function breathTargetsFor(jointNames) {
+    const names = [...jointNames].sort();
+    const targets = [];
+    names.filter((n) => HEAD_JOINTS.test(n)).forEach((name, i) => {
+      targets.push({ name, degrees: BREATH_DEGREES.head, period: BREATH_PERIOD, phase: i * 0.13 });
+    });
+    names.filter((n) => TAIL_JOINTS.test(n)).forEach((name, i) => {
+      targets.push({
+        name,
+        degrees: BREATH_DEGREES.tail,
+        period: BREATH_PERIOD * BREATH_TAIL_PERIOD_FACTOR,
+        phase: 0.25 + i * 0.13,
+      });
+    });
+    if (targets.length === 0 && names.length > 0) {
+      targets.push({ name: names[0], degrees: BREATH_DEGREES.fallback, period: BREATH_PERIOD, phase: 0 });
+    }
+    return targets;
+  }
+
+  // ======================= 渲染机的 seek 也要能出帧 =======================
+  //
+  // 实测 GSAP 3.15：tl.seek(t) 的 suppressEvents 默认是 true，onUpdate 完全
+  // 不触发；tl.time(t) / tl.progress(p) 才触发。而 HyperFrames 的采样脚本
+  // （hyperframes-animation/scripts/animation-map-sampling.mjs）走的正是
+  // window.__hf.seek(time) / timeline.seek(time) 的默认参数这条路。
+  //
+  // 只把渲染挂在 onUpdate 上，遇到这条路径角色会从头到尾定格在 mount 姿势，
+  // 退出码 0、不报错——本项目最贵的那种失败。
+  //
+  // 解法照抄上游官方示例（hyperframes-animation/examples/
+  // messaging-multi-phrase.html）：一条覆盖全片的 tween 负责常规出帧，另外把
+  // window.__hf / window.__player 的 seek 和 timeline 的 seek/pause 各包一层，
+  // 让它们也把时间转发给 renderAt。renderAt 是纯函数，重复调用没有副作用。
+  const actors = [];
+  const renderAllAt = (time) => {
+    for (const actor of actors) actor.renderAt(time);
+  };
+
+  function wrapSeekOwner(owner) {
+    if (!owner || owner.__castSeekWrapped || typeof owner.seek !== 'function') return;
+    const inner = owner.seek.bind(owner);
+    owner.seek = function (time, ...rest) {
+      const result = inner(time, ...rest);
+      if (typeof time === 'number') renderAllAt(time);
+      return result;
+    };
+    owner.__castSeekWrapped = true;
+  }
+
+  // installWindowSeekHook：宿主对象可能在 cast.js 之后才被赋值，所以用
+  // defineProperty 等它出现。装不上（属性不可配置）就静默放过——覆盖全片的
+  // 那条 tween 仍然工作，这里只是额外一层保险。
+  function installWindowSeekHook(key) {
+    if (typeof window === 'undefined' || window[`__castHooked_${key}`]) return;
+    try {
+      window[`__castHooked_${key}`] = true;
+      if (window[key]) {
+        wrapSeekOwner(window[key]);
+        return;
+      }
+      let pending;
+      Object.defineProperty(window, key, {
+        configurable: true,
+        get: () => pending,
+        set: (value) => {
+          pending = value;
+          wrapSeekOwner(value);
+        },
+      });
+    } catch (_) {
+      /* 宿主不让改就算了，覆盖全片的 tween 才是主路径 */
+    }
+  }
+
+  // ======================= I/O 与 SVG 预处理 =======================
+
   function requireTimeline(tl, method) {
     if (!tl || typeof tl.to !== 'function') {
       throw new Error(
         `cast.${method}() 的第一个参数必须是镜头那条 paused GSAP timeline：` +
           '角色动画必须挂在它上面，否则逐帧 seek 出的成片是错的且不报错'
       );
+    }
+    // time() 是硬要求，不做兜底：舞台状态按「timeline 当前时间」现算，拿不到
+    // 准确时间就只能从每条 tween 自己的进度反推，而停在进度 0 的那条反推出的
+    // 是它自己的起点、不是 timeline 真正所在的时刻，于是又退回成「取值依赖
+    // 渲染顺序」。GSAP 的 timeline 一定有 time()。
+    if (typeof tl.time !== 'function') {
+      throw new Error(`cast.${method}() 收到的 timeline 没有 time() 方法：本库按 timeline 当前时间现算每一帧`);
     }
     return tl;
   }
@@ -75,6 +253,19 @@ const cast = (() => {
     return document.importNode(root, true);
   }
 
+  // rewriteRefs 把一段文本里对旧 id 的引用改写成新 id。
+  // 覆盖 url(#x)（含引号变体）与整串就是 "#x" 的 href。
+  function rewriteRefs(text, renamed) {
+    let next = text;
+    for (const [from, to] of renamed) {
+      for (const quote of ['', '"', "'"]) {
+        next = next.split(`url(${quote}#${from}${quote})`).join(`url(${quote}#${to}${quote})`);
+      }
+      if (next === `#${from}`) next = `#${to}`;
+    }
+    return next;
+  }
+
   // namespaceIds 给一个视图里的所有 id 加前缀，并同步改写内部引用。
   //
   // 三个视图的 rig 往往是同一张图改出来的，渐变、遮罩、滤镜的 id 大概率重名。
@@ -92,37 +283,53 @@ const cast = (() => {
     }
     if (renamed.size === 0) return;
     for (const node of nodes) {
-      if (!node.attributes) continue;
-      for (const attr of Array.from(node.attributes)) {
-        if (!attr.value.includes('#')) continue;
-        let next = attr.value;
-        for (const [from, to] of renamed) {
-          for (const quote of ['', '"', "'"]) {
-            next = next.split(`url(${quote}#${from}${quote})`).join(`url(${quote}#${to}${quote})`);
-          }
-          if (next === `#${from}`) next = `#${to}`;
+      if (node.attributes) {
+        for (const attr of Array.from(node.attributes)) {
+          if (!attr.value.includes('#')) continue;
+          const next = rewriteRefs(attr.value, renamed);
+          if (next !== attr.value) node.setAttribute(attr.name, next);
         }
-        if (next !== attr.value) node.setAttribute(attr.name, next);
+      }
+      // 内嵌 <style> 里的 url(#…) 同样要改写，否则它照样指到别的视图去。
+      if (node.nodeName && node.nodeName.toLowerCase() === 'style' && node.textContent) {
+        const next = rewriteRefs(node.textContent, renamed);
+        if (next !== node.textContent) node.textContent = next;
       }
     }
   }
 
-  // mount 把角色挂上舞台。返回的 handle 是之后所有动作的入口。
+  // ======================= mount =======================
   //
   // opts:
   //   pack        角色包目录（相对镜头 HTML），例如 'cast/heiwa'
-  //   x           水平位置，画面宽度的归一化比例，锚在角色左右中线
-  //   ground      地平线，画面高度的归一化比例，角色脚底（baselineY）对齐它
+  //   x           水平位置，画面宽度的归一化比例（0–1），锚在角色左右中线
+  //   ground      地平线，画面高度的归一化比例（0–1），脚底 baselineY 对齐它
   //   facing      'right'（默认）| 'left'，左右镜像，与 view 正交
   //   view        初始视图名，默认 'front'
   //   pose        初始姿势名，默认 'idle'
   //   heightRatio 覆盖角色高度占比，默认取包内 scale.heightRatio 的中值
+  //   duration    镜头总时长（秒）。给了它，驱动 tween 从第 0 秒覆盖到片尾，
+  //               每一帧都会重算角色；不给则只覆盖到最后一个角色事件结束。
   async function mount(selector, opts = {}) {
     const stage = typeof selector === 'string' ? document.querySelector(selector) : selector;
     if (!stage) throw new Error(`cast.mount 找不到舞台 ${selector}`);
 
     const packDir = String(opts.pack || '').replace(/\/+$/, '');
     if (!packDir) throw new Error('cast.mount 缺少 pack：角色包目录（相对镜头 HTML）');
+
+    // 参数一律校验后再用，不做静默 clamp：位置写错了要立刻响，而不是把角色
+    // 悄悄贴到画面边缘——后者要等到看成片才发现。
+    const x = opts.x == null ? 0.5 : opts.x;
+    const ground = opts.ground == null ? 0.8 : opts.ground;
+    for (const [name, value] of [['x', x], ['ground', ground]]) {
+      if (typeof value !== 'number' || !isFinite(value) || value < 0 || value > 1) {
+        throw new Error(`cast.mount 的 ${name} 必须是 0–1 之间的归一化比例，收到 ${value}`);
+      }
+    }
+    const facing = opts.facing == null ? 'right' : opts.facing;
+    if (facing !== 'left' && facing !== 'right') {
+      throw new Error(`cast.mount 的 facing 只能是 'left' 或 'right'，收到 ${JSON.stringify(opts.facing)}`);
+    }
 
     // 硬约束 4：读 JSON，不读 YAML。
     const pack = JSON.parse(await fetchText(`${packDir}/character.json`));
@@ -139,7 +346,8 @@ const cast = (() => {
     }
 
     // 硬约束 3：所有视图一次性取回、一次性挂上。这里是全流程唯一的 await 点，
-    // 之后的建 DOM、置位、建 tween 全是同步的。
+    // 之后建 DOM、置位、建 tween 全是同步的。没有任何 lazy fetch 分支：转身那
+    // 一刻才去取 SVG 的话，逐帧 seek 下加载时机不可控，首批帧会抓到空视图。
     const svgTexts = await Promise.all(viewNames.map((name) => fetchText(`${packDir}/${rigOf(name).file}`)));
 
     const stageW = stage.clientWidth;
@@ -147,7 +355,6 @@ const cast = (() => {
     if (!stageW || !stageH) {
       throw new Error('舞台尺寸为 0：cast.mount 必须在舞台已经有布局尺寸之后调用');
     }
-    // 舞台必须是定位上下文，否则角色会跑到页面左上角去。
     if (getComputedStyle(stage).position === 'static') stage.style.position = 'relative';
 
     const [ratioLo, ratioHi] = pack.scale.heightRatio;
@@ -163,8 +370,9 @@ const cast = (() => {
     holder.style.position = 'absolute';
     holder.style.width = '0';
     holder.style.height = '0';
-    holder.style.left = `${round3(stageW * clamp(opts.x == null ? 0.5 : opts.x, 0, 1))}px`;
-    holder.style.top = `${round3(stageH * clamp(opts.ground == null ? 0.8 : opts.ground, 0, 1))}px`;
+    // 锚点只跟 x/ground 有关，与视图无关：所有视图共用同一个落脚点。
+    holder.style.left = `${round3(stageW * x)}px`;
+    holder.style.top = `${round3(stageH * ground)}px`;
 
     // body 承担 scaleX（朝向镜像 + 转身压扁）与呼吸的上下起伏，
     // 与 holder 的定位分开，两者互不覆盖对方的 transform。
@@ -183,10 +391,11 @@ const cast = (() => {
       const prefix = `cast-${pack.id}-${name}-`;
       namespaceIds(svg, prefix);
 
-      const [vbX, vbY, vbW, vbH] = rig.viewBox;
-      const scale = drawnHeight / vbH;
-      svg.setAttribute('width', round3(vbW * scale));
-      svg.setAttribute('height', round3(vbH * scale));
+      const layout = actorLayout({
+        stageW, stageH, x, ground, heightRatio, viewBox: rig.viewBox, baselineY: rig.baselineY,
+      });
+      svg.setAttribute('width', round3(layout.width));
+      svg.setAttribute('height', round3(layout.height));
       svg.style.display = 'block';
       svg.style.overflow = 'visible';
 
@@ -194,8 +403,8 @@ const cast = (() => {
       wrapper.className = 'cast-view';
       wrapper.dataset.castView = name;
       wrapper.style.position = 'absolute';
-      wrapper.style.left = `${round3(-(vbW * scale) / 2)}px`;
-      wrapper.style.top = `${round3(-(rig.baselineY - vbY) * scale)}px`;
+      wrapper.style.left = `${round3(layout.viewLeft)}px`;
+      wrapper.style.top = `${round3(layout.viewTop)}px`;
       // 预置隐藏，转身时只切 visibility：用 visibility 而不是 display，
       // 是为了不触发布局，切换在任意帧都是同一个开销。
       wrapper.style.visibility = 'hidden';
@@ -209,9 +418,9 @@ const cast = (() => {
         if (!group) {
           throw new Error(`角色 ${pack.id} 的视图 ${name} 里找不到 <g id="${JOINT_PREFIX}${jointName}">`);
         }
-        // angle 是姿势，breath 是呼吸叠加量，分开存、合成后写一次 transform：
-        // 两条 tween 各写各的字段，谁先谁后渲染结果都一样。
-        const state = { group, pivot: joint.pivot, range: joint.rotate, angle: 0, breath: 0 };
+        // angle 由 GSAP 的数值 tween 拥有；呼吸不写这里，它是时间的纯函数，
+        // 每帧现算后与 angle 合成（见 applyJoint）。
+        const state = { group, pivot: joint.pivot, range: joint.rotate, angle: 0 };
         joints[jointName] = state;
         (jointsByName[jointName] = jointsByName[jointName] || []).push(state);
       }
@@ -231,35 +440,42 @@ const cast = (() => {
 
     stage.appendChild(holder);
 
-    // ---------------- 渲染：全部由这两个纯函数收口 ----------------
+    // ======================= 舞台状态 =======================
+    //
+    // 转身/翻转/呼吸只在装配期往 schedule 里追加一条，每一帧由 renderAt 从
+    // schedule 现算。为什么不能用「onUpdate 里写共享状态」这条捷径：
+    //
+    //   onUpdate 只在自己那段区间内触发，区间之外的帧要靠别的东西兜底。如果
+    //   每条 tween 各自往共享状态里写自己的起止态，那么某一帧最终显示什么，
+    //   取决于「最后一次写是谁写的」，也就是 timeline 向后 seek 时以什么顺序
+    //   渲染子 tween。实测 GSAP 3.15 是倒序渲染，结果碰巧对——但那是内部实现
+    //   细节，换个 timeline 实现、GSAP 改版、或把 tween 拆进嵌套 timeline 就
+    //   出错帧，而顺序播放和本地预览永远看不出来。
+    //
+    //   现算则与渲染顺序完全无关：哪条 tween 的 onUpdate 触发都行，一条都没
+    //   触发（第 0 帧、或宿主用 seek() 抑制了事件）也照样正确。
+    const stageSchedule = []; // { start, end, seq, sign, mirror }
+    const breathSchedule = []; // { start, end, intensity }
+    const initialStage = { view: initialView, sign: facing === 'left' ? -1 : 1 };
+    const breathTargets = breathTargetsFor(Object.keys(jointsByName));
 
-    // stageState 的每个字段都由某条 tween 写成「自己那条进度的纯函数」，
-    // 没有任何字段是累积出来的；renderStage 只是把它画出来。
-    const stageState = {
-      view: initialView,
-      scaleX: opts.facing === 'left' ? -1 : 1,
-      bobY: 0,
-    };
-
-    function renderStage() {
-      for (const name of viewNames) {
-        views[name].wrapper.style.visibility = name === stageState.view ? 'visible' : 'hidden';
+    // breathStateAt 每帧要被每个关节问一次，按 time 做一格缓存。
+    const breathCache = { time: NaN, value: null };
+    function breathAt(time) {
+      if (breathCache.time !== time) {
+        breathCache.time = time;
+        breathCache.value = breathStateAt(breathSchedule, breathTargets, time, drawnHeight * BREATH_BOB_RATIO);
       }
-      body.style.transform = `translateY(${round3(stageState.bobY)}px) scaleX(${round3(stageState.scaleX)})`;
-      const mirrored = stageState.scaleX < 0;
-      for (const name of viewNames) {
-        for (const node of views[name].noMirror) {
-          node.style.transform = mirrored ? 'scaleX(-1)' : 'none';
-        }
-      }
+      return breathCache.value;
     }
 
     // 用 rotate(角度 支点x 支点y) 三参数写法，与 Go 侧 cast.PoseSVG 注入的
     // 完全一致——验收用的姿势预览图和成片里的角色必须是同一个姿势。
     // 也因此不依赖 CSS transform-origin，rig.svg 里禁止写 transform-origin
     // 这条校验才站得住：支点的唯一真相在 character.yaml。
-    function applyJoint(state) {
-      const angle = clamp(state.angle + state.breath, state.range[0], state.range[1]);
+    function applyJoint(state, jointName, time) {
+      const breath = breathAt(time).joints[jointName] || 0;
+      const angle = clamp(state.angle + breath, state.range[0], state.range[1]);
       state.group.setAttribute('transform', `rotate(${round3(angle)} ${state.pivot[0]} ${state.pivot[1]})`);
     }
 
@@ -267,6 +483,33 @@ const cast = (() => {
       for (const name of viewNames) {
         for (const [jointName, state] of Object.entries(views[name].joints)) fn(state, jointName, name);
       }
+    }
+
+    // lastTime 只是「上一次渲染到哪一帧」的回声，供 pose() 这种不带时间的同步
+    // 调用复用。它不参与任何取值判断。
+    let lastTime = 0;
+
+    // renderAt 是本库唯一的写 DOM 入口，且是时间的纯函数：同一个 t 永远画出
+    // 同样的像素，重复调用没有副作用。
+    function renderAt(time) {
+      lastTime = time;
+      const shape = stageStateAt(stageSchedule, initialStage, time);
+      if (!views[shape.view]) {
+        // 走到这里说明 turns 里写了一个没声明的视图。不抛错的话所有 wrapper
+        // 都会被设成 hidden，角色凭空消失且不报错。
+        throw new Error(`角色 ${pack.id} 在 t=${time} 需要视图 ${shape.view}，但它没有被声明`);
+      }
+      for (const name of viewNames) {
+        views[name].wrapper.style.visibility = name === shape.view ? 'visible' : 'hidden';
+      }
+      body.style.transform = `translateY(${round3(breathAt(time).bobY)}px) scaleX(${round3(shape.sign)})`;
+      const mirrored = shape.sign < 0;
+      for (const name of viewNames) {
+        for (const node of views[name].noMirror) {
+          node.style.transform = mirrored ? 'scaleX(-1)' : 'none';
+        }
+      }
+      eachJoint((state, jointName) => applyJoint(state, jointName, time));
     }
 
     function poseAngles(name) {
@@ -277,69 +520,57 @@ const cast = (() => {
       return target;
     }
 
-    // 呼吸挑哪些关节：有头用头，有尾巴用尾巴，都没有就退回第一个关节做最小
-    // 幅度的起伏。刻意不做口型音素同步——这个画风是面无表情的简笔画，加嘴型
-    // 会毁掉它；「在说话」由头部起伏、呼吸和尾巴表达，speak 与 listen 的差别
-    // 只是幅度。
-    const breathTargets = (() => {
-      const names = Object.keys(jointsByName).sort();
-      const targets = [];
-      names.filter((n) => HEAD_JOINTS.test(n)).forEach((name, i) => {
-        targets.push({ name, degrees: BREATH_DEGREES.head, period: BREATH_PERIOD, phase: i * 0.13 });
-      });
-      names.filter((n) => TAIL_JOINTS.test(n)).forEach((name, i) => {
-        targets.push({
-          name,
-          degrees: BREATH_DEGREES.tail,
-          period: BREATH_PERIOD * BREATH_TAIL_PERIOD_FACTOR,
-          phase: 0.25 + i * 0.13,
-        });
-      });
-      if (targets.length === 0 && names.length > 0) {
-        targets.push({ name: names[0], degrees: BREATH_DEGREES.fallback, period: BREATH_PERIOD, phase: 0 });
-      }
-      return targets;
-    })();
-
-    // breathe 把一段区间内的呼吸写成进度的纯函数：sin(相位) × 幅度 × 包络。
-    // 包络在区间两端归零，所以 seek 到区间之外时呼吸叠加量恰好是 0，
-    // 不会有残留角度粘在身上。
-    function breathe(tl, { from = 0, to = 0, intensity = 1 } = {}) {
-      const seconds = to - from;
-      if (!(seconds > 0)) {
-        throw new Error(`cast speak/listen 的区间必须为正：from=${from} to=${to}`);
-      }
-      const proxy = { t: 0 };
-      tl.to(
-        proxy,
-        {
-          t: 1,
-          duration: seconds,
-          ease: 'none',
-          onUpdate: () => {
-            const t = proxy.t;
-            const envelope = clamp(Math.min(t, 1 - t) / BREATH_RAMP, 0, 1);
-            const elapsed = t * seconds;
-            for (const target of breathTargets) {
-              const wave = Math.sin(2 * Math.PI * (elapsed / target.period + target.phase));
-              const amount = wave * target.degrees * intensity * envelope;
-              for (const state of jointsByName[target.name]) {
-                state.breath = amount;
-                applyJoint(state);
-              }
-            }
-            const bob = Math.sin(2 * Math.PI * (elapsed / BREATH_PERIOD + 0.5));
-            stageState.bobY = bob * drawnHeight * BREATH_BOB_RATIO * intensity * envelope;
-            renderStage();
-          },
-        },
-        from
-      );
-    }
+    // ======================= 装配期状态 =======================
 
     // current 只在「搭时间线的那一刻」使用，用来算下一次转身的起点。
-    // 它不参与任何一帧的取值——渲染取值一律走 stageState。
-    const current = { view: initialView, sign: stageState.scaleX };
+    // 它不参与任何一帧的取值——渲染取值一律走 stageStateAt。
+    const current = { view: initialView, sign: initialStage.sign, at: -Infinity };
+
+    // assertForward：转身与翻转必须按时间先后声明。
+    //
+    // current 是「声明顺序」游标：turn() 要用它算 turns 的键、flip() 要用它
+    // 算起始朝向。乱序声明（先写 at:5 的 flip 再写 at:2 的 turn）会让后声明
+    // 的那条拿到未来的状态当起点，两条都错，而且不报错。
+    // 姿势 tween 与 speak/listen 不受这条限制——它们不动游标。
+    function assertForward(at, method) {
+      if (at < current.at) {
+        throw new Error(
+          `角色 ${pack.id} 的 cast.${method}(at=${at}) 排在已声明的 at=${current.at} 之前：` +
+            '转身与翻转必须按时间先后声明，否则起始视图/朝向会算错（pose、to、speak、listen 不受此限）'
+        );
+      }
+      current.at = at;
+    }
+
+    // 覆盖全片的驱动 tween：区间之外的帧也要重算，不能只在事件窗口里出帧。
+    // 它自己不携带任何状态，proxy 的值根本不被读——渲染取值全从 schedule 现算。
+    let driver = null;
+    let coverage = opts.duration || 0;
+    function ensureCoverage(tl, until) {
+      coverage = Math.max(coverage, until);
+      if (!driver) {
+        tl.to({ t: 0 }, { t: 1, duration: coverage, ease: 'none', onUpdate: () => renderAt(tl.time()) }, 0);
+        driver = typeof tl.recent === 'function' ? tl.recent() : null;
+        return;
+      }
+      if (driver && typeof driver.duration === 'function') driver.duration(coverage);
+    }
+
+    // 所有 tween 必须挂在同一条 timeline 上：混用两条会让 schedule 里的时间
+    // 分属不同坐标系，算出来的帧全是错的，而且不报错。
+    let boundTimeline = null;
+    function bind(tl, method, until) {
+      requireTimeline(tl, method);
+      if (boundTimeline && boundTimeline !== tl) {
+        throw new Error(`角色 ${pack.id} 的动画必须全部挂在同一条 timeline 上，cast.${method}() 收到了另一条`);
+      }
+      if (!boundTimeline) {
+        boundTimeline = tl;
+        wrapSeekOwner(tl); // timeline 自己的 seek 也要转发出帧
+      }
+      ensureCoverage(tl, until);
+      return tl;
+    }
 
     const handle = {
       pack,
@@ -348,8 +579,12 @@ const cast = (() => {
       body,
       views,
       viewNames,
+      // renderAt / stageAt 是公开的：宿主（或自检脚本）可以在任意时刻直接
+      // 求值与出帧，不依赖 onUpdate 有没有被触发。
+      renderAt,
+      stageAt: (time) => stageStateAt(stageSchedule, initialStage, time),
       get svg() {
-        return views[current.view].svg;
+        return views[stageStateAt(stageSchedule, initialStage, lastTime).view].svg;
       },
 
       // pose 是同步置位，且对所有视图同时置位。
@@ -359,20 +594,26 @@ const cast = (() => {
         const target = poseAngles(name);
         eachJoint((state, jointName) => {
           state.angle = target[jointName] || 0;
-          applyJoint(state);
         });
-        renderStage();
+        renderAt(lastTime);
         return handle;
       },
 
       // to 把姿势 tween 到目标，同样覆盖所有视图。
+      // 数值插值交给 GSAP：链式 to() 在向后 seek 时由 GSAP 自己倒序渲染回
+      // 正确的起始值，这是它的既定语义（scrub 的基础），不需要我们复刻。
       to(tl, name, { at = 0, dur = 0.4, ease = 'power2.out' } = {}) {
-        requireTimeline(tl, 'to');
+        bind(tl, 'to', at + dur);
         const target = poseAngles(name);
         eachJoint((state, jointName) => {
           tl.to(
             state,
-            { angle: target[jointName] || 0, duration: dur, ease, onUpdate: () => applyJoint(state) },
+            {
+              angle: target[jointName] || 0,
+              duration: dur,
+              ease,
+              onUpdate: () => applyJoint(state, jointName, tl.time()),
+            },
             at
           );
         });
@@ -382,36 +623,20 @@ const cast = (() => {
       // flip 是左右镜像翻转：scaleX 从 +1 连续走到 -1，过零那一瞬间最窄。
       // 这是「朝向」维度，与「视图」维度正交。
       flip(tl, { at = 0, dur = DEFAULT_TURN_MS / 1000 } = {}) {
-        requireTimeline(tl, 'flip');
-        const startSign = current.sign;
-        const startView = current.view;
-        const proxy = { t: 0 };
-        tl.to(
-          proxy,
-          {
-            t: 1,
-            duration: dur,
-            ease: 'none',
-            onUpdate: () => {
-              stageState.view = startView;
-              stageState.scaleX = startSign * Math.cos(Math.PI * proxy.t);
-              renderStage();
-            },
-          },
-          at
-        );
-        current.sign = -startSign;
+        bind(tl, 'flip', at + dur);
+        assertForward(at, 'flip');
+        stageSchedule.push({ start: at, end: at + dur, seq: [current.view], sign: current.sign, mirror: true });
+        current.sign = -current.sign;
         return handle;
       },
 
-      // turn 是转身，不是把镜像 tween 过去——镜像动画在宽度过零时会翻成
-      // 反面，读起来是卡片翻面而不是转身。做法是 scaleX 压到 0 再回到 1，
-      // 在过零那一帧换视图，中间按 turns[key].via 经过四分之三侧。
+      // turn 是转身，不是把镜像 tween 过去——镜像动画在宽度过零时会翻成反面，
+      // 读起来是卡片翻面而不是转身。做法是 scaleX 压到 0 再回到 1，在过零那
+      // 一帧换视图，中间按 turns[key].via 经过四分之三侧。
       //
       // 只声明了默认视图的角色包，turn() 退化成镜像翻转（flip）：画三视图的
       // 准入成本是三倍，只有真有转身戏份的主角才值得画全。
       turn(tl, toView, { at = 0, dur } = {}) {
-        requireTimeline(tl, 'turn');
         const key = `${current.view}->${toView}`;
         const spec = (pack.turns || {})[key];
         if (viewNames.length === 1) {
@@ -423,56 +648,61 @@ const cast = (() => {
             `角色 ${pack.id} 未声明转身 ${key}：请在 character.yaml 的 turns 里显式写出这条路径（不做自动寻路，哪条路径好看是创作判断）`
           );
         }
-        const seq = [current.view, ...(spec.via || []), toView];
-        const segments = seq.length - 1;
-        const startSign = current.sign;
-        const proxy = { t: 0 };
-        tl.to(
-          proxy,
-          {
-            t: 1,
-            duration: dur == null ? spec.durationMs / 1000 : dur,
-            ease: 'none',
-            // 视图与 scaleX 都是 proxy.t 的纯函数，每次求值只依赖当前进度。
-            // 不得在这里翻标志位或做累积——渲染机按任意帧 seek，不保证顺序、
-            // 不保证只走一遍，靠「播过去了所以状态变了」的实现会给出乱掉的帧，
-            // 而本地预览完全正常。
-            //
-            // phase 走 [0, segments]，压扁量取 |cos(π·phase)|，零点落在
-            // phase 的半整数处；视图索引取 round(phase)，切换点正好是同一批
-            // 半整数。两者必须对齐：错开一点点，就会在角色还有宽度的时候换
-            // 视图，肉眼看是"闪一下换了张图"。
-            onUpdate: () => {
-              const phase = proxy.t * segments;
-              stageState.view = seq[clamp(Math.round(phase), 0, segments)];
-              stageState.scaleX = startSign * Math.abs(Math.cos(Math.PI * phase));
-              renderStage();
-            },
-          },
-          at
-        );
+        const seconds = dur == null ? spec.durationMs / 1000 : dur;
+        bind(tl, 'turn', at + seconds);
+        assertForward(at, 'turn');
+        stageSchedule.push({
+          start: at,
+          end: at + seconds,
+          seq: [current.view, ...(spec.via || []), toView],
+          sign: current.sign,
+          mirror: false,
+        });
         current.view = toView;
         return handle;
       },
 
       // speak / listen 的区别只有幅度，都不做口型。
-      speak(tl, { from, to } = {}) {
-        requireTimeline(tl, 'speak');
-        breathe(tl, { from, to, intensity: 1 });
-        return handle;
+      speak(tl, options = {}) {
+        return handle.breathe(tl, { ...options, intensity: 1 });
       },
-      listen(tl, { from, to } = {}) {
-        requireTimeline(tl, 'listen');
-        breathe(tl, { from, to, intensity: 0.35 });
+      listen(tl, options = {}) {
+        return handle.breathe(tl, { ...options, intensity: 0.35 });
+      },
+      breathe(tl, { from = 0, to = 0, intensity = 1 } = {}) {
+        if (!(to - from > 0)) {
+          throw new Error(`cast speak/listen 的区间必须为正：from=${from} to=${to}`);
+        }
+        bind(tl, 'speak/listen', to);
+        breathSchedule.push({ start: from, end: to, intensity });
         return handle;
       },
     };
 
+    actors.push(handle);
+    installWindowSeekHook('__hf');
+    installWindowSeekHook('__player');
     handle.pose(opts.pose || 'idle');
     return handle;
   }
 
-  return { mount, DEFAULT_VIEW, SCHEMA };
+  return {
+    mount,
+    DEFAULT_VIEW,
+    SCHEMA,
+    // pure 里全是无副作用的取值函数，导出供 assets_test.go 的 node 断言与
+    // 交付前自检直接求值。改这里等于改动画的定义，改完必须同步那些断言。
+    pure: {
+      pinchScaleAtPhase,
+      viewIndexAtPhase,
+      mirrorScaleAtProgress,
+      breathEnvelope,
+      actorLayout,
+      stageStateAt,
+      breathStateAt,
+      breathTargetsFor,
+    },
+  };
 })();
 
 // 以 <script src="…/cast.js"> 引入时，上面的 const 已经是全局绑定；

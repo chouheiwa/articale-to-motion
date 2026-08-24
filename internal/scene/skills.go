@@ -38,6 +38,9 @@ const AlgorithmicArtSkillName = "algorithmic-art"
 // TextToLottieSkillName 是 Lottie 图层制作技能目录名。
 const TextToLottieSkillName = "text-to-lottie"
 
+// CharacterRigSkillName 是角色驱动技能目录名。
+const CharacterRigSkillName = "character-rig"
+
 // SkillDescriptor 描述一个可自动发现的技能。
 // SkillSource 说明技能是怎么进到用户项目里的。
 //
@@ -101,7 +104,19 @@ var RegisteredSkills = []SkillDescriptor{
 		RequiredFiles: []string{skillManifestFile},
 		PromptSection: textToLottiePrompt,
 	},
+	{
+		Name:   CharacterRigSkillName,
+		Source: SourceEmbedded,
+		// 驱动库本身也是必需文件：只有 SKILL.md 而没有 cast.js 的技能目录，
+		// 提示词里那条「把驱动库复制进镜头目录」的契约就无从执行。
+		RequiredFiles: []string{skillManifestFile, castDriverFile},
+		PromptSection: characterRigPrompt,
+	},
 }
+
+// castDriverFile 是 character-rig 技能里的驱动库文件名。
+// 它同时出现在 RequiredFiles 与 castSection 的复制契约里，所以取一个常量。
+const castDriverFile = "cast.js"
 
 // skillLocations 是一个渲染工具的技能目录：家目录级与项目级的相对路径可能不同。
 type skillLocations struct {
@@ -362,4 +377,29 @@ func textToLottiePrompt(skillsDir string) string {
 		"HTML 侧必须独立满足全部动效要求。\n" +
 		"- Lottie 由渲染框架逐帧 seek：播放器实例 autoplay 与 loop 均为 false 并注册到框架约定的全局数组，" +
 		"JSON 内不得使用表达式、时钟或未播种随机，粒子与物理一类系统必须烘成关键帧。\n"
+}
+
+// characterRigPrompt 是角色驱动技能的提示词片段。
+//
+// 这里刻意不写驱动库的文件名，也不写任何角色契约的细节：那些属于
+// castSection，只在 scene.Cast != nil 时才出现。没有角色的镜头必须拿不到
+// 任何角色相关的强制要求——老镜头（单口播）的提示词不能因为新增了这个技能
+// 就多出一段它永远用不上的契约，internal/scene 的
+// TestBuildPromptOmitsCastSectionWhenNil 守着这一点。
+//
+// 本段只做一件事：把技能目录的本机绝对路径交出去。castSection 里那条
+// 「把驱动库复制进镜头目录」的契约需要一个源目录，而它就在这里。
+func characterRigPrompt(skillsDir string) string {
+	if skillsDir != "" {
+		return fmt.Sprintf("角色驱动（按需）：\n"+
+			"- 本镜头如有角色出场（下方出现「角色（强制）」段），必须加载 %s 技能。本机该技能目录为：\n    %s\n"+
+			"  实现前必须读其中的 %s：它定义角色包目录结构、驱动库的挂载与转身/说话接口，以及四条硬规则。\n"+
+			"- 没有角色的镜头忽略本段，不要自行引入角色。\n",
+			CharacterRigSkillName, filepath.Join(skillsDir, CharacterRigSkillName), skillManifestFile)
+	}
+	return fmt.Sprintf("角色驱动（按需）：\n"+
+		"- 本镜头如有角色出场（下方出现「角色（强制）」段），必须加载 %s 技能。\n"+
+		"  （本机未能定位该技能目录，请使用你自身的技能加载机制载入。）\n"+
+		"- 没有角色的镜头忽略本段，不要自行引入角色。\n",
+		CharacterRigSkillName)
 }

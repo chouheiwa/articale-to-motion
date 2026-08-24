@@ -339,6 +339,14 @@ func castSection(s Scene) string {
 		beats = append(beats, fmt.Sprintf("%s %.3f–%.3f", beat.Speaker, beat.Start, beat.End))
 	}
 	b.WriteString("- 台词节拍（镜头本地时间，秒）：" + strings.Join(beats, "，") + "\n")
+	// 驱动库必须随镜头目录走，理由与上面 style 段里的字体文件一字不差：
+	// 渲染只服务镜头目录内的文件，引用镜头目录之外的路径会静默 404——
+	// 角色根本不出现，而渲染照样成功、退出码为 0。
+	b.WriteString(fmt.Sprintf(
+		"- 驱动库（强制）：必须把 %s 技能目录下的 %s 复制进本镜头目录，"+
+			"并在 composition 里按镜头目录内的相对路径引用（例如 <script src=\"%s\"></script>）。"+
+			"不得引用镜头目录之外的路径：渲染只服务镜头目录内的文件，外部路径静默 404，角色不出现且不报错。\n",
+		CharacterRigSkillName, castDriverFile, castDriverFile))
 	b.WriteString("- 所有角色动画必须挂在那条 paused timeline 上；不得给 rig 写 CSS 动画、不得调用 requestAnimationFrame。\n")
 	b.WriteString("- 第 0 帧必须已是初始姿势的终态，不得留空台或入场中间态。\n")
 	return b.String()

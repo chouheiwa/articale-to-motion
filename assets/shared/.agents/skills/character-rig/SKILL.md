@@ -21,6 +21,21 @@ HyperFrames 是单条 paused timeline + 逐帧 seek 出帧。不受那条 timeli
 - 你也不许。不要给 rig 写 CSS `@keyframes`/`transition`，不要在 rig.svg 里放 `<animate>`（`am cast validate` 会拦，但拼进 HTML 的那部分没人拦你）。
 - `to`/`turn`/`flip`/`speak`/`listen` 的第一个参数都是那条 timeline，传错会立刻抛错——这是故意的。
 
+**推进时间线只能用 `tl.time(t)` 或 `tl.seek(t, false)`，不要用 `tl.seek(t)`。** GSAP 的
+`seek(position, suppressEvents)` 里 `suppressEvents` **默认是 true**，`onUpdate` 一次都不会触发。
+实测同一条时间线：
+
+| 调用 | 结果 |
+|---|---|
+| `tl.seek(3.0)` | onUpdate 不触发 |
+| `tl.seek(3.0, false)` | 正常出帧 |
+| `tl.time(3.0)` / `tl.progress(p)` | 正常出帧 |
+
+`cast.js` 为此做了两层保险（照上游官方示例 `hyperframes-animation/examples/messaging-multi-phrase.html`）：
+一条覆盖全片的驱动 tween，加上对 `window.__hf` / `window.__player` 的 `seek` 与 timeline 自身
+`seek` 的转发包装。所以即使宿主用默认参数 seek，角色照样出帧。**但你自己写的 tween 没有这层保险**
+——预览与自检一律用 `tl.time(t)`。
+
 ### 2. 每个 onUpdate 只能是「当前进度 → 画面」的纯函数
 
 渲染机按任意帧 seek，**不保证顺序、不保证只走一遍**。任何「播过去了所以状态变了」的实现（在 `onUpdate` 里翻标志位、做累积、读上一帧）都会给出乱掉的帧，而本地顺序播放看不出来。
@@ -91,11 +106,13 @@ cast/
 
 ## 接进镜头
 
-把 `cast.js` 从技能目录拷进镜头目录，用相对路径引入——渲染只服务镜头目录内的文件，`<script src>` 指到镜头目录外会静默 404：
+把 `cast.js` 从技能目录拷进镜头目录，用相对路径引入——渲染只服务镜头目录内的文件，`<script src>` 指到镜头目录外会静默 404（角色根本不出现，渲染却成功、退出码为 0）：
 
 ```bash
-cp <技能目录>/character-rig/cast.js ./cast.js
+cp <本技能目录>/cast.js ./cast.js
 ```
+
+`<本技能目录>` 的本机绝对路径由 `am` 写在镜头提示词的「角色驱动（按需）」一段里，直接用那一条，不要猜路径、不要引用镜头目录之外的文件。这条复制义务同时写在提示词的「角色（强制）」段里，是硬要求。
 
 ```html
 <script src="cast.js"></script>
@@ -113,6 +130,8 @@ const heiwa = await cast.mount('#stage', {
   facing: 'right',      // 'right'（默认）| 'left'
   view: 'front',        // 初始视图，默认 front
   pose: 'idle',         // 初始姿势，默认 idle
+  duration: 6.0,        // 镜头总时长（秒）。给了它，驱动 tween 从第 0 秒覆盖到片尾，
+                        // 每一帧都重算角色；不给则只覆盖到最后一个角色事件结束。
 });
 
 heiwa.pose('pointing');                                    // 同步置位，用于第 0 帧
@@ -123,6 +142,9 @@ heiwa.listen(tl, { from: 4.52, to: 5.60 });
 ```
 
 `mount` 是 `async` 的，**必须 await 完再建后面的 tween**；舞台元素必须已经有布局尺寸（`clientWidth/clientHeight` 非 0），否则会抛错而不是静默摆错位置。
+
+`x` / `ground` 超出 0–1、`facing` 不是 `'left'` / `'right'`、姿势或视图名没声明过——全部立刻抛错，
+不做静默 clamp 也不回退默认值。位置写错要在第一次跑的时候响，而不是等看成片时才发现角色贴在画边。
 
 ### 尺寸与站位怎么算的
 
@@ -177,6 +199,10 @@ turns:
 - **未声明的转身组合直接抛错，不做自动寻路。** 哪条路径好看是创作判断，不是图论问题：`front->back` 是从左边转还是右边转，画面观感完全不同，只能由人写死。
 - 想双向转身就写两条，`am cast validate` 不会替你补。
 
+**`turn()` 与 `flip()` 必须按时间先后声明**（`at` 不得回退），否则会抛错。原因是这两个方法要用
+「上一次转到哪儿」来算 `turns` 的键和起始朝向；先写 `at: 5.0` 再写 `at: 2.0`，后者拿到的是未来的
+状态当起点，两条都算错。`pose` / `to` / `speak` / `listen` 不动这个游标，可以任意顺序穿插。
+
 ### 三视图是可选的：先问值不值
 
 `views` 和 `turns` 都是**可选**的。只画了默认视图的角色包完全合法，`turn()` 在这种包上会退化成**镜像翻转**（等价于 `flip()`）：同样是压扁过零，但换的是朝向而不是视图。对大多数角色，这就够了。
@@ -196,7 +222,24 @@ heiwa.listen(tl, { from: 4.52, to: 5.60 });
 
 「在说话」由极轻微的头部起伏、呼吸和尾巴表达。`speak` 与 `listen` 用的是同一套运动，**区别只有幅度**（listen 约为 speak 的三分之一）。这也正是真实对话里的样子：听的人也在动，只是动得小。
 
-细节：起伏是进度的正弦函数，在区间两端有淡入淡出包络，所以 seek 到区间之外时叠加量恰好为 0，不会有残留角度粘在身上。呼吸写的是与姿势分开的字段，和 `to()` 的姿势 tween 叠加而不是互相覆盖——两者顺序随便排都不会打架。
+细节：起伏是时间的正弦函数，在区间两端有淡入淡出包络，所以 seek 到区间之外时叠加量恰好为 0，不会有残留角度粘在身上。呼吸与姿势分开算、合成后写一次 `transform`，和 `to()` 的姿势 tween 不会互相覆盖——两者顺序随便排都不打架。
+
+**关节命名影响呼吸挑谁。** 驱动库按名字匹配：含 `head` / `neck` 的关节做小幅点头，含 `tail` 的做
+大幅摆尾。两类都没有时退回「第一个关节做最小幅度起伏」的兜底——不会报错，但角色会显得偏死。
+画 rig 时把头关节命名成 `head`（或 `neckHead` 一类含 `head` 的名字）就能拿到应有的表演。
+
+## 自检接口
+
+handle 上有两个不碰时间线的口子，专门给交付前自检用：
+
+```js
+heiwa.renderAt(2.05);        // 把角色按 t=2.05 画出来，纯函数，重复调用无副作用
+heiwa.stageAt(2.05);         // => { view: 'front', sign: 0 }，只取值不画
+cast.pure.pinchScaleAtPhase  // 压扁曲线等取值函数，可直接单独求值
+```
+
+`renderAt` 就是驱动库内部每一帧走的那条路径，没有第二套渲染逻辑。想确认某一帧对不对，
+直接 `renderAt(t)` 再截图，比反复播放可靠。
 
 ## 常见的坑
 
@@ -210,6 +253,17 @@ heiwa.listen(tl, { from: 4.52, to: 5.60 });
 1. 页面控制台无报错——`cast.js` 的错误都是显式抛出的，静默失败在这条链路上比崩溃贵得多。
 2. 第 0 帧截图：角色在位、姿势是终态、没有半透明或空台。
 3. 有转身的镜头，抓压扁过零附近的三帧（前一帧、零点帧、后一帧）：宽度连续、换图发生在最窄那一帧、脚底不跳。
-4. 随机抽 5 个非顺序的帧号分别 seek 后出图，与顺序播放到同一帧的结果逐像素一致——这是硬规则 2 的实际验收方式。
+4. 乱序求值一致性（硬规则 2 的实际验收方式）。这条必须写成**能失败**的形式，否则等于没查：
+
+   ```js
+   const t = [0.4, 2.05, 3.1, 4.7, 5.9];
+   const forward = t.map((x) => { tl.time(x); return heiwa.body.style.transform + JSON.stringify(heiwa.stageAt(x)); });
+   const shuffled = [...t].reverse().map((x) => { tl.time(x); return heiwa.body.style.transform + JSON.stringify(heiwa.stageAt(x)); });
+   console.assert(forward.join() === [...shuffled].reverse().join(), '乱序 seek 出现错帧');
+   console.assert(new Set(forward).size > 1, '所有帧都一样：时间根本没推进，这条自检是空转');
+   ```
+
+   第二条断言不能省。用 `tl.seek(t)`（默认参数）时 `onUpdate` 不触发，5 帧会是同一张静止图，
+   第一条断言照样通过——自查空转、什么也没查出来。
 5. 台词区间内角色有可见但克制的生命感；区间外回到静止，没有残留的歪头。
 6. 角色高度落在 `heightRatio` 区间内，脚底压在 `ground` 上，没有穿地或悬空。
