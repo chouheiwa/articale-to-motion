@@ -223,6 +223,9 @@ func validateCast(s Scene) error {
 		// on_stage 已在上面判过重复，此处登记用于校验 beats.speaker。
 		onStage[actor.ID] = true
 	}
+	// voiceOver 缓存已经确认过角色包存在的画外音说话人，避免同一个人多拍
+	// 时把 cast.Load 重复跑一遍。
+	voiceOver := make(map[string]bool)
 	prevEnd := math.Inf(-1)
 	prevIndex := -1
 	for i, beat := range c.Beats {
@@ -235,8 +238,26 @@ func validateCast(s Scene) error {
 		if beat.Start < -floatEps || beat.End > s.DurationSeconds+floatEps {
 			return fmt.Errorf("cast.beats[%d] 超出镜头时长 %.3f 秒：[%v, %v]", i, s.DurationSeconds, beat.Start, beat.End)
 		}
-		if !onStage[beat.Speaker] {
-			return fmt.Errorf("cast.beats[%d] 的 speaker %q 不在台上", i, beat.Speaker)
+		// 一拍的含义是「这段时间这个人在说话」，不蕴含「他可见」：说话人不在
+		// on_stage 里就是画外音，合法。纯转场 / 纯 B-roll / 纯图表镜头如果有台词
+		// 盖过，就是这种写法——on_stage 可以为空，beats 照填。
+		//
+		// 但不放开成任意字符串：画外音说话人同样要能在 pack_dir 下找到角色包，
+		// 走的是与 on_stage 角色完全相同的 contained + cast.Load 路径。否则一个
+		// 拼错的名字既不会在这里被拦下，也不会在渲染时被发现（画外音本来就不
+		// 出现在画面里），只会让 am validate cast 那边的台词覆盖对不上。
+		if !onStage[beat.Speaker] && !voiceOver[beat.Speaker] {
+			actorDir, err := contained(packDir, beat.Speaker,
+				fmt.Sprintf("cast.beats[%d] 的画外音 speaker %s", i, beat.Speaker))
+			if err != nil {
+				return err
+			}
+			if _, err := cast.Load(actorDir); err != nil {
+				return fmt.Errorf("cast.beats[%d] 的 speaker %q 既不在 on_stage 里，"+
+					"也在 %s 下找不到对应角色包：画外音的说话人同样必须是已登记的角色（%w）",
+					i, beat.Speaker, c.PackDir, err)
+			}
+			voiceOver[beat.Speaker] = true
 		}
 		// 乱序（后一拍 start 早于前一拍 start）与重叠（后一拍 start 落进前一拍
 		// [start,end) 区间）用同一个判断拦：只要后一拍的 start 没有不小于前一拍
@@ -317,13 +338,28 @@ func CanvasOf(directory, styleGuide string) (Canvas, error) {
 // 最后两条约束不是风格建议，是渲染正确性要求：HyperFrames 按任意帧 seek
 // 出帧，没有挂在 cast.js 那条 paused timeline 上的动画在成片里是错的、
 // 但不会报错；首帧空台或停在入场中间态的坑这个项目已经踩过一次。
+//
+// on_stage 为空（纯转场 / 纯 B-roll / 纯图表镜头被台词盖过）时走另一套措辞：
+// 台上没人，与 rig 有关的那几条约束一条都不适用，而“本镜头有角色出场”这句
+// 话会直接把角色画进图表镜头里。
 func castSection(s Scene) string {
 	c := s.Cast
 	if c == nil {
 		return ""
 	}
+	onStage := make(map[string]bool, len(c.OnStage))
+	for _, actor := range c.OnStage {
+		onStage[actor.ID] = true
+	}
 	var b strings.Builder
-	b.WriteString("\n角色（强制）：本镜头有角色出场，必须使用 character-rig 技能的 cast.js 驱动。\n")
+	if len(c.OnStage) == 0 {
+		// 纯转场 / 纯 B-roll / 纯图表镜头被台词盖过时的形态：有 beats、没有台上
+		// 角色。这里绝不能说「本镜头有角色出场」——渲染 agent 会照着把角色画
+		// 进图表镜头里。
+		b.WriteString("\n角色（强制）：本镜头没有角色出场，台词全部是画外音；不得把任何角色画进画面。\n")
+	} else {
+		b.WriteString("\n角色（强制）：本镜头有角色出场，必须使用 character-rig 技能的 cast.js 驱动。\n")
+	}
 	for _, actor := range c.OnStage {
 		view := actor.View
 		if view == "" {
@@ -333,12 +369,29 @@ func castSection(s Scene) string {
 		b.WriteString(fmt.Sprintf("- 台上：%s（x=%.3f，初始姿势 %s，朝向 %s，视图 %s，角色定义见 %s）\n",
 			actor.ID, actor.X, actor.Pose, actor.Facing, view, dnaPath))
 	}
-	b.WriteString(fmt.Sprintf("- 地平线：ground_y=%.3f（画面高度比例）\n", c.GroundY))
+	if len(c.OnStage) > 0 {
+		b.WriteString(fmt.Sprintf("- 地平线：ground_y=%.3f（画面高度比例）\n", c.GroundY))
+	}
 	beats := make([]string, 0, len(c.Beats))
+	hasVoiceOver := false
 	for _, beat := range c.Beats {
-		beats = append(beats, fmt.Sprintf("%s %.3f–%.3f", beat.Speaker, beat.Start, beat.End))
+		mark := ""
+		if !onStage[beat.Speaker] {
+			mark = "（画外音）"
+			hasVoiceOver = true
+		}
+		beats = append(beats, fmt.Sprintf("%s %.3f–%.3f%s", beat.Speaker, beat.Start, beat.End, mark))
 	}
 	b.WriteString("- 台词节拍（镜头本地时间，秒）：" + strings.Join(beats, "，") + "\n")
+	if hasVoiceOver {
+		// 一拍只说明「这段时间这个人在说话」，不说明他可见。标了画外音的说话人
+		// 不在 on_stage 里，把他画出来就是多出一个本不该在这个镜头露面的角色。
+		b.WriteString("- 画外音（强制）：标注「（画外音）」的说话人本镜头不出场，" +
+			"不得把它画进画面，也不得为它装载 rig；那几拍只用来对齐画面节奏。\n")
+	}
+	if len(c.OnStage) == 0 {
+		return b.String()
+	}
 	// 驱动库必须随镜头目录走，理由与上面 style 段里的字体文件一字不差：
 	// 渲染只服务镜头目录内的文件，引用镜头目录之外的路径会静默 404——
 	// 角色根本不出现，而渲染照样成功、退出码为 0。

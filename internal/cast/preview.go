@@ -66,10 +66,10 @@ func PoseSVG(pack Pack, viewName, poseName string) (string, error) {
 			continue
 		}
 		id := attr(start, "id")
-		if !strings.HasPrefix(id, jointPrefix) {
+		if !strings.HasPrefix(id, JointPrefix) {
 			continue
 		}
-		name := strings.TrimPrefix(id, jointPrefix)
+		name := strings.TrimPrefix(id, JointPrefix)
 		angle, ok := pose[name]
 		if !ok || angle == 0 {
 			continue

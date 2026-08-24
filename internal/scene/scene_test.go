@@ -151,17 +151,26 @@ func writeSceneWithCast(t *testing.T, castJSON string) string {
 	t.Helper()
 	dir := writeScene(t, fmt.Sprintf(`{"id":"scene-001","duration_seconds":4,"output":"scene-001.mp4",
 "transcript":"transcript.srt","text":"一句话","cast":%s}`, castJSON))
-	packDir := filepath.Join(dir, "cast", "heiwa")
+	writeCastPack(t, dir, "heiwa")
+	return dir
+}
+
+// writeCastPack 在 <dir>/cast/<id>/ 下写一个最小角色包。
+// 画外音用例需要第二个角色（说话人不在台上，但角色包必须存在），
+// 所以把原先内联在 writeSceneWithCast 里的这段抽出来按 id 复用。
+func writeCastPack(t *testing.T, dir, id string) {
+	t.Helper()
+	packDir := filepath.Join(dir, "cast", id)
 	if err := os.MkdirAll(packDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(packDir, "character.yaml"), []byte(testCastYAML), 0o644); err != nil {
+	body := strings.Replace(testCastYAML, "id: heiwa", "id: "+id, 1)
+	if err := os.WriteFile(filepath.Join(packDir, "character.yaml"), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(packDir, "rig.svg"), []byte(testCastSVG), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	return dir
 }
 
 func TestLoadAcceptsSceneWithoutCast(t *testing.T) {
@@ -214,9 +223,14 @@ func TestLoadRejectsBadCast(t *testing.T) {
 		{"beat 超出镜头时长", `{"pack_dir":"cast","ground_y":0.78,
 "on_stage":[{"id":"heiwa","x":0.3,"pose":"idle","facing":"right"}],
 "beats":[{"speaker":"heiwa","start":0,"end":9}]}`, "时长"},
-		{"beat 说话人不在台上", `{"pack_dir":"cast","ground_y":0.78,
+		// 原先这条叫「beat 说话人不在台上」，断言的是"不在 on_stage 里就非法"。
+		// 那条规则已经被去掉：一拍只说明「这段时间这个人在说话」，不蕴含「他
+		// 可见」，说话人不在台上就是画外音。剩下要拦的是拼错的名字——画外音
+		// 说话人同样得能在 pack_dir 下找到角色包。这里的 zhaocai 没有角色包，
+		// 所以仍然应当被拒绝，只是理由变了。
+		{"画外音说话人的角色包不存在", `{"pack_dir":"cast","ground_y":0.78,
 "on_stage":[{"id":"heiwa","x":0.3,"pose":"idle","facing":"right"}],
-"beats":[{"speaker":"zhaocai","start":0,"end":2}]}`, "zhaocai"},
+"beats":[{"speaker":"zhaocai","start":0,"end":2}]}`, "找不到对应角色包"},
 		{"view 未声明", `{"pack_dir":"cast","ground_y":0.78,
 "on_stage":[{"id":"heiwa","x":0.3,"pose":"idle","facing":"right","view":"back"}],"beats":[]}`, "back"},
 		{"beats 重叠", `{"pack_dir":"cast","ground_y":0.78,
@@ -233,6 +247,92 @@ func TestLoadRejectsBadCast(t *testing.T) {
 				t.Fatalf("错误 = %v，期望含 %q", err, tc.want)
 			}
 		})
+	}
+}
+
+// 画外音：beat 的 speaker 不在 on_stage 里是合法的——一拍的含义是「这段时间
+// 这个人在说话」，不蕴含「他可见」。旁白盖过纯转场 / 纯 B-roll / 纯图表镜头是
+// 这类视频最常见的用法之一，此前三面堵死（不写 cast 块过不了 am validate cast
+// 的台词覆盖，写了 beats 又过不了这条校验，唯一能过的写法是把角色摆上台，于是
+// 角色被画到图表镜头上）。
+func TestLoadAcceptsVoiceOverSpeakerNotOnStage(t *testing.T) {
+	cases := []struct{ name, cast string }{
+		{"台上有人，另一个人画外音", `{"pack_dir":"cast","ground_y":0.78,
+"on_stage":[{"id":"heiwa","x":0.3,"pose":"idle","facing":"right"}],
+"beats":[{"speaker":"heiwa","start":0,"end":1},{"speaker":"zhaocai","start":1,"end":2}]}`},
+		{"纯图表镜头，台上没人，全是画外音", `{"pack_dir":"cast","ground_y":0.78,
+"on_stage":[],
+"beats":[{"speaker":"zhaocai","start":0,"end":2}]}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := writeSceneWithCast(t, tc.cast)
+			writeCastPack(t, dir, "zhaocai")
+			if _, err := Load(dir); err != nil {
+				t.Fatalf("画外音说话人应当合法，却报错：%v", err)
+			}
+		})
+	}
+}
+
+// 提示词里必须把画外音这件事说破。只在节拍串里少一个标记，渲染 agent 看到的
+// 是一个和台上角色写法完全一样的说话人，照样会给它画一个形象出来。
+//
+// 用精确子串断言，不用「不得」这类通用词：提示词模板里那句与 cast 无关的防
+// 注入样板同样含「不得」，本分支已经踩过两次这个坑（把整句约束删掉断言仍然
+// PASS）。
+func TestBuildPromptMarksVoiceOverBeats(t *testing.T) {
+	dir := writeSceneWithCast(t, `{"pack_dir":"cast","ground_y":0.78,
+"on_stage":[{"id":"heiwa","x":0.34,"pose":"pointing","facing":"right"}],
+"beats":[{"speaker":"heiwa","start":0,"end":1.5},{"speaker":"zhaocai","start":1.5,"end":3.2}]}`)
+	writeCastPack(t, dir, "zhaocai")
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"zhaocai 1.500–3.200（画外音）",
+		"标注「（画外音）」的说话人本镜头不出场，不得把它画进画面，也不得为它装载 rig",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("提示词缺 %q", want)
+		}
+	}
+	// 台上角色那一拍不该被误标成画外音。
+	if !strings.Contains(prompt, "heiwa 0.000–1.500，") {
+		t.Errorf("台上角色的节拍被改写了：%s", prompt)
+	}
+}
+
+// 台上没人、只有画外音的镜头（纯转场 / 纯 B-roll / 纯图表）不得被告知
+// "本镜头有角色出场"——那正是把角色画进图表镜头的直接原因。
+func TestBuildPromptCastSectionWithEmptyStage(t *testing.T) {
+	dir := writeSceneWithCast(t, `{"pack_dir":"cast","ground_y":0.78,
+"on_stage":[],
+"beats":[{"speaker":"zhaocai","start":0,"end":3.2}]}`)
+	writeCastPack(t, dir, "zhaocai")
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(prompt, "本镜头没有角色出场，台词全部是画外音；不得把任何角色画进画面") {
+		t.Errorf("空台镜头缺画外音声明：%s", prompt)
+	}
+	for _, unwanted := range []string{"本镜头有角色出场", "cast.js", "不得留空台或入场中间态"} {
+		if strings.Contains(prompt, unwanted) {
+			t.Errorf("空台镜头的提示词不该出现 %q", unwanted)
+		}
+	}
+	if !strings.Contains(prompt, "zhaocai 0.000–3.200（画外音）") {
+		t.Errorf("空台镜头仍要给出台词节拍：%s", prompt)
 	}
 }
 

@@ -20,15 +20,15 @@ var forbiddenElements = []string{"animate", "animateTransform", "animateMotion",
 // style 里出现这些片段同样意味着自走动画。
 var forbiddenStyleTokens = []string{"@keyframes", "animation", "transition"}
 
-// jointPrefix 是可动件分组 id 的前缀。
-const jointPrefix = "j-"
+// JointPrefix 是可动件分组 id 的前缀。
+const JointPrefix = "j-"
 
-// noMirrorAttr 是 cast.js 用来标记"需要二次翻转"的属性名。facing: left 用
-// scaleX(-1) 整体镜像角色，带 noMirrorAttr 的元素会被自动二次翻转抵消，
+// NoMirrorAttr 是 cast.js 用来标记"需要二次翻转"的属性名。facing: left 用
+// scaleX(-1) 整体镜像角色，带 NoMirrorAttr 的元素会被自动二次翻转抵消，
 // 否则举牌、字幕板这类带文字的元素在朝左时会镜像成反字。
-const noMirrorAttr = "data-no-mirror"
+const NoMirrorAttr = "data-no-mirror"
 
-// mirrorSensitiveElements 是带方向/文字语义、必须显式标注 noMirrorAttr（自身
+// mirrorSensitiveElements 是带方向/文字语义、必须显式标注 NoMirrorAttr（自身
 // 或任一祖先）的元素。这是 character-rig SKILL.md 那条规则本身的机械化：
 // "牌子、字幕板、任何带文字或方向语义的元素都该在 rig.svg 里打上
 // data-no-mirror"。cast.js 的二次翻转只在 rig 子树内按 [data-no-mirror]
@@ -63,7 +63,7 @@ func ValidateRig(svgPath string, rig Rig) []string {
 	rootChecked := false
 
 	// mirrorStack 与当前还未闭合的元素栈一一对应：mirrorStack[i] 表示深度 i
-	// 的这个元素、或它的任一祖先，是否已经出现过 noMirrorAttr。<style> 走
+	// 的这个元素、或它的任一祖先，是否已经出现过 NoMirrorAttr。<style> 走
 	// DecodeElement 整体消费、不出现在这条栈里，因为它的子树不可能含真正
 	// 需要镜像语义的 SVG 文本元素，见下方 "style" 分支的说明。
 	var mirrorStack []bool
@@ -107,13 +107,13 @@ func ValidateRig(svgPath string, rig Rig) []string {
 		}
 
 		parentCovered := len(mirrorStack) > 0 && mirrorStack[len(mirrorStack)-1]
-		covered := parentCovered || hasAttr(start, noMirrorAttr)
+		covered := parentCovered || hasAttr(start, NoMirrorAttr)
 		mirrorStack = append(mirrorStack, covered)
 		if mirrorSensitiveElements[local] && !covered {
 			problems = append(problems, fmt.Sprintf(
 				"rig 内 <%s> 缺少 %s：facing=left 时角色整体镜像，带文字/方向语义的元素"+
 					"必须显式标注（自身或祖先均可）做二次翻转抵消，否则举牌类内容会镜像成反字且不报错",
-				local, noMirrorAttr))
+				local, NoMirrorAttr))
 		}
 
 		if local == "svg" && !rootChecked {
@@ -122,8 +122,8 @@ func ValidateRig(svgPath string, rig Rig) []string {
 		}
 		problems = append(problems, checkAttributes(start)...)
 		if local == "g" {
-			if id := attr(start, "id"); strings.HasPrefix(id, jointPrefix) {
-				seenJoints[strings.TrimPrefix(id, jointPrefix)] = true
+			if id := attr(start, "id"); strings.HasPrefix(id, JointPrefix) {
+				seenJoints[strings.TrimPrefix(id, JointPrefix)] = true
 				problems = append(problems, checkJointGroupNativeTransform(start, id)...)
 			}
 		}

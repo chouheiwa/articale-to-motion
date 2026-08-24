@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -96,6 +98,72 @@ func TestAssembleFailsWhenSegmentAudioContradictsDeclaredDuration(t *testing.T) 
 	}
 	if _, statErr := os.Stat(filepath.Join(root, "production", "audio", "voice.wav")); statErr == nil {
 		t.Error("不应该产出 voice.wav：声明与实测差出数倍时必须在拼接前就失败")
+	}
+}
+
+// gapPatchingFfmpeg 在 dir 下放一个叫 ffmpeg 的转发脚本，除了「生成静音」那次
+// 调用之外一律原样转发给真 ffmpeg；生成静音时把 -t 的时长换成 overrideSeconds。
+// 返回的是这个目录，调用方把它插到 PATH 最前面即可。
+//
+// 为什么要造这个替身：Assemble 里插入的静音和 Rebuild 里累加的间隔都来自
+// plan 的同一个 gapAfterMs 字段，正常输入下两边恒等，纯靠 plan.json 与音频
+// 文件构造不出「逐段都吻合、只有总时长对不上」的场景。而这正是总时长断言
+// 存在的意义——它拦的是拼接管道自身的逻辑 bug（某段间隔该不该计入算错了）。
+// 把「实际插入的静音与声明的 gapAfterMs 不一致」做成 ffmpeg 层的替身，就能在
+// 不改生产代码的前提下把那个 bug 的外部表现真实地喂给 Assemble。
+func gapPatchingFfmpeg(t *testing.T, overrideSeconds string) string {
+	t.Helper()
+	real, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		t.Skip("需要 ffmpeg")
+	}
+	dir := t.TempDir()
+	// 逐个弹出再压回队尾地重排位置参数：这样能在保持顺序的前提下改掉 -t 后面
+	// 那一个值，不必在 sh 里做引号拼接。
+	script := "#!/bin/sh\n" +
+		"real=" + strconv.Quote(real) + "\n" +
+		"case \" $* \" in *anullsrc*) ;; *) exec \"$real\" \"$@\" ;; esac\n" +
+		"count=$#\n" +
+		"swap=0\n" +
+		"i=0\n" +
+		"while [ $i -lt $count ]; do\n" +
+		"  a=\"$1\"; shift\n" +
+		"  if [ \"$swap\" = 1 ]; then a=" + strconv.Quote(overrideSeconds) + "; swap=0\n" +
+		"  elif [ \"$a\" = \"-t\" ]; then swap=1; fi\n" +
+		"  set -- \"$@\" \"$a\"\n" +
+		"  i=$((i+1))\n" +
+		"done\n" +
+		"exec \"$real\" \"$@\"\n"
+	if err := os.WriteFile(filepath.Join(dir, "ffmpeg"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+// 总时长漂移断言（Assemble 顶部文档注释里的第 2 道防线）必须有测试守着。
+//
+// 这个场景刻意让第 1 道防线（逐段声明 vs 实测）必然通过：两段音频的实测
+// 时长与 plan 里声明的分毫不差，Assemble 遍历分段时挑不出任何毛病。失配
+// 只体现在总时长上——plan 声明段间静音 200ms，拼接实际插进去 900ms，于是
+// 实测 voice.wav 比按分段推算的值长 0.7 秒。没有第 2 道断言，Assemble 会
+// 若无其事地写出 voice.wav、SRT 和 dialogue.json，而 SRT 里第二段的时间戳
+// 整体早了 0.7 秒：画面正常，只是嘴和字对不上。
+func TestAssembleFailsOnTotalDriftWhenSegmentsAllMatch(t *testing.T) {
+	newTestRunner(t)
+	root, planPath := writePlanProject(t, 1.0)
+	t.Setenv("PATH", gapPatchingFfmpeg(t, "0.900")+string(os.PathListSeparator)+os.Getenv("PATH"))
+	_, err := Assemble(context.Background(), Options{Root: root, PlanPath: planPath})
+	if err == nil {
+		t.Fatal("段间静音与声明的 gapAfterMs 不符时，总时长漂移断言必须失败")
+	}
+	// "按分段推算" 是精确子串：只有总时长漂移那条断言会这么说，逐段校验说的
+	// 是"第 N 段时间轴漂移"，ExpectTotalSeconds 那条说的是"期望"。
+	if !strings.Contains(err.Error(), "按分段推算") {
+		t.Fatalf("错误 = %v，期望是总时长漂移断言（含“按分段推算”）", err)
+	}
+	// 顺带证明第 1 道防线确实没被触发：它会点名具体段号。
+	if strings.Contains(err.Error(), "段时间轴漂移") {
+		t.Errorf("这个场景不该触发逐段校验：%v", err)
 	}
 }
 

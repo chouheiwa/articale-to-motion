@@ -106,6 +106,7 @@ func TestConcatDurationIsSumOfParts(t *testing.T) {
 		t.Errorf("拼接总时长 = %v，期望 1.7", media.DurationSeconds)
 	}
 }
+
 // Concat 假定输入已经统一格式，自己不转码；格式不一致时 concat demuxer 不会
 // 报错，只会静默拼出错误的时长。这里故意跳过 Normalize，直接把两段规格不符
 // 目标格式（48000Hz/单声道）的源文件交给 Concat，断言拿到的是错误而不是一个

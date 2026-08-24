@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/chouheiwa/articale-to-motion/internal/cast"
 )
 
 // TestBuiltinSkillsIncludesCharacterRig 守住角色驱动库的下发。
@@ -72,6 +74,32 @@ func TestCastDriverReadsJSONNotYAML(t *testing.T) {
 	} {
 		if strings.Contains(code, forbidden) {
 			t.Errorf("cast.js 不得出现 %s：动画必须挂在调用方传入的 paused timeline 上", forbidden)
+		}
+	}
+}
+
+// TestCastDriverConstantsMatchGo 锁住 Go 侧 internal/cast 与 cast.js 里
+// 那四个一式两份的常量。
+//
+// 前三个（schema、默认视图、关节前缀）漂了会在装载阶段响亮抛错，最后一个
+// data-no-mirror 漂了却是静默的：Go 侧 ValidateRig 校验的是这个属性名存在，
+// cast.js 按 [data-no-mirror] 选择器做二次翻转，任一处改名都不会有人报错，
+// 只是 facing: left 的镜头里举牌、字幕板直接出反字，退出码照样为 0。
+func TestCastDriverConstantsMatchGo(t *testing.T) {
+	body, err := fs.ReadFile(sharedTree(t), castSkillPath("cast.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 只看代码不看注释：注释里提到常量名不算“真的在用同一个值”。
+	code := stripJSLineComments(string(body))
+	for _, want := range []string{
+		"'" + cast.SchemaVersion + "'",
+		"'" + cast.DefaultView + "'",
+		"'" + cast.JointPrefix + "'",
+		"[" + cast.NoMirrorAttr + "]",
+	} {
+		if !strings.Contains(code, want) {
+			t.Errorf("cast.js 里找不到 %s：它与 Go 侧 internal/cast 的常量必须一字不差", want)
 		}
 	}
 }
