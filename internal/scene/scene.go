@@ -9,9 +9,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/chouheiwa/articale-to-motion/internal/cast"
 	"github.com/chouheiwa/articale-to-motion/internal/tools"
 	"gopkg.in/yaml.v3"
 )
+
+// floatEps 是浮点边界比较的容差：JSON 里的 0.78、9 之类的数经过反复运算
+// 后可能带一点浮点误差，严格 < / > 会把本该合法的边界值判成非法。
+const floatEps = 1e-9
 
 const (
 	TextOpen  = "<scene-text>"
@@ -32,6 +37,36 @@ type Scene struct {
 	Text            string  `json:"text"`
 	StyleGuide      string  `json:"style_guide,omitempty"`
 	Renderer        string  `json:"renderer,omitempty"`
+	// Cast 是可选的角色配置。老镜头没有这个字段，Cast 为 nil，行为完全不变。
+	Cast *Cast `json:"cast,omitempty"`
+}
+
+// Cast 是镜头的角色配置。老镜头没有这个字段，Scene.Cast 为 nil。
+type Cast struct {
+	PackDir string  `json:"pack_dir"`
+	GroundY float64 `json:"ground_y"`
+	OnStage []Actor `json:"on_stage"`
+	Beats   []Beat  `json:"beats"`
+}
+
+// Actor 是台上的一个角色。X 与 GroundY 都是画面归一化比例而不是像素：
+// 同一份镜头描述在 1080×1440 与 1080×1920 下都成立。
+type Actor struct {
+	ID     string  `json:"id"`
+	X      float64 `json:"x"`
+	Pose   string  `json:"pose"`
+	Facing string  `json:"facing"`
+	// View 是初始视图，可省略，缺省为 cast.DefaultView。
+	// 镜头内的转身由渲染 agent 在 composition 里调 turn() 表达，不写进 scene.json——
+	// scene.json 描述的是初始状态与台词节拍，不是逐拍动作脚本。
+	View string `json:"view,omitempty"`
+}
+
+// Beat 的时间已是镜头本地时间，由拆镜头时从 dialogue.json 切片并减去镜头起点。
+type Beat struct {
+	Speaker string  `json:"speaker"`
+	Start   float64 `json:"start"`
+	End     float64 `json:"end"`
 }
 
 func (s Scene) OutputPath() string { return filepath.Join(s.Directory, s.Output) }
@@ -74,7 +109,7 @@ func Load(directory string) (Scene, error) {
 	if err := json.Unmarshal(body, &fields); err != nil {
 		return Scene{}, fmt.Errorf("scene.json 不是合法 JSON：%w", err)
 	}
-	allowed := map[string]bool{"id": true, "duration_seconds": true, "output": true, "transcript": true, "text": true, "style_guide": true, "renderer": true}
+	allowed := map[string]bool{"id": true, "duration_seconds": true, "output": true, "transcript": true, "text": true, "style_guide": true, "renderer": true, "cast": true}
 	for key := range fields {
 		if !allowed[key] {
 			return Scene{}, fmt.Errorf("scene.json 含未知字段：%s", key)
@@ -128,7 +163,86 @@ func Load(directory string) (Scene, error) {
 	if result.Renderer != "" && !tools.ValidTools[result.Renderer] {
 		return Scene{}, fmt.Errorf("无效的 renderer：%s", result.Renderer)
 	}
+	if err := validateCast(result); err != nil {
+		return Scene{}, err
+	}
 	return result, nil
+}
+
+// validateCast 校验镜头的 cast 块。cast 是可选字段：没有它的老镜头
+// （Cast == nil）直接放行，行为与引入这块之前完全一致。
+func validateCast(s Scene) error {
+	c := s.Cast
+	if c == nil {
+		return nil
+	}
+	packDir, err := contained(s.Directory, c.PackDir, "cast.pack_dir")
+	if err != nil {
+		return err
+	}
+	if !isFinite(c.GroundY) || c.GroundY <= 0 || c.GroundY >= 1 {
+		return fmt.Errorf("cast.ground_y 必须在 (0,1) 区间内，收到 %v", c.GroundY)
+	}
+	onStage := make(map[string]bool, len(c.OnStage))
+	for _, actor := range c.OnStage {
+		if actor.ID == "" {
+			return fmt.Errorf("cast.on_stage 中存在缺少 id 的角色")
+		}
+		if onStage[actor.ID] {
+			return fmt.Errorf("cast.on_stage 中角色 id 重复：%s", actor.ID)
+		}
+		if !isFinite(actor.X) || actor.X <= 0 || actor.X >= 1 {
+			return fmt.Errorf("角色 %s 的 x 必须在 (0,1) 区间内，收到 %v", actor.ID, actor.X)
+		}
+		if actor.Facing != "left" && actor.Facing != "right" {
+			return fmt.Errorf("角色 %s 的 facing 必须是 left 或 right，收到 %q", actor.ID, actor.Facing)
+		}
+		actorDir, err := contained(packDir, actor.ID, fmt.Sprintf("cast.on_stage 中角色 %s 的 id", actor.ID))
+		if err != nil {
+			return err
+		}
+		pack, err := cast.Load(actorDir)
+		if err != nil {
+			return fmt.Errorf("角色 %s 的角色包加载失败：%w", actor.ID, err)
+		}
+		if _, ok := pack.Poses[actor.Pose]; !ok {
+			return fmt.Errorf("角色 %s 的 pose %q 不在角色包的姿势列表中", actor.ID, actor.Pose)
+		}
+		if actor.View != "" {
+			known := false
+			for _, name := range pack.ViewNames() {
+				if name == actor.View {
+					known = true
+					break
+				}
+			}
+			if !known {
+				return fmt.Errorf("角色 %s 的 view %q 不在角色包声明的视图内：%v", actor.ID, actor.View, pack.ViewNames())
+			}
+		}
+		// on_stage 已在上面判过重复，此处登记用于校验 beats.speaker。
+		onStage[actor.ID] = true
+	}
+	prevEnd := math.Inf(-1)
+	for i, beat := range c.Beats {
+		if beat.Speaker == "" {
+			return fmt.Errorf("cast.beats[%d] 缺少 speaker", i)
+		}
+		if !isFinite(beat.Start) || !isFinite(beat.End) || beat.Start >= beat.End {
+			return fmt.Errorf("cast.beats[%d] 的 start 必须小于 end，收到 start=%v end=%v", i, beat.Start, beat.End)
+		}
+		if beat.Start < -floatEps || beat.End > s.DurationSeconds+floatEps {
+			return fmt.Errorf("cast.beats[%d] 超出镜头时长 %.3f 秒：[%v, %v]", i, s.DurationSeconds, beat.Start, beat.End)
+		}
+		if !onStage[beat.Speaker] {
+			return fmt.Errorf("cast.beats[%d] 的 speaker %q 不在台上", i, beat.Speaker)
+		}
+		if beat.Start < prevEnd-floatEps {
+			return fmt.Errorf("cast.beats 未按 start 递增排列或与前一拍重叠：第 %d 拍", i)
+		}
+		prevEnd = beat.End
+	}
+	return nil
 }
 
 func isFinite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
