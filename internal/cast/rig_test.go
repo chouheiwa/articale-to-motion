@@ -69,6 +69,8 @@ func TestValidateRigRejects(t *testing.T) {
   <g id="j-frontLeg">`, 1), "non-scaling-stroke"},
 		{"SVG 里写了 transform-origin",
 			strings.Replace(goodSVG, `<g id="j-head">`, `<g id="j-head" transform-origin="200 168">`, 1), "transform-origin"},
+		{"j- 分组带原生 transform",
+			strings.Replace(goodSVG, `<g id="j-head">`, `<g id="j-head" transform="translate(10,0)">`, 1), "transform"},
 		{"内联 style 里有 transition",
 			strings.Replace(goodSVG, `<g id="j-head">`, `<g id="j-head" style="transition: transform 1s">`, 1), "transition"},
 		{"内联 style 里有 animation",
@@ -82,5 +84,15 @@ func TestValidateRigRejects(t *testing.T) {
 				t.Errorf("问题列表 = %q，期望含 %q", joined, tc.want)
 			}
 		})
+	}
+}
+
+// 非 j- 分组上的 transform 是正常美术手段（比如整体缩放/平移一个装饰性
+// 分组），不应被误伤——禁令只针对驱动库要独占的 j-* 关节分组。
+func TestValidateRigAllowsTransformOutsideJointGroups(t *testing.T) {
+	svg := strings.Replace(goodSVG, "</svg>",
+		`<g transform="translate(5,5)"><rect width="1" height="1"/></g></svg>`, 1)
+	if problems := ValidateRig(writeSVG(t, svg), goodRig); len(problems) != 0 {
+		t.Fatalf("非 j- 分组上的 transform 不应报错，得到 %v", problems)
 	}
 }

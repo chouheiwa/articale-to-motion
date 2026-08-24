@@ -92,3 +92,47 @@ func TestPreviewProducesContactSheetForManyPoses(t *testing.T) {
 		t.Fatalf("contact sheet 应存在于 %s：%v", sheet, err)
 	}
 }
+
+// id 不在 <g 后第一位（手写 rig 里很常见）时，正则式实现会完全不匹配，
+// 静默丢掉整个关节的旋转、不报错。改用 xml.Decoder 定位注入点后必须
+// 与属性顺序无关。
+func TestPoseSVGInjectsRegardlessOfAttributeOrder(t *testing.T) {
+	svg := strings.Replace(goodSVG, `<g id="j-head">`, `<g class="limb" id="j-head">`, 1)
+	dir := writePack(t, goodYAML)
+	if err := os.WriteFile(filepath.Join(dir, "rig.svg"), []byte(svg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pack, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := PoseSVG(pack, "pointing")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(body, `rotate(-6 200 168)`) {
+		t.Errorf("id 不在第一位时应仍能注入 head 的旋转，实际：%s", body)
+	}
+}
+
+// 自闭合的 j- 分组（<g id="j-x"/>）注入点在 "/>" 之前，不是任意 ">" 之前。
+func TestPoseSVGInjectsIntoSelfClosingJointGroup(t *testing.T) {
+	svg := strings.Replace(goodSVG,
+		`<g id="j-frontLeg"><path d="M176 330 L176 420" stroke="#000" stroke-width="6"/></g>`,
+		`<g id="j-frontLeg"/>`, 1)
+	dir := writePack(t, goodYAML)
+	if err := os.WriteFile(filepath.Join(dir, "rig.svg"), []byte(svg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pack, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := PoseSVG(pack, "pointing")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(body, `<g id="j-frontLeg" transform="rotate(48 176 330)"/>`) {
+		t.Errorf("自闭合 j- 分组应正确注入旋转，实际：%s", body)
+	}
+}

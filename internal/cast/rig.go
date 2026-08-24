@@ -84,6 +84,7 @@ func ValidateRig(svgPath string, rig Rig) []string {
 		if local == "g" {
 			if id := attr(start, "id"); strings.HasPrefix(id, jointPrefix) {
 				seenJoints[strings.TrimPrefix(id, jointPrefix)] = true
+				problems = append(problems, checkJointGroupNativeTransform(start, id)...)
 			}
 		}
 	}
@@ -107,6 +108,21 @@ func checkViewBox(start xml.StartElement, rig Rig) []string {
 		}
 	}
 	return nil
+}
+
+// checkJointGroupNativeTransform 禁止 j- 分组自带原生 transform 属性。
+//
+// 预览（cast.PoseSVG）与运行时（cast.js 的 pose()）都用
+// setAttribute('transform', 'rotate(...)') 独占这个属性：手写的 transform
+// 要么被追加成第二个同名属性（无效 XML，rsvg-convert 行为不可预期），要么
+// 被静默覆盖——本地看着正常，成片是错的，退出码为 0，与本文件里已有的
+// 自走动画禁令是同一类危害。位移/缩放请放在该分组的父级或子级元素上。
+func checkJointGroupNativeTransform(start xml.StartElement, id string) []string {
+	if attr(start, "transform") == "" {
+		return nil
+	}
+	return []string{fmt.Sprintf(
+		"rig 内 <g id=%q> 不得写 transform：驱动库（预览与运行时）独占这个属性，位移/缩放请放在该分组的父级或子级元素上", id)}
 }
 
 func checkAttributes(start xml.StartElement) []string {
