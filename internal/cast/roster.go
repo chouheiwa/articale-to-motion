@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -57,12 +58,42 @@ func LoadRoster(root string) (Roster, error) {
 	return roster, nil
 }
 
+// containedPack 检查 packs 路径是否逃出项目根目录。
+// 处理 `../../outside` 这类相对路径逃逸，以及指向项目外的软链。
+func containedPack(root, rel string) (string, error) {
+	if rel == "" || filepath.IsAbs(rel) {
+		return "", fmt.Errorf("%s 的 packs 必须是非空相对路径，收到 %q", RosterFile, rel)
+	}
+	root, _ = filepath.Abs(root)
+	target, _ := filepath.Abs(filepath.Join(root, rel))
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return "", fmt.Errorf("无法解析项目目录：%w", err)
+	}
+	resolvedTarget, resolveErr := filepath.EvalSymlinks(target)
+	if resolveErr != nil {
+		// 目标不存在（可能还没有被创建），尝试解析其父目录
+		resolvedParent, parentErr := filepath.EvalSymlinks(filepath.Dir(target))
+		if parentErr == nil {
+			resolvedTarget = filepath.Join(resolvedParent, filepath.Base(target))
+		} else {
+			resolvedTarget = target
+		}
+	}
+	rel, err = filepath.Rel(resolvedRoot, resolvedTarget)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("%s 的 packs 不得逃出项目目录：%s", RosterFile, rel)
+	}
+	return resolvedTarget, nil
+}
+
 // LoadPacks 按班底加载全部角色包，键是角色 id。
 func (r Roster) LoadPacks(root string) (map[string]Pack, error) {
 	out := make(map[string]Pack, len(r.Packs))
 	for _, rel := range r.Packs {
-		if filepath.IsAbs(rel) {
-			return nil, fmt.Errorf("%s 的 packs 必须是项目内相对路径，收到 %q", RosterFile, rel)
+		// 检查路径安全性，防止逃逸和软链指向项目外
+		if _, err := containedPack(root, rel); err != nil {
+			return nil, err
 		}
 		pack, err := Load(filepath.Join(root, rel))
 		if err != nil {
