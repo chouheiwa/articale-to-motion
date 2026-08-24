@@ -766,6 +766,7 @@ SVG 转 PNG 这一步不能用 ImageMagick 代替：多数 ImageMagick 构建自
 	styleCmd.Flags().BoolVar(&regenerateExamples, "regenerate-examples", false, "重新生成通用风格示例 PNG，需要 rsvg-convert（librsvg）与 magick（ImageMagick）两个命令")
 	validateCmd.AddCommand(styleCmd)
 	validateCmd.AddCommand(newValidateVideoCommand(stdout, &projectRoot))
+	validateCmd.AddCommand(newValidateCastCommand(stdout))
 	root.AddCommand(validateCmd)
 	root.AddCommand(newConcatCommand(stdout, &projectRoot))
 	root.AddCommand(newCastCmd(stdout))

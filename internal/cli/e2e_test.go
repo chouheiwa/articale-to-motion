@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/chouheiwa/articale-to-motion/internal/dialogue"
 )
 
 // fakeRenderer 装一个假渲染工具：它不真的渲染，只把预先准备好的 mp4 拷到
@@ -203,6 +205,148 @@ func TestEndToEndCoverageMismatchStopsBeforeRendering(t *testing.T) {
 	}
 	if _, err := os.Stat(marker); err != nil {
 		t.Error("不加 --strict-coverage 时应当照常渲染")
+	}
+}
+
+// TestEndToEndCastNarrationValidate 把多角色叙事项目的整条链路串起来跑一遍：
+// 初始化 → 建角色 → 校验角色包 → 装配对白 → 声明镜头节拍 → 项目级一致性校验。
+//
+// 单元测试各自覆盖了每一环（cast.Load、dialogue.Assemble、scene.Load、
+// CastProblems 本身），但没有任何测试证明这些产物真的能首尾相接：cast new
+// 写出的骨架能不能被 dialogue assemble 的说话人字段对上、装配出的
+// dialogue.json 时间戳能不能被镜头 cast.beats 精确覆盖、am validate cast
+// 读到的是不是这一整条链路的真实产物而不是手造的 fixture。
+func TestEndToEndCastNarrationValidate(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("需要 ffmpeg，本机未安装")
+	}
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		t.Skip("需要 ffprobe，本机未安装")
+	}
+
+	project := t.TempDir()
+
+	// 1. 初始化多角色项目：必须传 --skip-hyperframes，否则会联网安装。
+	if out, err := runCLI(t, project, "init", "--canvas", "vertical-3x4",
+		"--narration", "cast", "--skip-hyperframes"); err != nil {
+		t.Fatalf("init 失败：%v（%s）", err, out)
+	}
+
+	// 2. 生成角色骨架。
+	if out, err := runCLI(t, project, "cast", "new", "heiwa"); err != nil {
+		t.Fatalf("cast new 失败：%v（%s）", err, out)
+	}
+
+	// 手填 voiceId：cast new 留空的骨架过得了自洽校验，但过不了本任务新增的
+	// 音色校验（VoiceFor 要求 voiceId 非空）。
+	characterYAMLPath := filepath.Join(project, "cast", "heiwa", "character.yaml")
+	body, err := os.ReadFile(characterYAMLPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	filled := strings.ReplaceAll(string(body), `voiceId: ""`, `voiceId: "v-heiwa"`)
+	if filled == string(body) {
+		t.Fatal("骨架里找不到待填的 voiceId 占位符")
+	}
+	if err := os.WriteFile(characterYAMLPath, []byte(filled), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// cast new 只落地角色包目录，不登记进项目班底——登记是 cast add 的职责。
+	// 这里手工登记，模拟人工编辑 cast.yaml 把角色纳入班底的真实操作。
+	rosterPath := filepath.Join(project, "cast.yaml")
+	rosterBody, err := os.ReadFile(rosterPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	registered := strings.Replace(string(rosterBody), "packs: []", "packs: [cast/heiwa]", 1)
+	if registered == string(rosterBody) {
+		t.Fatalf("cast.yaml 里找不到待替换的空 packs：%s", rosterBody)
+	}
+	if err := os.WriteFile(rosterPath, []byte(registered), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// 3. 校验角色包：改完 character.yaml 必须重新跑一次，否则 character.json
+	// 仍是旧的（cast.go 的文档注释就是这么写的）。
+	if out, err := runCLI(t, project, "cast", "validate"); err != nil {
+		t.Fatalf("cast validate 失败：%v（%s）", err, out)
+	}
+
+	// 4. 造两段音频与 plan.json：都是 heiwa 说的，一段 1.0 秒、一段 0.5 秒，
+	// 段间静音 200ms。
+	audioDir := filepath.Join(project, "production", "audio")
+	if err := os.MkdirAll(audioDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	dialogueTone(t, filepath.Join(audioDir, "seg-001-heiwa.wav"), 1.0)
+	dialogueTone(t, filepath.Join(audioDir, "seg-002-heiwa.wav"), 0.5)
+	plan := dialogue.Plan{
+		Schema: dialogue.SchemaVersion,
+		Segments: []dialogue.PlanSegment{
+			{Index: 1, Speaker: "heiwa", VoiceID: "v-heiwa", Audio: "production/audio/seg-001-heiwa.wav",
+				GapAfterMs: 200, Lines: []dialogue.PlanLine{{Text: "第一句", StartSeconds: 0, EndSeconds: 1.0}}},
+			{Index: 2, Speaker: "heiwa", VoiceID: "v-heiwa", Audio: "production/audio/seg-002-heiwa.wav",
+				GapAfterMs: 0, Lines: []dialogue.PlanLine{{Text: "第二句", StartSeconds: 0, EndSeconds: 0.5}}},
+		},
+	}
+	planBody, err := json.MarshalIndent(plan, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(audioDir, "plan.json"), planBody, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// 5. 装配对白：产出 production/dialogue.json，全局时间轴是
+	// [0, 1.0] 和 [1.2, 1.7]（段间 200ms 静音）。
+	if out, err := runCLI(t, project, "dialogue", "assemble"); err != nil {
+		t.Fatalf("dialogue assemble 失败：%v（%s）", err, out)
+	}
+
+	// 6. 写一个带 cast 块的 scene.json：cast.beats 精确复现上面两行的全局
+	// 时间戳，pack_dir 指向镜头目录内自带的一份角色包拷贝——scene.Load 不
+	// 允许 pack_dir 逃出镜头目录，项目根的 cast/heiwa 不能直接引用。
+	sceneDir := filepath.Join(project, "scenes", "scene-001")
+	if err := os.MkdirAll(sceneDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sceneDir, "transcript.txt"), []byte("占位字幕"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := copyTree(filepath.Join(project, "cast", "heiwa"), filepath.Join(sceneDir, "cast", "heiwa")); err != nil {
+		t.Fatalf("拷贝角色包到镜头目录失败：%v", err)
+	}
+	sceneJSON := `{
+  "id": "scene-001",
+  "duration_seconds": 1.7,
+  "output": "out.mp4",
+  "transcript": "transcript.txt",
+  "text": "黑娃说两句话",
+  "cast": {
+    "pack_dir": "cast",
+    "ground_y": 0.78,
+    "on_stage": [
+      {"id": "heiwa", "x": 0.5, "pose": "idle", "facing": "right"}
+    ],
+    "beats": [
+      {"speaker": "heiwa", "start": 0, "end": 1.0},
+      {"speaker": "heiwa", "start": 1.2, "end": 1.7}
+    ]
+  }
+}
+`
+	if err := os.WriteFile(filepath.Join(sceneDir, "scene.json"), []byte(sceneJSON), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// 7. 项目级一致性校验：班底、对白时间线、镜头节拍三者必须互相吻合。
+	out, err := runCLI(t, project, "validate", "cast")
+	if err != nil {
+		t.Fatalf("validate cast 应当通过，实际失败：%v（%s）", err, out)
+	}
+	if !strings.Contains(out, "通过") {
+		t.Errorf("缺少通过结论：%s", out)
 	}
 }
 
