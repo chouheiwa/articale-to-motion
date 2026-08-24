@@ -296,10 +296,13 @@ func TestInitRequiresExplicitCanvasWhenNotInteractive(t *testing.T) {
 	}
 }
 
+// --skip-hyperframes：本包其余 7 处调用 init 的测试都带这个开关，避免走真实的
+// 联网 HyperFrames 安装——这里断言的是 --narration 的行为，与技能安装无关，
+// 跟随既有约定同样跳过，让用例在无网环境下也能快速、确定地跑完。
 func TestInitNarrationSoloHasNoRoster(t *testing.T) {
 	root := t.TempDir()
 	target := filepath.Join(root, "solo")
-	if _, err := runCLI(t, root, "init", target, "--canvas", "vertical-3x4"); err != nil {
+	if _, err := runCLI(t, root, "init", target, "--canvas", "vertical-3x4", "--skip-hyperframes"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(target, "cast.yaml")); !os.IsNotExist(err) {
@@ -310,15 +313,26 @@ func TestInitNarrationSoloHasNoRoster(t *testing.T) {
 func TestInitNarrationCastWritesRoster(t *testing.T) {
 	root := t.TempDir()
 	target := filepath.Join(root, "story")
-	if _, err := runCLI(t, root, "init", target, "--canvas", "vertical-3x4", "--narration", "cast"); err != nil {
+	if _, err := runCLI(t, root, "init", target, "--canvas", "vertical-3x4", "--narration", "cast", "--skip-hyperframes"); err != nil {
 		t.Fatal(err)
 	}
 	body, err := os.ReadFile(filepath.Join(target, "cast.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(body), "schema: cast/v1") {
-		t.Errorf("cast.yaml = %s", body)
+	// packs: [] 是明确裁定过的设计：am init 刚建的项目本来就还没有角色包，
+	// 钉住这个具体值，防止后人顺手给它补一个占位角色。defaults 的三个值
+	// 与 am cast add 新建 cast.yaml 时使用的默认值必须一致。
+	for _, want := range []string{
+		"schema: cast/v1",
+		"packs: []",
+		"ground_y: 0.78",
+		"turn: 240",
+		"interject: 100",
+	} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("cast.yaml 缺少 %q，实际内容：\n%s", want, body)
+		}
 	}
 	// 附录随 shared 树无条件下发，两种模式都在。
 	if _, err := os.Stat(filepath.Join(target, "PROMPT-CAST-ADDENDUM.md")); err != nil {

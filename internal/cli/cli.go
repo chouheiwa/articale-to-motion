@@ -31,6 +31,7 @@ import (
 	"github.com/chouheiwa/articale-to-motion/internal/tools"
 	"github.com/chouheiwa/articale-to-motion/internal/validate"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 const Version = "1.0.0"
@@ -53,16 +54,24 @@ const (
 	narrationCast = "cast"
 )
 
-// castInitGroundY、castInitGapMs 是 am init --narration cast 写出的 cast.yaml
-// 里 defaults 的取值，与 am cast add 新建 cast.yaml 时的默认值（castDefaultGroundY、
-// castDefaultGapMs，见 cast.go）保持一致，避免同一套默认值在两处各自维护、悄悄漂移。
-func castInitYAML() string {
-	return fmt.Sprintf(`schema: %s
-packs: []
-defaults:
-  ground_y: %g
-  gap_ms: { turn: %d, interject: %d }
-`, cast.SchemaVersion, castDefaultGroundY, castDefaultGapMs.Turn, castDefaultGapMs.Interject)
+// castInitYAML 构造 am init --narration cast 要写出的 cast.yaml 内容。
+//
+// 走 cast.Roster{} + yaml.Marshal，而不是手写字符串拼 YAML：与 am cast add
+// 的 registerCastPack 共用同一条构造路径，Roster/Defaults 以后加字段时两条
+// 命令会一起跟上，不会因为这里是手写模板而悄悄漂移出一份过时的默认值。
+// defaults 取值与 registerCastPack 新建 cast.yaml 时完全一致（见 cast.go 的
+// castDefaultGroundY、castDefaultGapMs）；Packs 留空（零值 nil），
+// yaml.Marshal 序列化为 `packs: []`。
+func castInitYAML() ([]byte, error) {
+	roster := cast.Roster{
+		Schema:   cast.SchemaVersion,
+		Defaults: cast.Defaults{GroundY: castDefaultGroundY, GapMs: castDefaultGapMs},
+	}
+	body, err := yaml.Marshal(roster)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 %s 失败：%w", cast.RosterFile, err)
+	}
+	return body, nil
 }
 
 // writeCastScaffold 在 target 下写出 cast.yaml 并建出空的 cast/ 目录。
@@ -80,7 +89,10 @@ func writeCastScaffold(target string) error {
 		return fmt.Errorf("创建 %s 目录失败：%w", cast.RosterFile, err)
 	}
 	rosterPath := filepath.Join(target, cast.RosterFile)
-	body := []byte(castInitYAML())
+	body, err := castInitYAML()
+	if err != nil {
+		return err
+	}
 	if existing, err := os.ReadFile(rosterPath); err == nil {
 		if !bytes.Equal(existing, body) {
 			return fmt.Errorf("目标文件已存在且内容不同：%s", rosterPath)

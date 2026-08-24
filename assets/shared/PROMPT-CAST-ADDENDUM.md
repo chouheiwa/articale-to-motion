@@ -9,6 +9,7 @@
 - 触发条件只有一个：项目根存在 `cast.yaml`。不存在则本附录不适用。
 - 出场角色必须先通过 `am cast add <外部角色包目录>` 或 `am cast new <id>` 登记进 `cast.yaml` 的 `packs` 列表，才能出现在对话体脚本和 `scene.json` 的 `cast` 块里。
 - `am init --narration cast` 建出的 `cast.yaml` 里 `packs` 是空列表——这是预期状态，不是错误。项目在第一次 `am cast add` / `am cast new` 之前本来就还没有可用角色，此时若强行渲染角色相关镜头会在角色装载阶段清楚报错，好过带着不存在的角色渲到一半才发现。
+- `am init --narration cast` 同时会建出空的 `cast/` 目录。Git 不跟踪空目录，`git status` 在第一次 `am cast add` / `am cast new` 之前不会显示它——这是正常现象，不代表目录没建成功；目录一旦被写入第一个角色包（即目录不再为空），Git 就会正常跟踪其内容。
 
 ## 一、对话体脚本格式
 
