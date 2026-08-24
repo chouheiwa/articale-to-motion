@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -59,6 +60,21 @@ type Pose map[string]float64
 // IdlePose 是每个角色包必须提供的基准姿势。
 const IdlePose = "idle"
 
+// DefaultView 是 rig 字段所代表的视图名。它不出现在 views 里，
+// 但 ViewNames / View 都把它当作一个正常视图对待，调用方无需分两条路径。
+const DefaultView = "front"
+
+// Turn 是一次转身：经过哪些中间视图、总时长多少。
+//
+// 不做自动寻路：哪条路径好看是创作判断，不是图论问题。未声明的组合一律非法。
+type Turn struct {
+	Via        []string `yaml:"via" json:"via"`
+	DurationMs int      `yaml:"durationMs" json:"durationMs"`
+}
+
+// turnKeyPattern 约束 turns 的键必须写成 <from>-><to>。
+var turnKeyPattern = regexp.MustCompile(`^([a-z][a-z0-9-]*)->([a-z][a-z0-9-]*)$`)
+
 type Pack struct {
 	Dir     string           `yaml:"-" json:"-"`
 	Schema  string           `yaml:"schema" json:"schema"`
@@ -67,6 +83,8 @@ type Pack struct {
 	Summary string           `yaml:"summary" json:"summary"`
 	Voice   map[string]Voice `yaml:"voice" json:"voice"`
 	Rig     Rig              `yaml:"rig" json:"rig"`
+	Views   map[string]Rig   `yaml:"views" json:"views"`
+	Turns   map[string]Turn  `yaml:"turns" json:"turns"`
 	Scale   Scale            `yaml:"scale" json:"scale"`
 	Poses   map[string]Pose  `yaml:"poses" json:"poses"`
 }
@@ -95,19 +113,16 @@ func ParsePack(dir string) (Pack, error) {
 	if len(pack.Voice) == 0 {
 		return Pack{}, fmt.Errorf("角色包 %s 没有声明任何音色", pack.ID)
 	}
-	if pack.Rig.File == "" {
-		return Pack{}, fmt.Errorf("角色包 %s 缺少 rig.file", pack.ID)
+	if err := validateRigFields(pack.ID, DefaultView, pack.Rig); err != nil {
+		return Pack{}, err
 	}
-	if len(pack.Rig.Joints) == 0 {
-		return Pack{}, fmt.Errorf("角色包 %s 没有声明任何关节", pack.ID)
+	if _, ok := pack.Views[DefaultView]; ok {
+		return Pack{}, fmt.Errorf("角色包 %s 的 views 不能再声明 %s，它已经是 rig 字段代表的默认视图", pack.ID, DefaultView)
 	}
-	for name, joint := range pack.Rig.Joints {
-		if joint.Rotate[0] >= joint.Rotate[1] {
-			return Pack{}, fmt.Errorf("角色包 %s 关节 %s 的 rotate 区间无效：%v", pack.ID, name, joint.Rotate)
+	for name, view := range pack.Views {
+		if err := validateRigFields(pack.ID, name, view); err != nil {
+			return Pack{}, err
 		}
-	}
-	if pack.Rig.BaselineY <= pack.Rig.ViewBox[1] || pack.Rig.BaselineY > pack.Rig.ViewBox[1]+pack.Rig.ViewBox[3] {
-		return Pack{}, fmt.Errorf("角色包 %s 的 baselineY=%v 落在 viewBox 之外", pack.ID, pack.Rig.BaselineY)
 	}
 	lo, hi := pack.Scale.HeightRatio[0], pack.Scale.HeightRatio[1]
 	if lo <= 0 || hi <= lo || hi >= 1 {
@@ -116,6 +131,7 @@ func ParsePack(dir string) (Pack, error) {
 	if _, ok := pack.Poses[IdlePose]; !ok {
 		return Pack{}, fmt.Errorf("角色包 %s 必须提供 %s 姿势作为基准", pack.ID, IdlePose)
 	}
+	viewNames := pack.ViewNames()
 	for poseName, pose := range pack.Poses {
 		for jointName, angle := range pose {
 			joint, ok := pack.Rig.Joints[jointName]
@@ -126,9 +142,105 @@ func ParsePack(dir string) (Pack, error) {
 				return Pack{}, fmt.Errorf("角色包 %s 姿势 %s 的关节 %s 角度 %v 超出区间 %v",
 					pack.ID, poseName, jointName, angle, joint.Rotate)
 			}
+			// 姿势跨视图共享，但关节是每视图独立声明的：同一个姿势换个视图，
+			// 用到的关节必须在那个视图里也存在，且角度落在那个视图自己的
+			// rotate 区间内。漏了这条检查，角色一转身某个姿势就会静默失效。
+			for _, viewName := range viewNames {
+				if viewName == DefaultView {
+					continue
+				}
+				view := pack.Views[viewName]
+				viewJoint, ok := view.Joints[jointName]
+				if !ok {
+					return Pack{}, fmt.Errorf("角色包 %s 姿势 %s 的关节 %s 在视图 %s 里没有声明",
+						pack.ID, poseName, jointName, viewName)
+				}
+				if angle < viewJoint.Rotate[0] || angle > viewJoint.Rotate[1] {
+					return Pack{}, fmt.Errorf("角色包 %s 姿势 %s 的关节 %s 角度 %v 在视图 %s 里超出区间 %v",
+						pack.ID, poseName, jointName, angle, viewName, viewJoint.Rotate)
+				}
+			}
 		}
 	}
+	if err := validateTurns(pack.ID, pack.Turns, viewNames); err != nil {
+		return Pack{}, err
+	}
 	return pack, nil
+}
+
+// validateRigFields 校验一个 rig（不论是默认视图的 rig 字段，还是 views 里的
+// 某个视图）本身的字段是否完整合法。viewName 只用来让错误信息点出问题出在
+// 哪个视图，不参与校验逻辑。
+func validateRigFields(id, viewName string, rig Rig) error {
+	if rig.File == "" {
+		return fmt.Errorf("角色包 %s 的视图 %s 缺少 file", id, viewName)
+	}
+	if len(rig.Joints) == 0 {
+		return fmt.Errorf("角色包 %s 的视图 %s 没有声明任何关节", id, viewName)
+	}
+	for name, joint := range rig.Joints {
+		if joint.Rotate[0] >= joint.Rotate[1] {
+			return fmt.Errorf("角色包 %s 的视图 %s 关节 %s 的 rotate 区间无效：%v", id, viewName, name, joint.Rotate)
+		}
+	}
+	if rig.BaselineY <= rig.ViewBox[1] || rig.BaselineY > rig.ViewBox[1]+rig.ViewBox[3] {
+		return fmt.Errorf("角色包 %s 的视图 %s 的 baselineY=%v 落在 viewBox 之外", id, viewName, rig.BaselineY)
+	}
+	return nil
+}
+
+// validateTurns 校验 turns 声明：键必须匹配 <from>-><to>，from/to/via 引用的
+// 视图都必须已经声明过，durationMs 必须为正。
+func validateTurns(id string, turns map[string]Turn, viewNames []string) error {
+	known := make(map[string]bool, len(viewNames))
+	for _, name := range viewNames {
+		known[name] = true
+	}
+	for key, turn := range turns {
+		m := turnKeyPattern.FindStringSubmatch(key)
+		if m == nil {
+			return fmt.Errorf("角色包 %s 的 turns 键 %q 格式不对，必须是 <from>-><to>", id, key)
+		}
+		from, to := m[1], m[2]
+		if !known[from] {
+			return fmt.Errorf("角色包 %s 的 turns %q 引用了未声明的视图 %s", id, key, from)
+		}
+		if !known[to] {
+			return fmt.Errorf("角色包 %s 的 turns %q 引用了未声明的视图 %s", id, key, to)
+		}
+		for _, via := range turn.Via {
+			if !known[via] {
+				return fmt.Errorf("角色包 %s 的 turns %q 的 via 引用了未声明的视图 %s", id, key, via)
+			}
+		}
+		if turn.DurationMs <= 0 {
+			return fmt.Errorf("角色包 %s 的 turns %q 的 durationMs 必须大于 0，收到 %d", id, key, turn.DurationMs)
+		}
+	}
+	return nil
+}
+
+// View 按名字返回视图，DefaultView 回落到 rig 字段。
+func (p Pack) View(name string) (Rig, error) {
+	if name == "" || name == DefaultView {
+		return p.Rig, nil
+	}
+	view, ok := p.Views[name]
+	if !ok {
+		return Rig{}, fmt.Errorf("角色 %s 没有视图 %s", p.ID, name)
+	}
+	return view, nil
+}
+
+// ViewNames 返回全部视图名（含默认视图），已排序，便于确定性遍历。
+func (p Pack) ViewNames() []string {
+	names := make([]string, 0, len(p.Views)+1)
+	names = append(names, DefaultView)
+	for name := range p.Views {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 // VoiceFor 返回指定 provider 的音色声明。
