@@ -69,6 +69,10 @@ func TestValidateRigRejects(t *testing.T) {
   <g id="j-frontLeg">`, 1), "non-scaling-stroke"},
 		{"SVG 里写了 transform-origin",
 			strings.Replace(goodSVG, `<g id="j-head">`, `<g id="j-head" transform-origin="200 168">`, 1), "transform-origin"},
+		{"内联 style 里有 transition",
+			strings.Replace(goodSVG, `<g id="j-head">`, `<g id="j-head" style="transition: transform 1s">`, 1), "transition"},
+		{"内联 style 里有 animation",
+			strings.Replace(goodSVG, `<g id="j-head">`, `<g id="j-head" style="animation: spin 2s linear infinite">`, 1), "animation"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

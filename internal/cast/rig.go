@@ -23,6 +23,19 @@ var forbiddenStyleTokens = []string{"@keyframes", "animation", "transition"}
 // jointPrefix 是可动件分组 id 的前缀。
 const jointPrefix = "j-"
 
+// checkForbiddenStyleTokens 检查内容中是否包含禁止的样式词汇（@keyframes/animation/transition）。
+// location 用于错误消息，例如 "rig 的 <style>" 或 "rig 的 style 属性"。
+func checkForbiddenStyleTokens(content, location string) []string {
+	var problems []string
+	lower := strings.ToLower(content)
+	for _, needle := range forbiddenStyleTokens {
+		if strings.Contains(lower, needle) {
+			problems = append(problems, fmt.Sprintf("%s 内不得出现 %s：动画必须由 timeline 驱动", location, needle))
+		}
+	}
+	return problems
+}
+
 // ValidateRig 校验 rig.svg 的全部硬约束，返回中文问题列表。
 // 返回空切片表示通过。一次返回所有问题，避免修一条报一条。
 func ValidateRig(svgPath string, rig Rig) []string {
@@ -59,12 +72,7 @@ func ValidateRig(svgPath string, rig Rig) []string {
 		if local == "style" {
 			var body string
 			if err := decoder.DecodeElement(&body, &start); err == nil {
-				lower := strings.ToLower(body)
-				for _, token := range forbiddenStyleTokens {
-					if strings.Contains(lower, token) {
-						problems = append(problems, fmt.Sprintf("rig 的 <style> 内不得出现 %s：动画必须由 timeline 驱动", token))
-					}
-				}
+				problems = append(problems, checkForbiddenStyleTokens(body, "rig 的 <style>")...)
 			}
 			continue
 		}
@@ -114,8 +122,11 @@ func checkAttributes(start xml.StartElement) []string {
 			problems = append(problems, "rig 内不得使用 vector-effect=\"non-scaling-stroke\"：角色只占画面高度 22–32%，描边不等比缩放会细成发丝")
 		case name == "transform-origin":
 			problems = append(problems, "rig 内不得写 transform-origin：pivot 的唯一真相在 character.yaml")
-		case name == "style" && strings.Contains(a.Value, "transform-origin"):
-			problems = append(problems, "rig 的 style 属性内不得写 transform-origin：pivot 的唯一真相在 character.yaml")
+		case name == "style":
+			if strings.Contains(a.Value, "transform-origin") {
+				problems = append(problems, "rig 的 style 属性内不得写 transform-origin：pivot 的唯一真相在 character.yaml")
+			}
+			problems = append(problems, checkForbiddenStyleTokens(a.Value, "rig 的 style 属性")...)
 		}
 	}
 	return problems
