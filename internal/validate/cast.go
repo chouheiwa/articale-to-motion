@@ -15,10 +15,17 @@ import (
 )
 
 // beatCoverageToleranceSeconds 是把镜头本地 beats 换算回全局时间后，与
-// dialogue.json 对应行做覆盖比对时的容差。dialogue.json 的时间戳本身就是
-// Rebuild 按实测时长缩放算出来的浮点数，1 毫秒足够吸收累加误差，又远小于
-// 「beats 真的漏标了一整行」这类实际问题的量级。
+// dialogue.json 对应行做覆盖/相接比对时的容差。dialogue.json 与 beats 换算
+// 出来的时间戳都是浮点数（Rebuild 按实测时长缩放算出来的），1 毫秒足够吸收
+// 累加误差，又远小于「beats 真的漏标了一整行」这类实际问题的量级。
 const beatCoverageToleranceSeconds = 0.001
+
+// lineOverlapToleranceSeconds 是 dialogue.json 自身逐行重叠检测的容差。
+// 数值上与 beatCoverageToleranceSeconds 一样，但语义不同——一个管"镜头
+// beats 是否盖住了台词行"，一个管"台词行之间是否重叠"，各起各的名字，
+// 以后两者要分道扬镳（比如换一种时间戳来源、容差量级不再一致）时不用
+// 从共用的名字里把语义拆开。
+const lineOverlapToleranceSeconds = 0.001
 
 // CastProblems 校验多角色项目的项目级一致性：班底与角色包是否自洽、
 // dialogue.json 是否完整覆盖字幕、每个镜头的 cast.beats 换算回全局时间后
@@ -61,8 +68,22 @@ func CastProblems(root, provider string) []string {
 	}
 	sort.Strings(ids)
 	for _, id := range ids {
-		if _, err := packs[id].VoiceFor(provider); err != nil {
+		pack := packs[id]
+		if _, err := pack.VoiceFor(provider); err != nil {
 			problems = append(problems, fmt.Sprintf("角色 %s 缺少 %s 音色：%v", id, provider, err))
+		}
+		// 班底源目录（cast/<id>/）自己的 dna.md 是否存在。这跟下面
+		// sceneCastProblems 里查的"镜头引用路径缺 dna.md"是两条互相独立
+		// 的检查：镜头目录内的 pack_dir 通常是这份源文件的拷贝，源文件被
+		// 误删、但某个镜头此前拷贝过的副本还在时，只查镜头引用路径看不出
+		// 问题——直到下一次往新镜头里拷贝（或重新生成拷贝）才会把缺失带
+		// 进去，那时已经晚了。查 pack.Dir 而不是重新拼 root/cast/id，是
+		// 因为 Pack.Dir 就是 cast.Load 实际读到这个包的目录，两者理应
+		// 一致，但没有理由让这里自己重新推导一遍路径规则。
+		dnaPath := filepath.Join(pack.Dir, "dna.md")
+		if info, statErr := os.Stat(dnaPath); statErr != nil || !info.Mode().IsRegular() {
+			problems = append(problems, fmt.Sprintf(
+				"角色 %s 的班底目录缺少 dna.md：%s 不存在", id, dnaPath))
 		}
 	}
 
@@ -96,9 +117,9 @@ func CastProblems(root, provider string) []string {
 	return problems
 }
 
-// dialogueResultJSON 只解出 CastProblems 需要的字段。dialogue.Result 本身
-// 的 Line.Text 带 json:"-"，反序列化用不到；这里复用 dialogue 包的类型而不是
-// 自己重新定义一遍字段，避免 schema 出现第二个不同步的真相源。
+// loadDialogueResult 从 path 读出 production/dialogue.json 并校验它的
+// 外层结构（schema、至少一行）。复用 dialogue 包的 Result 类型而不是自己
+// 重新定义一遍字段，避免 schema 出现第二个不同步的真相源。
 func loadDialogueResult(path string) (*dialogue.Result, []string) {
 	body, err := os.ReadFile(path)
 	if err != nil {
@@ -131,7 +152,7 @@ func dialogueLineProblems(lines []dialogue.Line) []string {
 			problems = append(problems, fmt.Sprintf(
 				"dialogue.json 第 %d 行时间倒挂：[%v, %v]", line.SRTIndex, line.StartSeconds, line.EndSeconds))
 		}
-		if line.StartSeconds < prevEnd-beatCoverageToleranceSeconds {
+		if line.StartSeconds < prevEnd-lineOverlapToleranceSeconds {
 			problems = append(problems, fmt.Sprintf(
 				"dialogue.json 第 %d 行与上一行重叠：上一行止于 %.3f 秒，本行起于 %.3f 秒",
 				line.SRTIndex, prevEnd, line.StartSeconds))
@@ -163,7 +184,8 @@ type globalBeat struct {
 //     internal/cast.Load 或 internal/scene.validateCast，是因为只有这里
 //     才同时拿得到"镜头目录"与"这个镜头实际使用的 pack_dir"——同一个
 //     角色 id 在不同镜头完全可以指向不同的 pack_dir 副本，cast.Load 校验
-//     的是项目级班底目录，未必是某个具体镜头引用的那一份。
+//     的是项目级班底目录，未必是某个具体镜头引用的那一份（班底源目录
+//     自己的 dna.md 由 CastProblems 主循环里的另一处检查兜底，见上文）。
 func sceneCastProblems(root string, lines []dialogue.Line) []string {
 	scenesDir := filepath.Join(root, "scenes")
 	scenes, err := schedule.Plan(scenesDir)
@@ -196,18 +218,92 @@ func sceneCastProblems(root string, lines []dialogue.Line) []string {
 		cursor += s.DurationSeconds
 	}
 
-	for _, line := range lines {
-		if !lineCoveredByBeats(line, beats) {
+	// brief 原文写的是"合并覆盖"：同一说话人的两拍如果换算到全局时间后
+	// 首尾相接（典型情况是一句台词按语义拆镜头，恰好切在这句话中间），
+	// 拼起来才是完整的一行，不能拿单独一拍去跟整行比对包含关系——那样
+	// 一句台词只要跨越镜头切点就必然被判成"没覆盖"，而 scene.validateCast
+	// 又硬性要求 beat.End 不能超过镜头时长，作者除了拆成两拍以外没有第二
+	// 种写法，等于这条校验凭空新增了一条任何文档都没写过的"不得在台词中间
+	// 切镜头"的约束。
+	merged := mergeBeatsBySpeaker(beats)
+
+	var uncoveredIndexes []int
+	for i, line := range lines {
+		if !lineCoveredByBeats(line, merged) {
 			problems = append(problems, fmt.Sprintf(
 				"dialogue.json 第 %d 行（说话人 %s，%.3f–%.3f 秒）没有被任何镜头的 cast.beats 覆盖",
 				line.SRTIndex, line.Speaker, line.StartSeconds, line.EndSeconds))
+			uncoveredIndexes = append(uncoveredIndexes, i)
 		}
+	}
+	if suspectCumulativeDrift(uncoveredIndexes, len(lines)) {
+		problems = append(problems, "疑似镜头时长累计漂移：从某一行起，后续所有行都没有被覆盖——"+
+			"这种“未覆盖”从某处开始一路延伸到最后一行的模式，通常不是漏标了某一拍，"+
+			"而是某个镜头的 duration_seconds 与实际配音时长不一致，导致它之后全部镜头的全局起点"+
+			"都算错了，请优先检查各镜头时长，而不是逐行去改 beats")
 	}
 	return problems
 }
 
-// lineCoveredByBeats 判断某一行对白是否被换算到全局时间后的某一拍完整覆盖：
-// 同一说话人、且这一拍的 [start,end] 完整包住这一行的 [start,end]。
+// mergeBeatsBySpeaker 按说话人分组，把同一说话人换算到全局时间后的区间
+// 按 start 排序，再合并相邻或首尾相接（容差内）的区间。跨镜头切点的一句
+// 台词会被拆成两个首尾相接的区间，必须先合并才能正确判断覆盖关系。
+func mergeBeatsBySpeaker(beats []globalBeat) []globalBeat {
+	if len(beats) == 0 {
+		return nil
+	}
+	bySpeaker := make(map[string][]globalBeat, len(beats))
+	for _, b := range beats {
+		bySpeaker[b.speaker] = append(bySpeaker[b.speaker], b)
+	}
+
+	speakers := make([]string, 0, len(bySpeaker))
+	for speaker := range bySpeaker {
+		speakers = append(speakers, speaker)
+	}
+	sort.Strings(speakers) // 遍历顺序确定性，便于测试与调试。
+
+	var merged []globalBeat
+	for _, speaker := range speakers {
+		list := bySpeaker[speaker]
+		sort.Slice(list, func(i, j int) bool { return list[i].start < list[j].start })
+		current := list[0]
+		for _, b := range list[1:] {
+			if b.start <= current.end+beatCoverageToleranceSeconds {
+				if b.end > current.end {
+					current.end = b.end
+				}
+				continue
+			}
+			merged = append(merged, current)
+			current = b
+		}
+		merged = append(merged, current)
+	}
+	return merged
+}
+
+// suspectCumulativeDrift 判断未覆盖的行是不是"从某个下标开始、一路连续
+// 延伸到最后一行"这种模式——这是镜头时长累计漂移的典型指纹：一旦某个
+// 镜头的声明时长跟实际不符，它之后全部镜头的全局起点都会被同一个偏移量
+// 带偏，从那一点起所有台词的换算区间就统一错位，而不是零散地漏掉某几行。
+func suspectCumulativeDrift(uncoveredIndexes []int, total int) bool {
+	if len(uncoveredIndexes) < 2 || total == 0 {
+		return false
+	}
+	if uncoveredIndexes[len(uncoveredIndexes)-1] != total-1 {
+		return false // 没有延伸到最后一行，不是这个模式。
+	}
+	for i, idx := range uncoveredIndexes {
+		if idx != uncoveredIndexes[0]+i {
+			return false // 中间有被覆盖的行插在里面，不连续，不是这个模式。
+		}
+	}
+	return true
+}
+
+// lineCoveredByBeats 判断某一行对白是否被合并后的某个区间完整覆盖：
+// 同一说话人、且这个区间的 [start,end] 完整包住这一行的 [start,end]。
 func lineCoveredByBeats(line dialogue.Line, beats []globalBeat) bool {
 	for _, beat := range beats {
 		if beat.speaker != line.Speaker {

@@ -233,6 +233,7 @@ type castFixtureOptions struct {
 	srtLines           []castDialogueLine
 	scenes             []castSceneSpec
 	emptyRoster        bool
+	dropRosterDNAFor   string
 }
 
 func withoutVoice(provider string) func(*castFixtureOptions) {
@@ -271,6 +272,85 @@ func emptyRoster() func(*castFixtureOptions) {
 	return func(o *castFixtureOptions) { o.emptyRoster = true }
 }
 
+// missingDNAFromRosterSource 删掉班底源目录（cast/<id>/）里的 dna.md，
+// 模拟 am cast new 生成后被人手误删；镜头目录内的拷贝（若有）不受影响，
+// 用来单独打这条检查——它跟"镜头引用路径缺 dna.md"是两条互相独立的检查。
+func missingDNAFromRosterSource(id string) func(*castFixtureOptions) {
+	return func(o *castFixtureOptions) { o.dropRosterDNAFor = id }
+}
+
+// lineSpanningSceneCut 构造一句台词横跨镜头切点的场景：zhaocai 的第 2 行
+// [1,3] 秒被拆镜头切成两拍，分别落在 scene-001 与 scene-002 里，全局时间
+// 换算后首尾相接（scene-001 止于 2，scene-002 起于 2）。这是"按语义拆镜头"
+// 的正常产物，不是缺陷——合并覆盖判断必须认得出这两拍拼起来就是完整的一行。
+func lineSpanningSceneCut() func(*castFixtureOptions) {
+	return func(o *castFixtureOptions) {
+		lines := []castDialogueLine{
+			{speaker: "heiwa", startSeconds: 0, endSeconds: 1, text: "台词一"},
+			{speaker: "zhaocai", startSeconds: 1, endSeconds: 3, text: "台词二横跨切点"},
+			{speaker: "heiwa", startSeconds: 3, endSeconds: 4, text: "台词三"},
+		}
+		o.dialogueLines = lines
+		o.srtLines = lines
+		o.scenes = []castSceneSpec{
+			{id: "scene-001", durationSeconds: 2, beats: []castSceneBeat{
+				{speaker: "heiwa", start: 0, end: 1},
+				{speaker: "zhaocai", start: 1, end: 2},
+			}},
+			{id: "scene-002", durationSeconds: 2, beats: []castSceneBeat{
+				{speaker: "zhaocai", start: 0, end: 1},
+				{speaker: "heiwa", start: 1, end: 2},
+			}},
+		}
+	}
+}
+
+// lineSpanningSceneCutWithGap 在 lineSpanningSceneCut 的基础上，把
+// scene-002 里 zhaocai 那一拍的本地起点从 0 错开到 0.2——换算回全局后
+// 变成 [2.2,3]，与 scene-001 的 zhaocai 拍 [1,2] 之间留了 [2,2.2] 的真实
+// 缺口。合并逻辑不能把这种真实缺口也糊过去，仍然必须报第 2 行未覆盖。
+func lineSpanningSceneCutWithGap() func(*castFixtureOptions) {
+	return func(o *castFixtureOptions) {
+		lineSpanningSceneCut()(o)
+		scenes := make([]castSceneSpec, len(o.scenes))
+		copy(scenes, o.scenes)
+		scenes[1] = castSceneSpec{id: "scene-002", durationSeconds: 2, beats: []castSceneBeat{
+			{speaker: "zhaocai", start: 0.2, end: 1},
+			{speaker: "heiwa", start: 1, end: 2},
+		}}
+		o.scenes = scenes
+	}
+}
+
+// sceneDurationDrift 模拟"某个镜头的 duration_seconds 与实际配音时长不
+// 一致"这一类病根：scene-001 的两条 beats 与声明的 2 秒时长本身自洽（能
+// 通过 scene.Load），但真实台词（dialogue.json）里 scene-001 其实用了
+// 2.5 秒——后续所有镜头的全局起点都基于声明的 2 秒去累加，于是从这一点
+// 之后，所有台词的换算区间都统一偏移了 0.5 秒，表现为“从某一行起，后面
+// 所有行全部未覆盖”，而不是零散的漏拍。
+func sceneDurationDrift() func(*castFixtureOptions) {
+	return func(o *castFixtureOptions) {
+		lines := []castDialogueLine{
+			{speaker: "heiwa", startSeconds: 0, endSeconds: 1, text: "台词一"},
+			{speaker: "zhaocai", startSeconds: 1, endSeconds: 2, text: "台词二"},
+			{speaker: "heiwa", startSeconds: 2.5, endSeconds: 3.5, text: "台词三"},
+			{speaker: "zhaocai", startSeconds: 3.5, endSeconds: 4.5, text: "台词四"},
+		}
+		o.dialogueLines = lines
+		o.srtLines = lines
+		o.scenes = []castSceneSpec{
+			{id: "scene-001", durationSeconds: 2, beats: []castSceneBeat{
+				{speaker: "heiwa", start: 0, end: 1},
+				{speaker: "zhaocai", start: 1, end: 2},
+			}},
+			{id: "scene-002", durationSeconds: 2, beats: []castSceneBeat{
+				{speaker: "heiwa", start: 0, end: 1},
+				{speaker: "zhaocai", start: 1, end: 2},
+			}},
+		}
+	}
+}
+
 // castProject 搭一个可通过全部校验的多角色项目，再按 opts 逐个破坏。
 func castProject(t *testing.T, opts ...func(*castFixtureOptions)) string {
 	t.Helper()
@@ -299,6 +379,11 @@ func castProject(t *testing.T, opts ...func(*castFixtureOptions)) string {
 	}
 	writeCastPack(t, filepath.Join(root, "cast", "heiwa"), "heiwa", "黑娃", heiwaVoices, true)
 	writeCastPack(t, filepath.Join(root, "cast", "zhaocai"), "zhaocai", "招财", bothVoiceLines, true)
+	if options.dropRosterDNAFor != "" {
+		if err := os.Remove(filepath.Join(root, "cast", options.dropRosterDNAFor, "dna.md")); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	writeDialogueJSON(t, filepath.Join(root, "production", "dialogue.json"), options.dialogueLines)
 	writeCastSRT(t, filepath.Join(root, "transcription-production.srt"), options.srtLines)
@@ -345,8 +430,47 @@ func TestValidateCastDialogueCoversEverySRTLine(t *testing.T) {
 func TestValidateCastSceneBeatsCoverDialogue(t *testing.T) {
 	root := castProject(t, sceneMissingBeat())
 	problems := CastProblems(root, "minimax")
-	if len(problems) == 0 || !strings.Contains(strings.Join(problems, "\n"), "镜头") {
-		t.Fatalf("期望报镜头 beats 未覆盖 dialogue.json，得到 %v", problems)
+	// 断言完整短语而不是"镜头"两个字：「读取镜头目录失败」这条错误信息里也
+	// 含"镜头"，fixture 本身如果因为别的原因坏掉（比如目录读取失败），
+	// 这条断言会在错误理由完全不对的情况下误判通过。
+	const want = "没有被任何镜头的 cast.beats 覆盖"
+	if len(problems) == 0 || !strings.Contains(strings.Join(problems, "\n"), want) {
+		t.Fatalf("期望报 %q，得到 %v", want, problems)
+	}
+}
+
+// TestValidateCastLineSpanningSceneCutNotMisreported 钉住 Important 1：
+// 一句台词按语义拆镜头切成两拍、换算回全局时间后首尾相接，这是正常产物，
+// 不该被误报成"未覆盖"。
+func TestValidateCastLineSpanningSceneCutNotMisreported(t *testing.T) {
+	root := castProject(t, lineSpanningSceneCut())
+	problems := CastProblems(root, "minimax")
+	if len(problems) != 0 {
+		t.Fatalf("台词横跨镜头切点、两拍首尾相接时不应误报，得到 %v", problems)
+	}
+}
+
+// TestValidateCastLineSpanningSceneCutGapStillReported 证明合并逻辑不会
+// 把真实缺口也糊过去：两拍之间留了 0.2 秒的真实间隙时仍要报。
+func TestValidateCastLineSpanningSceneCutGapStillReported(t *testing.T) {
+	root := castProject(t, lineSpanningSceneCutWithGap())
+	problems := CastProblems(root, "minimax")
+	joined := strings.Join(problems, "\n")
+	if len(problems) == 0 || !strings.Contains(joined, "第 2 行") {
+		t.Fatalf("合并后仍有真实缺口时应当继续报第 2 行未覆盖，得到 %v", problems)
+	}
+}
+
+// TestValidateCastSceneDurationDriftHintsRootCause 验证 Minor 4：
+// 时长累计漂移会表现成"从某一行起，后面所有行都未覆盖"，这条测试确认
+// 除了逐行报告之外还会追加一条指向根因的提示，而不是让人误以为要逐行修
+// beats。
+func TestValidateCastSceneDurationDriftHintsRootCause(t *testing.T) {
+	root := castProject(t, sceneDurationDrift())
+	problems := CastProblems(root, "minimax")
+	joined := strings.Join(problems, "\n")
+	if !strings.Contains(joined, "疑似镜头时长累计漂移") {
+		t.Fatalf("从某一行起后续全部未覆盖时应给出漂移提示，得到 %v", problems)
 	}
 }
 
@@ -363,5 +487,19 @@ func TestValidateCastSceneActorMissingDNA(t *testing.T) {
 	problems := CastProblems(root, "minimax")
 	if len(problems) == 0 || !strings.Contains(strings.Join(problems, "\n"), "dna.md") {
 		t.Fatalf("期望报角色缺少 dna.md，得到 %v", problems)
+	}
+}
+
+// TestValidateCastRosterSourceMissingDNA 钉住 Important 3：班底源目录
+// （cast/<id>/）自己的 dna.md 被误删时必须报——即便这个角色在某个镜头里
+// 引用的 pack_dir 拷贝仍然完好。这条检查跟"镜头引用路径缺 dna.md"
+// （TestValidateCastSceneActorMissingDNA）相互独立，缺一个都会漏掉一种
+// 真实的误删场景。
+func TestValidateCastRosterSourceMissingDNA(t *testing.T) {
+	root := castProject(t, missingDNAFromRosterSource("zhaocai"))
+	problems := CastProblems(root, "minimax")
+	joined := strings.Join(problems, "\n")
+	if len(problems) == 0 || !strings.Contains(joined, "dna.md") || !strings.Contains(joined, "zhaocai") {
+		t.Fatalf("期望报班底源目录缺少 dna.md，得到 %v", problems)
 	}
 }

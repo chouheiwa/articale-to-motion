@@ -23,6 +23,19 @@ var forbiddenStyleTokens = []string{"@keyframes", "animation", "transition"}
 // jointPrefix 是可动件分组 id 的前缀。
 const jointPrefix = "j-"
 
+// noMirrorAttr 是 cast.js 用来标记"需要二次翻转"的属性名。facing: left 用
+// scaleX(-1) 整体镜像角色，带 noMirrorAttr 的元素会被自动二次翻转抵消，
+// 否则举牌、字幕板这类带文字的元素在朝左时会镜像成反字。
+const noMirrorAttr = "data-no-mirror"
+
+// mirrorSensitiveElements 是带方向/文字语义、必须显式标注 noMirrorAttr（自身
+// 或任一祖先）的元素。这是 character-rig SKILL.md 那条规则本身的机械化：
+// "牌子、字幕板、任何带文字或方向语义的元素都该在 rig.svg 里打上
+// data-no-mirror"。cast.js 的二次翻转只在 rig 子树内按 [data-no-mirror]
+// 选择器查找，失效域正好就是 rig.svg 本身，所以按这条规则逐元素检查相对
+// cast.js 的实现没有误报余地。
+var mirrorSensitiveElements = map[string]bool{"text": true, "tspan": true}
+
 // checkForbiddenStyleTokens 检查内容中是否包含禁止的样式词汇（@keyframes/animation/transition）。
 // location 用于错误消息，例如 "rig 的 <style>" 或 "rig 的 style 属性"。
 func checkForbiddenStyleTokens(content, location string) []string {
@@ -49,6 +62,12 @@ func ValidateRig(svgPath string, rig Rig) []string {
 	seenJoints := make(map[string]bool)
 	rootChecked := false
 
+	// mirrorStack 与当前还未闭合的元素栈一一对应：mirrorStack[i] 表示深度 i
+	// 的这个元素、或它的任一祖先，是否已经出现过 noMirrorAttr。<style> 走
+	// DecodeElement 整体消费、不出现在这条栈里，因为它的子树不可能含真正
+	// 需要镜像语义的 SVG 文本元素，见下方 "style" 分支的说明。
+	var mirrorStack []bool
+
 	decoder := xml.NewDecoder(file)
 	for {
 		token, err := decoder.Token()
@@ -57,6 +76,13 @@ func ValidateRig(svgPath string, rig Rig) []string {
 		}
 		if err != nil {
 			return append(problems, fmt.Sprintf("解析 rig SVG 失败：%v", err))
+		}
+
+		if _, ok := token.(xml.EndElement); ok {
+			if len(mirrorStack) > 0 {
+				mirrorStack = mirrorStack[:len(mirrorStack)-1]
+			}
+			continue
 		}
 		start, ok := token.(xml.StartElement)
 		if !ok {
@@ -70,12 +96,26 @@ func ValidateRig(svgPath string, rig Rig) []string {
 			}
 		}
 		if local == "style" {
+			// DecodeElement 会读到这个元素自己的 EndElement 为止，因此
+			// 不会有落单的 EndElement token 回到上面的分支——不需要，也
+			// 不应该为它 push/pop mirrorStack。
 			var body string
 			if err := decoder.DecodeElement(&body, &start); err == nil {
 				problems = append(problems, checkForbiddenStyleTokens(body, "rig 的 <style>")...)
 			}
 			continue
 		}
+
+		parentCovered := len(mirrorStack) > 0 && mirrorStack[len(mirrorStack)-1]
+		covered := parentCovered || hasAttr(start, noMirrorAttr)
+		mirrorStack = append(mirrorStack, covered)
+		if mirrorSensitiveElements[local] && !covered {
+			problems = append(problems, fmt.Sprintf(
+				"rig 内 <%s> 缺少 %s：facing=left 时角色整体镜像，带文字/方向语义的元素"+
+					"必须显式标注（自身或祖先均可）做二次翻转抵消，否则举牌类内容会镜像成反字且不报错",
+				local, noMirrorAttr))
+		}
+
 		if local == "svg" && !rootChecked {
 			rootChecked = true
 			problems = append(problems, checkViewBox(start, rig)...)
@@ -179,4 +219,13 @@ func attr(start xml.StartElement, name string) string {
 		}
 	}
 	return ""
+}
+
+func hasAttr(start xml.StartElement, name string) bool {
+	for _, a := range start.Attr {
+		if a.Name.Local == name {
+			return true
+		}
+	}
+	return false
 }

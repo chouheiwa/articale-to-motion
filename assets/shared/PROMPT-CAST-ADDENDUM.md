@@ -104,7 +104,7 @@ am dialogue assemble
 ```json
 {
   "cast": {
-    "pack_dir": "../../cast",
+    "pack_dir": "cast",
     "ground_y": 0.78,
     "on_stage": [
       { "id": "heiwa", "x": 0.32, "pose": "idle", "facing": "right" },
@@ -118,14 +118,14 @@ am dialogue assemble
 }
 ```
 
-- `pack_dir` 是相对本镜头目录、指向项目根 `cast/` 的路径；`on_stage` 列出本镜头台上的全部角色及初始站位（`x`，画面归一化比例）、初始姿势（`pose`）和朝向（`facing`）；`ground_y` 默认沿用 `cast.yaml` 的 `defaults.ground_y`，除非本镜头有特殊构图需要单独覆盖。
-- **`beats[].start` / `end` 必须是镜头本地时间**（相对本镜头起点，单位秒），不是 `production/dialogue.json` 里的全局时间——从 `dialogue.json` 按本镜头覆盖的时间区间切片后，每一条都要减去镜头起点，才能得到镜头本地时间。
+- `pack_dir` 是相对本镜头目录的路径，**不得指向镜头目录之外**（例如 `../../cast` 这种写法会被 `am validate cast` 与渲染前的镜头级校验一律拒绝：渲染只服务镜头目录内的文件，外部路径静默 404、角色不出现且不报错）；正确做法是把项目根 `cast/<id>/` 拷贝一份进本镜头目录（例如 `<镜头目录>/cast/<id>/`），`pack_dir` 填这份拷贝相对本镜头目录的路径（上例是 `cast`）。`on_stage` 列出本镜头台上的全部角色及初始站位（`x`，画面归一化比例）、初始姿势（`pose`）和朝向（`facing`）；`ground_y` 默认沿用 `cast.yaml` 的 `defaults.ground_y`，除非本镜头有特殊构图需要单独覆盖。
+- **`beats[].start` / `end` 必须是镜头本地时间**（相对本镜头起点，单位秒），不是 `production/dialogue.json` 里的全局时间——从 `dialogue.json` 按本镜头覆盖的时间区间切片后，每一条都要减去镜头起点，才能得到镜头本地时间。一句台词横跨镜头切点时，按切点拆成两条 beats 分别落进各自镜头即可，换算回全局时间后只要首尾相接，`am validate cast` 就认得出这是完整的一行，不需要把台词本身也拆开。
 - `beats` 必须按 `start` 递增排列、互不重叠，且每一条的 `speaker` 必须出现在同一镜头的 `on_stage` 里；这两条会在渲染前被强制校验，不通过直接报错，不会带着非法节拍继续渲染。
 - 没有角色出场的镜头（纯转场、纯 B-roll、纯图表）不写 `cast` 块，与老镜头完全一样。
+- 拆完全部镜头、写完每个镜头的 `cast` 块后执行 `am validate cast`：它校验班底与角色包是否自洽、每个角色是否声明了当前 `TTS_PROVIDER` 的音色、`production/dialogue.json` 是否完整覆盖字幕、以及全部镜头的 `cast.beats` 换算回全局时间后是否合并覆盖了 `dialogue.json` 的每一行——不通过不得开始渲染。
 
 ## 七、角色包的引入
 
-- 角色包通过 `am cast add <外部角色包目录>` 引入一个已存在的角色，或 `am cast new <id>` 现场生成一个新角色骨架（`character.yaml` + `rig.svg` + `dna.md`）后手工补全真实 `voiceId`、外观与人设。
-- 两个命令成功后都会把角色顺带登记进项目根 `cast.yaml` 的 `packs` 列表，并在角色包目录里重新生成 `character.json`。
+- 角色包通过 `am cast add <外部角色包目录>` 引入一个已存在的角色（会自动登记进项目根 `cast.yaml` 的 `packs` 列表），或 `am cast new <id>` 现场生成一个新角色骨架（`character.yaml` + `rig.svg` + `dna.md`）后手工补全真实 `voiceId`、外观与人设。**`am cast new` 不会自动登记进 `cast.yaml`**：新角色骨架落地后，要手工把它加进项目根 `cast.yaml` 的 `packs` 列表，否则这个角色对班底而言不存在，过不了 `am cast validate`（不传参数时）和 `am validate cast`。
 - 写对话体脚本之前，先确认脚本里会用到的每一个说话人 id 都已经登记；未登记的说话人既过不了 `am cast validate`，也过不了渲染前的镜头级校验。
 - 手改 `cast/<id>/character.yaml` 之后要重新跑一次 `am cast validate` 才会同步 `character.json`；渲染机实际读取的是 `character.json`，不会因为 yaml 改过就自动感知。

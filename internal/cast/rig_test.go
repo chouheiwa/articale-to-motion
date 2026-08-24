@@ -96,3 +96,59 @@ func TestValidateRigAllowsTransformOutsideJointGroups(t *testing.T) {
 		t.Fatalf("非 j- 分组上的 transform 不应报错，得到 %v", problems)
 	}
 }
+
+// TestValidateRigRequiresDataNoMirrorOnTextElements 机械化 SKILL.md 里的
+// 规则原文（"牌子、字幕板、任何带文字或方向语义的元素都该在 rig.svg 里
+// 打上 data-no-mirror"）：rig 里任何 <text>/<tspan>，若自身及全部祖先都
+// 没有 data-no-mirror，就是一条问题。cast.js 的镜像变换（scaleX(-1) 的
+// 二次翻转）只在 rig 子树内查 [data-no-mirror]，失效域正好就是 rig.svg
+// 本身，这条规则相对该实现没有误报余地。
+func TestValidateRigRequiresDataNoMirrorOnTextElements(t *testing.T) {
+	svg := strings.Replace(goodSVG, "</svg>",
+		`<text x="0" y="0">举牌文字</text></svg>`, 1)
+	problems := ValidateRig(writeSVG(t, svg), goodRig)
+	joined := strings.Join(problems, "\n")
+	if !strings.Contains(joined, "data-no-mirror") {
+		t.Fatalf("裸 <text> 缺 data-no-mirror 时应当报问题，得到 %v", problems)
+	}
+}
+
+// TestValidateRigAcceptsTextWithOwnDataNoMirror 元素自身标注时不应误报。
+func TestValidateRigAcceptsTextWithOwnDataNoMirror(t *testing.T) {
+	svg := strings.Replace(goodSVG, "</svg>",
+		`<text x="0" y="0" data-no-mirror="true">举牌文字</text></svg>`, 1)
+	if problems := ValidateRig(writeSVG(t, svg), goodRig); len(problems) != 0 {
+		t.Fatalf("<text> 自身已标 data-no-mirror 时不应报问题，得到 %v", problems)
+	}
+}
+
+// TestValidateRigAcceptsTextInheritingDataNoMirrorFromAncestor 标注在祖先
+// 分组上时同样应当豁免：cast.js 的 querySelectorAll('[data-no-mirror]')
+// 只按选择器命中，而实际二次翻转对整棵子树生效，标在父级分组上是常见写法。
+func TestValidateRigAcceptsTextInheritingDataNoMirrorFromAncestor(t *testing.T) {
+	svg := strings.Replace(goodSVG, "</svg>",
+		`<g data-no-mirror="true"><text x="0" y="0">举牌文字</text></g></svg>`, 1)
+	if problems := ValidateRig(writeSVG(t, svg), goodRig); len(problems) != 0 {
+		t.Fatalf("<text> 的祖先分组已标 data-no-mirror 时不应报问题，得到 %v", problems)
+	}
+}
+
+// TestValidateRigRequiresDataNoMirrorOnTspan tspan 是文字排版里常见的行内
+// 拆分元素，同样带方向语义，规则同等适用。
+func TestValidateRigRequiresDataNoMirrorOnTspan(t *testing.T) {
+	svg := strings.Replace(goodSVG, "</svg>",
+		`<text x="0" y="0" data-no-mirror="true"><tspan>没有单独标注的 tspan</tspan></text></svg>`, 1)
+	// 注意：这里 <text> 自身标了 data-no-mirror，tspan 作为子孙元素应当继承，
+	// 不应报错——用来确认继承逻辑同样覆盖 tspan，而不是只覆盖 text 自身。
+	if problems := ValidateRig(writeSVG(t, svg), goodRig); len(problems) != 0 {
+		t.Fatalf("tspan 从祖先 text 继承 data-no-mirror 时不应报问题，得到 %v", problems)
+	}
+
+	bareSVG := strings.Replace(goodSVG, "</svg>",
+		`<text x="0" y="0"><tspan>裸 tspan</tspan></text></svg>`, 1)
+	problems := ValidateRig(writeSVG(t, bareSVG), goodRig)
+	joined := strings.Join(problems, "\n")
+	if !strings.Contains(joined, "tspan") || !strings.Contains(joined, "data-no-mirror") {
+		t.Fatalf("裸 tspan（且 text 本身也没标）应当报问题，得到 %v", problems)
+	}
+}
