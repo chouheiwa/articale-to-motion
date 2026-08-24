@@ -323,10 +323,14 @@ func TestBuildPromptCastSectionWithEmptyStage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(prompt, "本镜头没有角色出场，台词全部是画外音；不得把任何角色画进画面") {
+	if !strings.Contains(prompt, "角色（本镜头无角色出场）：台词全部是画外音；不得把任何角色画进画面，也无需加载 character-rig 技能") {
 		t.Errorf("空台镜头缺画外音声明：%s", prompt)
 	}
-	for _, unwanted := range []string{"本镜头有角色出场", "cast.js", "不得留空台或入场中间态"} {
+	// "角色（强制）：" 带冒号是段标题的写法。skillPromptSections 的角色驱动门控
+	// 按「下方出现『角色（强制）』段」判断要不要加载 character-rig 技能，空台镜头
+	// 一旦顶着这个标题，就会一边被命令加载技能、一边被禁止装载 rig。门控自己的
+	// 说明文字里那处「角色（强制）」写在「」里、不带冒号，不会被这条断言误伤。
+	for _, unwanted := range []string{"角色（强制）：", "本镜头有角色出场", "cast.js", "不得留空台或入场中间态"} {
 		if strings.Contains(prompt, unwanted) {
 			t.Errorf("空台镜头的提示词不该出现 %q", unwanted)
 		}
@@ -444,7 +448,10 @@ func TestBuildPromptCastSection(t *testing.T) {
 	// 驱动库的复制契约与字体那条同构：技能树在项目根，渲染只服务镜头目录内的
 	// 文件，不把驱动库复制进来就静默 404、角色不出现且退出码为 0。
 	// 同样用精确子串，理由见上一段。
-	for _, want := range []string{"cast.js", "cast/heiwa/dna.md", "heiwa", "0.34", "pointing", "0.000", "3.200",
+	// "角色（强制）：" 是这一条的门控依据，不只是措辞：skillPromptSections 按
+	// 「下方出现『角色（强制）』段」决定要不要让渲染 agent 加载 character-rig。
+	// 真有角色的镜头必须继续顶着这个标题，否则门控从「误判为有」翻成「漏判为无」。
+	for _, want := range []string{"角色（强制）：", "cast.js", "cast/heiwa/dna.md", "heiwa", "0.34", "pointing", "0.000", "3.200",
 		"requestAnimationFrame", "不得留空台或入场中间态",
 		"必须把 character-rig 技能目录下的 cast.js 复制进本镜头目录",
 		"不得引用镜头目录之外的路径"} {

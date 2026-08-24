@@ -339,9 +339,10 @@ func CanvasOf(directory, styleGuide string) (Canvas, error) {
 // 出帧，没有挂在 cast.js 那条 paused timeline 上的动画在成片里是错的、
 // 但不会报错；首帧空台或停在入场中间态的坑这个项目已经踩过一次。
 //
-// on_stage 为空（纯转场 / 纯 B-roll / 纯图表镜头被台词盖过）时走另一套措辞：
-// 台上没人，与 rig 有关的那几条约束一条都不适用，而“本镜头有角色出场”这句
-// 话会直接把角色画进图表镜头里。
+// on_stage 为空（纯转场 / 纯 B-roll / 纯图表镜头被台词盖过）时走另一套措辞、
+// 也换一个标题：台上没人，与 rig 有关的那几条约束一条都不适用，而“本镜头有
+// 角色出场”这句话会直接把角色画进图表镜头里；标题继续叫「角色（强制）」还会
+// 让 skillPromptSections 的角色驱动门控误判（详见分支里的说明）。
 func castSection(s Scene) string {
 	c := s.Cast
 	if c == nil {
@@ -356,7 +357,14 @@ func castSection(s Scene) string {
 		// 纯转场 / 纯 B-roll / 纯图表镜头被台词盖过时的形态：有 beats、没有台上
 		// 角色。这里绝不能说「本镜头有角色出场」——渲染 agent 会照着把角色画
 		// 进图表镜头里。
-		b.WriteString("\n角色（强制）：本镜头没有角色出场，台词全部是画外音；不得把任何角色画进画面。\n")
+		//
+		// 标题也必须与「角色（强制）」区分开：skillPromptSections 的角色驱动门控
+		// 按「下方出现『角色（强制）』段」判断要不要加载 character-rig 技能，
+		// character-rig/SKILL.md 里那条「复制义务同时写在提示词的『角色（强制）』
+		// 段里」的说法也建立在同一个前提上。空台镜头照用这个标题，等于一边命令
+		// 加载技能、一边禁止装载 rig 且刻意省掉驱动库复制条款，提示词自相矛盾。
+		b.WriteString(fmt.Sprintf("\n角色（本镜头无角色出场）：台词全部是画外音；"+
+			"不得把任何角色画进画面，也无需加载 %s 技能。\n", CharacterRigSkillName))
 	} else {
 		b.WriteString("\n角色（强制）：本镜头有角色出场，必须使用 character-rig 技能的 cast.js 驱动。\n")
 	}

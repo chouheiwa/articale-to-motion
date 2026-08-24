@@ -91,11 +91,20 @@ func TestCastDriverConstantsMatchGo(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 只看代码不看注释：注释里提到常量名不算“真的在用同一个值”。
+	//
+	// 三个字符串常量连 “= ” 一起锚定，锚的是赋值那一行本身，不是这个值在文件里
+	// 出现过。cast.js 的注释里也会顺口写到这些值（例如 mount 的参数说明里那句
+	// “初始视图名，默认 'front'”），光找 "'front'" 会被注释撑住：把
+	// DEFAULT_VIEW 改成别的值测试照样 PASS，这一条就成了假保证。
+	// 不指望 stripJSLineComments 兜住——它不认识正则字面量，cast.js 里
+	// /["']/ 之后的注释根本没被剥掉，那是另一个范围的既有缺陷。
+	// data-no-mirror 是选择器不是赋值，按 [attr] 的完整写法锚定：紧邻的那条
+	// 注释里只有裸的 data-no-mirror，带方括号的只可能是真选择器。
 	code := stripJSLineComments(string(body))
 	for _, want := range []string{
-		"'" + cast.SchemaVersion + "'",
-		"'" + cast.DefaultView + "'",
-		"'" + cast.JointPrefix + "'",
+		"= '" + cast.SchemaVersion + "'",
+		"= '" + cast.DefaultView + "'",
+		"= '" + cast.JointPrefix + "'",
 		"[" + cast.NoMirrorAttr + "]",
 	} {
 		if !strings.Contains(code, want) {
