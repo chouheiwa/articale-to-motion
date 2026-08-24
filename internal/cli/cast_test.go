@@ -2,12 +2,15 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/chouheiwa/articale-to-motion/internal/dialogue"
 )
 
 // runCLI 在 root 目录下执行一次 am 命令。
@@ -295,5 +298,88 @@ func TestCastPreviewPrintsEveryView(t *testing.T) {
 		if !found {
 			t.Errorf("输出缺视图 %s 对应的一行（应同时含视图名与 %q）：%s", view, wantSheet, out)
 		}
+	}
+}
+
+// TestDialogueAssembleRequiresPlan 确认 am dialogue assemble 在缺
+// plan.json（默认路径 production/audio/plan.json）时失败，且失败信息里
+// 能看到 "plan" 字样——直接原样透出 dialogue.Assemble 的错误，不额外包装。
+func TestDialogueAssembleRequiresPlan(t *testing.T) {
+	root := t.TempDir()
+	out, err := runCLI(t, root, "dialogue", "assemble")
+	if err == nil {
+		t.Fatal("缺 plan.json 时应失败")
+	}
+	if !strings.Contains(out+err.Error(), "plan") {
+		t.Errorf("输出 = %q，期望提到 plan", out)
+	}
+}
+
+// dialogueTone 生成一段指定秒数的测试音频。与 internal/dialogue 包测试里的
+// 同名辅助函数（audio_test.go）逻辑一致，但那个函数未导出、且在 _test.go
+// 文件里，本包无法复用，只能照抄一份最小实现。
+func dialogueTone(t *testing.T, path string, seconds float64) {
+	t.Helper()
+	cmd := exec.Command("ffmpeg", "-v", "error", "-y",
+		"-f", "lavfi", "-i", fmt.Sprintf("sine=frequency=440:duration=%.3f", seconds),
+		"-ar", "22050", "-ac", "2", path)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("生成测试音频失败：%v（%s）", err, out)
+	}
+}
+
+// TestDialogueAssembleEndToEnd 走一遍 am dialogue assemble 的完整链路：
+// 两段真实音频 + plan.json，装配成功后校验命令输出提到三个产物路径与总
+// 时长，且产物文件确实落地。需要真实 ffmpeg/ffprobe，本机没装就跳过，
+// 与仓库里其他依赖外部命令的用例（如 TestCastPreviewPrintsEveryView）同一
+// 惯例。
+func TestDialogueAssembleEndToEnd(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("需要 ffmpeg，本机未安装")
+	}
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		t.Skip("需要 ffprobe，本机未安装")
+	}
+
+	root := t.TempDir()
+	audioDir := filepath.Join(root, "production", "audio")
+	if err := os.MkdirAll(audioDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	dialogueTone(t, filepath.Join(audioDir, "seg-001-heiwa.wav"), 1.0)
+	dialogueTone(t, filepath.Join(audioDir, "seg-002-zhaocai.wav"), 0.5)
+
+	plan := dialogue.Plan{
+		Schema: dialogue.SchemaVersion,
+		Segments: []dialogue.PlanSegment{
+			{Index: 1, Speaker: "heiwa", VoiceID: "v-1", Audio: "production/audio/seg-001-heiwa.wav",
+				GapAfterMs: 200, Lines: []dialogue.PlanLine{{Text: "第一句", StartSeconds: 0, EndSeconds: 1.0}}},
+			{Index: 2, Speaker: "zhaocai", VoiceID: "v-2", Audio: "production/audio/seg-002-zhaocai.wav",
+				GapAfterMs: 0, Lines: []dialogue.PlanLine{{Text: "等一下", StartSeconds: 0, EndSeconds: 0.5}}},
+		},
+	}
+	body, err := json.MarshalIndent(plan, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(audioDir, "plan.json"), body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runCLI(t, root, "dialogue", "assemble")
+	if err != nil {
+		t.Fatalf("dialogue assemble 失败：%v（%s）", err, out)
+	}
+
+	for _, rel := range []string{"production/audio/voice.wav", "transcription-production.srt", "production/dialogue.json"} {
+		if _, statErr := os.Stat(filepath.Join(root, rel)); statErr != nil {
+			t.Errorf("缺产物 %s：%v", rel, statErr)
+		}
+		if !strings.Contains(out, filepath.FromSlash(rel)) {
+			t.Errorf("输出未提到产物路径 %s：%q", rel, out)
+		}
+	}
+	if !strings.Contains(out, "1.7") && !strings.Contains(out, "1.700") {
+		t.Errorf("输出应提到总时长（约 1.7 秒）：%q", out)
 	}
 }

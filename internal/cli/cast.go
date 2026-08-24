@@ -5,6 +5,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/chouheiwa/articale-to-motion/internal/cast"
+	"github.com/chouheiwa/articale-to-motion/internal/dialogue"
 	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -438,4 +440,75 @@ func newCastPreviewCommand(stdout io.Writer) *cobra.Command {
 			return nil
 		},
 	}
+}
+
+// dialogueDefaultPlanPath 是 am dialogue assemble 未传 --plan 时的默认路径，
+// 与编排流程里 TTS 分段产物的落地位置一致。
+var dialogueDefaultPlanPath = filepath.Join("production", "audio", "plan.json")
+
+// newDialogueCmd 收拢 am dialogue 命令组：目前只有 assemble 一个子命令。
+//
+// internal/dialogue 包只管纯粹的装配逻辑（读 plan、探测音频、拼接、写产物），
+// 不碰 CLI 参数解析；这里是唯一把它接到命令行上的地方，与 newCastCmd 对
+// internal/cast 的分工一致。
+func newDialogueCmd(stdout io.Writer) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "dialogue",
+		Short: "多角色对白装配相关操作",
+		Long: `把分说话人合成的配音段装配成一条完整对白时间线。
+
+分段 TTS 只给得到段内相对时间戳，拼成全局时间轴要逐段累加偏移、插入段间
+静音、再拼接成一条完整音轨——这类机械计算算错了不会报错，只会让成片画面
+正常、嘴和字却对不上，所以收进这个命令而不是留给编排 agent 自己拼。`,
+	}
+	cmd.AddCommand(newDialogueAssembleCommand(stdout))
+	return cmd
+}
+
+func newDialogueAssembleCommand(stdout io.Writer) *cobra.Command {
+	var planPath string
+	var expectTotalSeconds float64
+	cmd := &cobra.Command{
+		Use:   "assemble",
+		Args:  noArgs,
+		Short: "把 plan.json 里的分段配音装配成一条对白时间线",
+		Long: fmt.Sprintf(`读取 --plan 指定的 plan.json，把里面登记的每一段配音统一格式、按需插入
+段间静音后拼接成一条完整音轨，同时算出全局时间轴，产出三个文件：
+
+  production/audio/voice.wav       拼接后的完整配音
+  transcription-production.srt     按全局时间轴生成的字幕
+  production/dialogue.json         装配结果的结构化时间线（schema %s）
+
+装配过程内置两道漂移断言：逐段声明时长与实测时长的比对、总时长漂移
+（容差 %.3f 秒）比对，任一超出容差都会失败并点名具体是第几段、哪个文件、
+声明多少、实测多少——本命令原样透出这些错误，不额外包装。
+
+--expect-total 是可选的第三道校验：外部（通常是编排 agent）期望的总时长，
+用于额外核对；不传就只做上面两道内部一致性断言。`, dialogue.SchemaVersion, dialogue.DriftToleranceSeconds),
+		Example: `  am dialogue assemble
+  am dialogue assemble --plan production/audio/plan.json --expect-total 42.5`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDialogueAssemble(cmd.Context(), stdout, planPath, expectTotalSeconds)
+		},
+	}
+	cmd.Flags().StringVar(&planPath, "plan", dialogueDefaultPlanPath, "plan.json 路径")
+	cmd.Flags().Float64Var(&expectTotalSeconds, "expect-total", 0, "外部期望总时长（秒），用于额外校验；可选，缺省不做这道校验")
+	return cmd
+}
+
+func runDialogueAssemble(ctx context.Context, stdout io.Writer, planPath string, expectTotalSeconds float64) error {
+	result, err := dialogue.Assemble(ctx, dialogue.Options{
+		Root:               ".",
+		PlanPath:           planPath,
+		ExpectTotalSeconds: expectTotalSeconds,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(stdout, "对白已装配：")
+	fmt.Fprintf(stdout, "  音频：%s\n", filepath.Join("production", "audio", "voice.wav"))
+	fmt.Fprintln(stdout, "  字幕：transcription-production.srt")
+	fmt.Fprintf(stdout, "  时间线：%s\n", filepath.Join("production", "dialogue.json"))
+	fmt.Fprintf(stdout, "总时长：%.3f 秒\n", result.TotalSeconds())
+	return nil
 }
