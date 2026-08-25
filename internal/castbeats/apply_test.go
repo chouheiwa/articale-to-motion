@@ -3,6 +3,7 @@ package castbeats
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/chouheiwa/articale-to-motion/internal/scene"
 	"os"
 	"path/filepath"
 	"strings"
@@ -112,11 +113,20 @@ func read(t *testing.T, path string) string {
 	return string(body)
 }
 
+// castProject 建一个多角色项目根。只放一个 cast.yaml：本命令只看它存在与否
+// （cast.yaml 存在与否就是叙事模式本身），不读里面的内容。
+func castProject(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	write(t, filepath.Join(root, "cast.yaml"), "schema: cast/v1\npacks: []\n")
+	return root
+}
+
 // TestApplyWritesBeatsAndKeepsOtherFields 是本命令的主路径：cast 块里原本
 // 没有 beats，跑完之后 beats 出现且是镜头本地时间，而 pack_dir / ground_y /
 // on_stage / text 一个字符都不许变。
 func TestApplyWritesBeatsAndKeepsOtherFields(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeDialogue(t, root, "heiwa", 0.0, 1.0, "zhaocai", 1.0, 2.5)
 	path := writeScene(t, root, "scene-001", 1.0, castBlockNoBeats)
 	writeScene(t, root, "scene-002", 1.5, castBlockNoBeats)
@@ -158,7 +168,7 @@ func TestApplyWritesBeatsAndKeepsOtherFields(t *testing.T) {
 // TestApplyOverwritesExistingBeats 幂等的前提：已有 beats（哪怕是错的）要
 // 被整体重写，而不是追加或跳过。
 func TestApplyOverwritesExistingBeats(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeDialogue(t, root, "heiwa", 0.0, 1.0)
 	stale := `,
   "cast": {
@@ -183,7 +193,7 @@ func TestApplyOverwritesExistingBeats(t *testing.T) {
 }
 
 func TestApplyIdempotent(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeDialogue(t, root, "heiwa", 0.0, 1.0, "heiwa", 1.0, 2.0)
 	path := writeScene(t, root, "scene-001", 1.2, castBlockNoBeats)
 	writeScene(t, root, "scene-002", 0.8, castBlockNoBeats)
@@ -207,7 +217,7 @@ func TestApplyIdempotent(t *testing.T) {
 // 在台上做反应）：写空数组，而不是把 beats 键留空缺——空数组是"算过了，
 // 这一镜确实没人说话"，缺键读起来是"还没算"。
 func TestApplySilentSceneGetsEmptyBeats(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeDialogue(t, root, "heiwa", 0.0, 1.0)
 	writeScene(t, root, "scene-001", 1.0, castBlockNoBeats)
 	path := writeScene(t, root, "scene-002", 2.0, castBlockNoBeats)
@@ -223,7 +233,7 @@ func TestApplySilentSceneGetsEmptyBeats(t *testing.T) {
 // TestApplyKeepsVoiceOverSpeaker 画外音：说话人不在 on_stage 里同样要出节拍，
 // 否则 am validate cast 会报这一行没被任何镜头覆盖。
 func TestApplyKeepsVoiceOverSpeaker(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeDialogue(t, root, "zhaocai", 0.0, 1.0)
 	emptyStage := `,
   "cast": {
@@ -243,7 +253,7 @@ func TestApplyKeepsVoiceOverSpeaker(t *testing.T) {
 // TestApplyRejectsCoveredSceneWithoutCastBlock 有台词盖过、却没有 cast 块的
 // 镜头：命令不能替 agent 编 pack_dir / ground_y，只能点名报错。
 func TestApplyRejectsCoveredSceneWithoutCastBlock(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeDialogue(t, root, "heiwa", 0.0, 1.0)
 	writeScene(t, root, "scene-001", 1.0, "")
 	_, err := Apply(root)
@@ -258,7 +268,7 @@ func TestApplyRejectsCoveredSceneWithoutCastBlock(t *testing.T) {
 // TestApplyRejectsLineBeyondScenes 镜头时长之和短于对白：不能截断，要报错，
 // 且一个 scene.json 都不许改（要么全对要么不动）。
 func TestApplyRejectsLineBeyondScenes(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeDialogue(t, root, "heiwa", 0.0, 1.0, "heiwa", 1.0, 3.0)
 	path := writeScene(t, root, "scene-001", 1.5, castBlockNoBeats)
 	before := read(t, path)
@@ -275,7 +285,7 @@ func TestApplyRejectsLineBeyondScenes(t *testing.T) {
 }
 
 func TestApplyRejectsMissingDialogue(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeScene(t, root, "scene-001", 1.0, castBlockNoBeats)
 	_, err := Apply(root)
 	if err == nil || !strings.Contains(err.Error(), "dialogue.json") {
@@ -287,7 +297,7 @@ func TestApplyRejectsMissingDialogue(t *testing.T) {
 // 写进 scene.json 会被 scene.Load 拒绝。与其写出一个自己都加载不了的产物，
 // 不如在源头报错。
 func TestApplyRejectsOverlappingLines(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeDialogue(t, root, "heiwa", 0.0, 1.2, "zhaocai", 1.0, 2.0)
 	writeScene(t, root, "scene-001", 2.0, castBlockNoBeats)
 	_, err := Apply(root)
@@ -299,7 +309,7 @@ func TestApplyRejectsOverlappingLines(t *testing.T) {
 // TestApplyLeavesPlainScenesAlone 老模式零破坏：没有 cast 块、也没有台词
 // 盖过的镜头，scene.json 一个字节都不许动。
 func TestApplyLeavesPlainScenesAlone(t *testing.T) {
-	root := t.TempDir()
+	root := castProject(t)
 	writeDialogue(t, root, "heiwa", 0.0, 1.0)
 	writeScene(t, root, "scene-001", 1.0, castBlockNoBeats)
 	path := writeScene(t, root, "scene-002", 2.0, "")
@@ -309,5 +319,89 @@ func TestApplyLeavesPlainScenesAlone(t *testing.T) {
 	}
 	if read(t, path) != before {
 		t.Fatalf("无 cast 块又无台词的老镜头不得被改写：\n改前:\n%s\n改后:\n%s", before, read(t, path))
+	}
+}
+
+// TestApplyRejectsNonCastProject 老项目误跑到这条命令时，要说清"本项目不是
+// 多角色项目"，而不是甩一句"找不到 dialogue.json"——后者会让人以为少跑了
+// am dialogue assemble，接着去装配一个根本不存在的对白。
+func TestApplyRejectsNonCastProject(t *testing.T) {
+	root := t.TempDir() // 故意不建 cast.yaml
+	writeDialogue(t, root, "heiwa", 0.0, 1.0)
+	writeScene(t, root, "scene-001", 1.0, castBlockNoBeats)
+	_, err := Apply(root)
+	if err == nil {
+		t.Fatal("没有 cast.yaml 的项目不该被这条命令处理")
+	}
+	if !strings.Contains(err.Error(), "cast.yaml") || !strings.Contains(err.Error(), "不是多角色项目") {
+		t.Fatalf("错误信息应点名 cast.yaml 并说清本项目不是多角色项目，得到：%v", err)
+	}
+	if strings.Contains(err.Error(), "dialogue.json") {
+		t.Fatalf("不该把人往 dialogue.json 上引：%v", err)
+	}
+}
+
+// TestApplyIgnoresStaleOutOfRangeBeats 钉住一个死锁：把某镜头的
+// duration_seconds 改小、旧 beats 还越界时，scene.Load 拒绝这份 scene.json，
+// 而本命令正是修它的工具——读取时要是也走 scene.Load，工具就把自己锁在
+// 门外，用户只能手改 JSON 脱困。
+//
+// beats 是本命令的输出，不该是它的输入：读镜头时只取 duration_seconds /
+// pack_dir / on_stage 这些它真正需要的字段，既有 beats 一概不看。
+func TestApplyIgnoresStaleOutOfRangeBeats(t *testing.T) {
+	root := castProject(t)
+	writeDialogue(t, root, "heiwa", 0.0, 1.0, "heiwa", 1.0, 2.0)
+	stale := `,
+  "cast": {
+    "pack_dir": "cast-pack",
+    "ground_y": 0.78,
+    "on_stage": [
+      {"id": "heiwa", "x": 0.3, "pose": "idle", "facing": "right"}
+    ],
+    "beats": [
+      {"speaker": "heiwa", "start": 0, "end": 1.9}
+    ]
+  }`
+	// 这一镜原本 2.0 秒（旧节拍止于 1.9 合法），现在被改小到 1.0 秒。
+	path := writeScene(t, root, "scene-001", 1.0, stale)
+	writeScene(t, root, "scene-002", 1.0, castBlockNoBeats)
+
+	// 前提核实：这份 scene.json 现在确实加载不了，死锁的门是关着的。
+	if _, err := scene.Load(filepath.Dir(path)); err == nil {
+		t.Fatal("前提不成立：越界的旧 beats 本应被 scene.Load 拒绝")
+	}
+
+	if _, err := Apply(root); err != nil {
+		t.Fatalf("越界的旧节拍不该挡住重算：%v", err)
+	}
+
+	// 重算之后这份 scene.json 必须重新可加载，且节拍是新算出来的。
+	loaded, err := scene.Load(filepath.Dir(path))
+	if err != nil {
+		t.Fatalf("重算之后 scene.Load 应当通过：%v", err)
+	}
+	if len(loaded.Cast.Beats) != 1 || loaded.Cast.Beats[0].End != 1.0 {
+		t.Fatalf("scene-001 的节拍应重算成 [0, 1.0]，得到 %+v", loaded.Cast.Beats)
+	}
+	second, err := scene.Load(filepath.Join(root, "scenes", "scene-002"))
+	if err != nil {
+		t.Fatalf("scene-002 应当能加载：%v", err)
+	}
+	if len(second.Cast.Beats) != 1 || second.Cast.Beats[0].End != 1.0 {
+		t.Fatalf("scene-002 的节拍应是本地 [0, 1.0]，得到 %+v", second.Cast.Beats)
+	}
+}
+
+// TestApplyRejectsSceneWithoutDuration 轻量解析放弃了 scene.Load 的完整校验，
+// 但它自己要用的字段仍然要查：没有 duration_seconds 就算不出镜头起点，
+// 静默当成 0 会把后面全部镜头的节拍一起带偏。
+func TestApplyRejectsSceneWithoutDuration(t *testing.T) {
+	root := castProject(t)
+	writeDialogue(t, root, "heiwa", 0.0, 1.0)
+	write(t, filepath.Join(root, "scenes", "scene-001", "scene.json"),
+		`{"id":"scene-001","output":"out.mp4","transcript":"transcript.txt","text":"占位"}`)
+	_, err := Apply(root)
+	if err == nil || !strings.Contains(err.Error(), "duration_seconds") {
+		t.Fatalf("缺 duration_seconds 时应点名报错，得到：%v", err)
 	}
 }

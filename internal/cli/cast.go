@@ -486,7 +486,12 @@ func newDialogueBeatsCommand(stdout io.Writer) *cobra.Command {
   - 有 cast 块但整段无人说话的镜头写出空数组（"算过了，确实没人说话"）
   - 没有 cast 块又没有台词盖过的镜头一个字节都不碰（老镜头零影响）
   - 只改 cast.beats：pack_dir / ground_y / on_stage 与其它字段原样保留
+  - 既有 beats 一律忽略并整体重写：它是本命令的输出，不是输入。改小过
+    duration_seconds、旧节拍越界的镜头不需要先手工清理，直接重跑
   - 幂等：重复执行结果一致，内容没变的文件不重新落盘
+
+项目根没有 cast.yaml（单口播项目）时直接报错退出：cast.beats 只在多角色
+模式下存在。
 
 有台词盖过、却没写 cast 块的镜头会报错而不是现编一个——本命令不替你决定
 角色站位。台词落在所有镜头覆盖范围之外时同样报错，那是镜头 duration_seconds

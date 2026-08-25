@@ -5,6 +5,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
 	"os"
 	"os/exec"
@@ -395,6 +396,62 @@ func TestEndToEndCastNarrationValidate(t *testing.T) {
 	}
 	if !strings.Contains(out, "通过") {
 		t.Errorf("缺少通过结论：%s", out)
+	}
+
+	// 9. 死锁回归：把 scene-001 的时长改小、另起一个 scene-002 吸收剩下的
+	// 时间——scene-001 上一步算出来的节拍随即越界，scene.Load 拒绝加载它，
+	// am validate cast 跟着失败。am dialogue beats 必须仍然跑得通（beats 是
+	// 它的输出、不是它的输入），跑完之后校验重新通过。这条链路曾经是死的：
+	// 唯一的出路是手改 JSON 把 beats 清成 []。
+	total := written.Cast.Beats[1].End
+	shrunk := strings.Replace(string(sceneBody), `"duration_seconds": 1.7`, `"duration_seconds": 1`, 1)
+	if shrunk == string(sceneBody) {
+		t.Fatalf("scene.json 里找不到待改小的 duration_seconds：%s", sceneBody)
+	}
+	if err := os.WriteFile(filepath.Join(sceneDir, "scene.json"), []byte(shrunk), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	secondDir := filepath.Join(project, "scenes", "scene-002")
+	if err := os.MkdirAll(secondDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(secondDir, "transcript.txt"), []byte("占位字幕"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := copyTree(filepath.Join(project, "cast", "heiwa"), filepath.Join(secondDir, "cast", "heiwa")); err != nil {
+		t.Fatal(err)
+	}
+	secondJSON := fmt.Sprintf(`{
+  "id": "scene-002",
+  "duration_seconds": %v,
+  "output": "out.mp4",
+  "transcript": "transcript.txt",
+  "text": "黑娃把话说完",
+  "cast": {
+    "pack_dir": "cast",
+    "ground_y": 0.78,
+    "on_stage": [
+      {"id": "heiwa", "x": 0.5, "pose": "idle", "facing": "right"}
+    ]
+  }
+}
+`, total-1)
+	if err := os.WriteFile(filepath.Join(secondDir, "scene.json"), []byte(secondJSON), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if out, err := runCLI(t, project, "validate", "cast"); err == nil {
+		t.Fatalf("旧节拍越界时 validate cast 不该通过：%s", out)
+	} else if !strings.Contains(out, "超出镜头时长") {
+		t.Fatalf("期望报节拍超出镜头时长，得到：%s", out)
+	}
+
+	if out, err := runCLI(t, project, "dialogue", "beats"); err != nil {
+		t.Fatalf("越界的旧节拍不该挡住重算：%v（%s）", err, out)
+	}
+
+	if out, err := runCLI(t, project, "validate", "cast"); err != nil {
+		t.Fatalf("重算之后 validate cast 应当通过：%v（%s）", err, out)
 	}
 }
 

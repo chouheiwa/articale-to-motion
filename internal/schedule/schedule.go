@@ -65,12 +65,19 @@ func (r Report) Render() string {
 	return fmt.Sprintf("镜头汇总（%d 个）\n  成功 %d  跳过 %d  过期 %d  失败 %d\n\n耗时 %.1f 秒", len(r.Scenes), r.CountValues[Succeeded], r.CountValues[Skipped], r.CountValues[Stale], r.CountValues[Failed], r.Seconds)
 }
 
-func Plan(root string) ([]scene.Scene, error) {
+// SceneDirs 列出 root 下所有含 scene.json 的子目录，按目录名升序返回——
+// 这个顺序就是镜头在时间轴上的先后顺序。
+//
+// 单抽出来的理由与 StartOffsets 相同：am dialogue beats 不能走 Plan
+// （Plan 里的 scene.Load 会因为过期的 cast.beats 越界而拒绝加载，而那正是
+// 该命令要修的东西），但它必须与 Plan 用同一套顺序，否则镜头起点的累加
+// 就有了第二条路径。顺序规则放这里，两边共用；各自要读什么字段各自决定。
+func SceneDirs(root string) ([]string, error) {
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		return nil, fmt.Errorf("无法读取镜头目录：%w", err)
 	}
-	var result []scene.Scene
+	var dirs []string
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -79,13 +86,25 @@ func Plan(root string) ([]scene.Scene, error) {
 		if _, err := os.Stat(filepath.Join(dir, "scene.json")); os.IsNotExist(err) {
 			continue
 		}
+		dirs = append(dirs, dir)
+	}
+	sort.Slice(dirs, func(i, j int) bool { return filepath.Base(dirs[i]) < filepath.Base(dirs[j]) })
+	return dirs, nil
+}
+
+func Plan(root string) ([]scene.Scene, error) {
+	dirs, err := SceneDirs(root)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]scene.Scene, 0, len(dirs))
+	for _, dir := range dirs {
 		s, err := scene.Load(dir)
 		if err != nil {
 			return nil, err
 		}
 		result = append(result, s)
 	}
-	sort.Slice(result, func(i, j int) bool { return filepath.Base(result[i].Directory) < filepath.Base(result[j].Directory) })
 	return result, nil
 }
 

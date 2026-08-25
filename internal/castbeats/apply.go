@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/chouheiwa/articale-to-motion/internal/cast"
 	"github.com/chouheiwa/articale-to-motion/internal/dialogue"
 	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 	"github.com/chouheiwa/articale-to-motion/internal/scene"
-	"github.com/chouheiwa/articale-to-motion/internal/schedule"
 )
 
 // DialogueRelPath 是对白时间线在项目里的固定位置，与 am dialogue assemble
@@ -41,35 +41,46 @@ type Report struct {
 //
 // 全部检查通过之前一个字节都不写：报错时不留下改了一半的镜头树。
 func Apply(root string) (Report, error) {
+	// cast.yaml 存在与否就是叙事模式本身。单口播项目误跑到这条命令时，
+	// 先说清"本项目不是多角色项目"——否则报出来的是"找不到 dialogue.json"，
+	// 会把人往"少跑了 am dialogue assemble"上引，接着去装配一个根本不存在
+	// 的对白。
+	if !cast.HasRoster(root) {
+		return Report{}, fmt.Errorf(
+			"本项目不是多角色项目：项目根没有 %s，cast.beats 只在多角色模式下存在。"+
+				"单口播项目不需要执行本命令；如果这本该是多角色项目，"+
+				"请确认当前目录就是项目根，并用 am init --narration cast 初始化",
+			cast.RosterFile)
+	}
+
 	lines, err := loadDialogueLines(filepath.Join(root, DialogueRelPath))
 	if err != nil {
 		return Report{}, err
 	}
 
-	scenes, err := schedule.Plan(filepath.Join(root, "scenes"))
+	heads, err := readSceneHeads(filepath.Join(root, "scenes"))
 	if err != nil {
-		return Report{}, fmt.Errorf("读取镜头目录失败：%w\n"+
-			"（若报的是 cast.beats 超出镜头时长，通常是改小了 duration_seconds 而旧节拍还留着："+
-			"把那个镜头的 cast.beats 改成 [] 再重跑本命令）", err)
+		return Report{}, err
 	}
 
-	offsets := schedule.StartOffsets(scenes)
-	durations := make([]float64, len(scenes))
+	offsets := make([]float64, len(heads))
+	durations := make([]float64, len(heads))
 	total := 0.0
-	for i, s := range scenes {
-		durations[i] = s.DurationSeconds
-		total += s.DurationSeconds
+	for i, h := range heads {
+		offsets[i] = total
+		durations[i] = h.duration
+		total += h.duration
 	}
 
 	perScene, uncovered := slice(lines, offsets, durations)
 
 	var problems []string
-	for i, s := range scenes {
-		if s.Cast == nil && len(perScene[i]) > 0 {
+	for i, h := range heads {
+		if !h.hasCast && len(perScene[i]) > 0 {
 			problems = append(problems, fmt.Sprintf(
 				"镜头 %s（全局 %.3f–%.3f 秒）有台词盖过，却没有 cast 块：本命令只负责重算 beats，"+
 					"不会替你决定 pack_dir / ground_y / on_stage——先把 cast 块补上（beats 可以不写）再重跑",
-				s.ID, offsets[i], offsets[i]+durations[i]))
+				h.id, offsets[i], offsets[i]+durations[i]))
 		}
 	}
 	for _, index := range uncovered {
@@ -85,15 +96,15 @@ func Apply(root string) (Report, error) {
 	}
 
 	report := Report{Lines: len(lines)}
-	for i, s := range scenes {
-		if s.Cast == nil {
+	for i, h := range heads {
+		if !h.hasCast {
 			continue
 		}
-		changed, err := writeSceneBeats(filepath.Join(s.Directory, "scene.json"), perScene[i])
+		changed, err := writeSceneBeats(filepath.Join(h.dir, "scene.json"), perScene[i])
 		if err != nil {
-			return Report{}, fmt.Errorf("写入镜头 %s 的节拍失败：%w", s.ID, err)
+			return Report{}, fmt.Errorf("写入镜头 %s 的节拍失败：%w", h.id, err)
 		}
-		report.Scenes = append(report.Scenes, SceneBeats{ID: s.ID, Count: len(perScene[i]), Changed: changed})
+		report.Scenes = append(report.Scenes, SceneBeats{ID: h.id, Count: len(perScene[i]), Changed: changed})
 		if changed {
 			report.Updated++
 		}

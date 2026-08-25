@@ -318,3 +318,43 @@ func TestStartOffsetsEmpty(t *testing.T) {
 		t.Fatalf("没有镜头时应返回空切片，得到 %v", got)
 	}
 }
+
+// TestSceneDirsOrdersByDirectoryName 钉住"镜头先后顺序"这条规则只有一处
+// 实现：Plan 与 am dialogue beats 的轻量读取都从这里取顺序，不各自 ReadDir
+// 再各自排一遍。含 scene.json 才算镜头，其余目录与散落文件都要跳过。
+func TestSceneDirsOrdersByDirectoryName(t *testing.T) {
+	root := t.TempDir()
+	for _, name := range []string{"scene-010", "scene-002", "scene-001"} {
+		dir := filepath.Join(root, name)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "scene.json"), []byte("{}"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(filepath.Join(root, "not-a-scene"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "readme.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	dirs, err := SceneDirs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, dir := range dirs {
+		names = append(names, filepath.Base(dir))
+	}
+	want := []string{"scene-001", "scene-002", "scene-010"}
+	if len(names) != len(want) {
+		t.Fatalf("应只认含 scene.json 的目录，得到 %v", names)
+	}
+	for i := range want {
+		if names[i] != want[i] {
+			t.Fatalf("镜头顺序应按目录名升序：want %v got %v", want, names)
+		}
+	}
+}
