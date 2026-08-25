@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/chouheiwa/articale-to-motion/internal/cast"
+	"github.com/chouheiwa/articale-to-motion/internal/castbeats"
 	"github.com/chouheiwa/articale-to-motion/internal/dialogue"
 	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 	"github.com/spf13/cobra"
@@ -462,6 +463,52 @@ func newDialogueCmd(stdout io.Writer) *cobra.Command {
 正常、嘴和字却对不上，所以收进这个命令而不是留给编排 agent 自己拼。`,
 	}
 	cmd.AddCommand(newDialogueAssembleCommand(stdout))
+	cmd.AddCommand(newDialogueBeatsCommand(stdout))
+	return cmd
+}
+
+func newDialogueBeatsCommand(stdout io.Writer) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "beats",
+		Args:  noArgs,
+		Short: "按 dialogue.json 重算各镜头 scene.json 的 cast.beats",
+		Long: `读取 ` + castbeats.DialogueRelPath + ` 与 scenes/*/scene.json，把每一行台词
+按镜头切片、减去该镜头的全局起点，写回各镜头 cast 块的 beats。
+
+镜头怎么切是创作判断（每个镜头的 duration_seconds 由你定），但"给定对白
+时间线与已定的镜头时长，算出每个镜头的节拍"是纯机械计算——减错一个镜头
+起点，成片画面正常、只是角色在不该说话的时候动嘴，什么都不会报错。所以
+这一步收进本命令，不要手写 beats。
+
+行为：
+
+  - 一行台词横跨镜头切点时按切点拆成多拍，各自落进自己的镜头
+  - 有 cast 块但整段无人说话的镜头写出空数组（"算过了，确实没人说话"）
+  - 没有 cast 块又没有台词盖过的镜头一个字节都不碰（老镜头零影响）
+  - 只改 cast.beats：pack_dir / ground_y / on_stage 与其它字段原样保留
+  - 幂等：重复执行结果一致，内容没变的文件不重新落盘
+
+有台词盖过、却没写 cast 块的镜头会报错而不是现编一个——本命令不替你决定
+角色站位。台词落在所有镜头覆盖范围之外时同样报错，那是镜头 duration_seconds
+与配音对不上，先对齐时长再重算。任一检查不通过就一个文件都不写。`,
+		Example: `  am dialogue beats`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			report, err := castbeats.Apply(".")
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(stdout, "镜头节拍已按 %s 重算（%d 行台词）：\n", castbeats.DialogueRelPath, report.Lines)
+			for _, s := range report.Scenes {
+				mark := "（未变）"
+				if s.Changed {
+					mark = ""
+				}
+				fmt.Fprintf(stdout, "  %s  %d 拍%s\n", s.ID, s.Count, mark)
+			}
+			fmt.Fprintf(stdout, "已更新 %d 个 scene.json\n", report.Updated)
+			return nil
+		},
+	}
 	return cmd
 }
 

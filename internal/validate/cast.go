@@ -195,14 +195,17 @@ func sceneCastProblems(root string, lines []dialogue.Line) []string {
 
 	var problems []string
 	var beats []globalBeat
-	cursor := 0.0
-	for _, s := range scenes {
+	// 镜头全局起点走 schedule.StartOffsets：正向的 am dialogue beats 用同一个
+	// 函数把全局台词切成镜头本地节拍，两边同源，这条反向校验才是在验产物，
+	// 而不是在验"两处各自累加的结果碰巧一致"。
+	offsets := schedule.StartOffsets(scenes)
+	for i, s := range scenes {
 		if s.Cast != nil {
 			for _, beat := range s.Cast.Beats {
 				beats = append(beats, globalBeat{
 					speaker: beat.Speaker,
-					start:   cursor + beat.Start,
-					end:     cursor + beat.End,
+					start:   offsets[i] + beat.Start,
+					end:     offsets[i] + beat.End,
 				})
 			}
 			for _, actor := range s.Cast.OnStage {
@@ -215,7 +218,6 @@ func sceneCastProblems(root string, lines []dialogue.Line) []string {
 				}
 			}
 		}
-		cursor += s.DurationSeconds
 	}
 
 	// brief 原文写的是"合并覆盖"：同一说话人的两拍如果换算到全局时间后
@@ -227,23 +229,36 @@ func sceneCastProblems(root string, lines []dialogue.Line) []string {
 	// 切镜头"的约束。
 	merged := mergeBeatsBySpeaker(beats)
 
-	var uncoveredIndexes []int
-	for i, line := range lines {
+	uncovered := 0
+	for _, line := range lines {
 		if !lineCoveredByBeats(line, merged) {
 			problems = append(problems, fmt.Sprintf(
 				"dialogue.json 第 %d 行（说话人 %s，%.3f–%.3f 秒）没有被任何镜头的 cast.beats 覆盖",
 				line.SRTIndex, line.Speaker, line.StartSeconds, line.EndSeconds))
-			uncoveredIndexes = append(uncoveredIndexes, i)
+			uncovered++
 		}
 	}
-	if suspectCumulativeDrift(uncoveredIndexes, len(lines)) {
-		problems = append(problems, "疑似镜头时长累计漂移：从某一行起，后续所有行都没有被覆盖——"+
-			"这种“未覆盖”从某处开始一路延伸到最后一行的模式，通常不是漏标了某一拍，"+
-			"而是某个镜头的 duration_seconds 与实际配音时长不一致，导致它之后全部镜头的全局起点"+
-			"都算错了，请优先检查各镜头时长，而不是逐行去改 beats")
+	if uncovered > 0 {
+		problems = append(problems, beatsRecomputeHint)
 	}
 	return problems
 }
+
+// beatsRecomputeHint 是有台词行未被覆盖时统一追加的一条出路。
+//
+// 这里曾经是一条名为 suspectCumulativeDrift 的启发式：未覆盖的行如果构成
+// "从某一行起一路延伸到最后一行"的后缀，就断言病因是镜头时长累计漂移。
+// 它有两个问题——其一，同样的指纹也会由"某个镜头压根没写 beats"产生，
+// 那时它把人支去改镜头时长，方向完全错了；其二，它当初是为"正向由 agent
+// 手算减法、反向由这里累加"这两个不同源的基准写的诊断，而 am dialogue
+// beats 落地后正反两向都走 schedule.StartOffsets，工具产出的节拍不可能
+// 因为漂移而对不上，剩下的未覆盖只会来自手写或过期的 beats。
+//
+// 换成一条无条件成立的提示：不论病因是漏拍、过期节拍还是时长写错，出路
+// 都是同一条——去跑重算命令，让 dialogue.json 重新当唯一真相源。
+const beatsRecomputeHint = "以上未被覆盖的台词行不要逐行手改 beats：" +
+	"确认各镜头的 duration_seconds 与配音一致、且有台词盖过的镜头都写了 cast 块之后，" +
+	"执行 am dialogue beats——它会按 production/dialogue.json 重算全部镜头的 cast.beats"
 
 // mergeBeatsBySpeaker 按说话人分组，把同一说话人换算到全局时间后的区间
 // 按 start 排序，再合并相邻或首尾相接（容差内）的区间。跨镜头切点的一句
@@ -281,25 +296,6 @@ func mergeBeatsBySpeaker(beats []globalBeat) []globalBeat {
 		merged = append(merged, current)
 	}
 	return merged
-}
-
-// suspectCumulativeDrift 判断未覆盖的行是不是"从某个下标开始、一路连续
-// 延伸到最后一行"这种模式——这是镜头时长累计漂移的典型指纹：一旦某个
-// 镜头的声明时长跟实际不符，它之后全部镜头的全局起点都会被同一个偏移量
-// 带偏，从那一点起所有台词的换算区间就统一错位，而不是零散地漏掉某几行。
-func suspectCumulativeDrift(uncoveredIndexes []int, total int) bool {
-	if len(uncoveredIndexes) < 2 || total == 0 {
-		return false
-	}
-	if uncoveredIndexes[len(uncoveredIndexes)-1] != total-1 {
-		return false // 没有延伸到最后一行，不是这个模式。
-	}
-	for i, idx := range uncoveredIndexes {
-		if idx != uncoveredIndexes[0]+i {
-			return false // 中间有被覆盖的行插在里面，不连续，不是这个模式。
-		}
-	}
-	return true
 }
 
 // lineCoveredByBeats 判断某一行对白是否被合并后的某个区间完整覆盖：

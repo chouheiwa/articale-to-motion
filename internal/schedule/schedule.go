@@ -89,6 +89,25 @@ func Plan(root string) ([]scene.Scene, error) {
 	return result, nil
 }
 
+// StartOffsets 给出每个镜头在项目全局时间轴上的起点：镜头首尾相接，
+// 第 i 个镜头的起点是它前面所有镜头 duration_seconds 之和。返回的切片与
+// 传入的 scenes 一一对应，顺序即 Plan 给出的顺序。
+//
+// 单抽成一个函数是因为这条累加规则有两个方向的使用者：am dialogue beats
+// 用它把 dialogue.json 的全局台词切成镜头本地节拍，am validate cast 用它把
+// 镜头本地节拍换算回全局时间做覆盖比对。两处各写一遍 cursor += duration
+// 就是两个基准，正反向一旦漂开，校验通过与否取决于哪一边算错，而不取决
+// 于产物对不对。
+func StartOffsets(scenes []scene.Scene) []float64 {
+	offsets := make([]float64, len(scenes))
+	cursor := 0.0
+	for i, s := range scenes {
+		offsets[i] = cursor
+		cursor += s.DurationSeconds
+	}
+	return offsets
+}
+
 // CoverageProblems 检查一组镜头是否构成一条完整、不重不漏的时间轴。
 //
 // 这条规则本来只写在 PROMPT 里，靠编排 agent 自己复核：

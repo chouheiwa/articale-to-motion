@@ -340,6 +340,30 @@ func TestBuildPromptCastSectionWithEmptyStage(t *testing.T) {
 	}
 }
 
+// TestBuildPromptCastSectionWithoutBeats 角色在台上、整镜没人说话：
+// am dialogue beats 对这类镜头写出 "beats": []，提示词里不能只留一个
+// "台词节拍：" 的空头，那读起来像节拍算漏了。
+func TestBuildPromptCastSectionWithoutBeats(t *testing.T) {
+	dir := writeSceneWithCast(t, `{"pack_dir":"cast","ground_y":0.78,
+"on_stage":[{"id":"zhaocai","x":0.5,"pose":"idle","facing":"left"}],
+"beats":[]}`)
+	writeCastPack(t, dir, "zhaocai")
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(prompt, "台词节拍：本镜头无人说话") {
+		t.Errorf("无节拍的镜头应明说没人说话：%s", prompt)
+	}
+	if strings.Contains(prompt, "台词节拍（镜头本地时间，秒）：\n") {
+		t.Errorf("不该留一个空的节拍清单：%s", prompt)
+	}
+}
+
 func quote(value string) string {
 	value = strings.ReplaceAll(value, `\`, `\\`)
 	value = strings.ReplaceAll(value, `"`, `\"`)

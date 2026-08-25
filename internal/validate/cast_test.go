@@ -322,6 +322,19 @@ func lineSpanningSceneCutWithGap() func(*castFixtureOptions) {
 	}
 }
 
+// sceneWithoutBeats 把 scene-002 的 beats 整个清空：它覆盖的第 3、4 行
+// 于是全部未覆盖，症状与"镜头时长累计漂移"完全一样（从某一行起一路延伸
+// 到最后一行），但病因完全不同——被删掉的那条启发式正是在这里给出误导性
+// 结论的。
+func sceneWithoutBeats() func(*castFixtureOptions) {
+	return func(o *castFixtureOptions) {
+		scenes := make([]castSceneSpec, len(defaultCastScenes))
+		copy(scenes, defaultCastScenes)
+		scenes[1] = castSceneSpec{id: "scene-002", durationSeconds: 2}
+		o.scenes = scenes
+	}
+}
+
 // sceneDurationDrift 模拟"某个镜头的 duration_seconds 与实际配音时长不
 // 一致"这一类病根：scene-001 的两条 beats 与声明的 2 秒时长本身自洽（能
 // 通过 scene.Load），但真实台词（dialogue.json）里 scene-001 其实用了
@@ -461,16 +474,49 @@ func TestValidateCastLineSpanningSceneCutGapStillReported(t *testing.T) {
 	}
 }
 
-// TestValidateCastSceneDurationDriftHintsRootCause 验证 Minor 4：
-// 时长累计漂移会表现成"从某一行起，后面所有行都未覆盖"，这条测试确认
-// 除了逐行报告之外还会追加一条指向根因的提示，而不是让人误以为要逐行修
-// beats。
-func TestValidateCastSceneDurationDriftHintsRootCause(t *testing.T) {
+// TestValidateCastUncoveredLinesPointAtBeatsCommand 取代原先那条启发式
+// 漂移提示：有台词行没被盖住时，逐行报告之外要追加一条确定性的出路——
+// 去跑 am dialogue beats，由它按 dialogue.json 重算全部节拍，而不是让人
+// 逐行手改 beats。用镜头时长漂移这个 fixture，是因为它正是原先那条启发式
+// 唯一说得准的场景，新提示在这里同样成立。
+func TestValidateCastUncoveredLinesPointAtBeatsCommand(t *testing.T) {
 	root := castProject(t, sceneDurationDrift())
 	problems := CastProblems(root, "minimax")
 	joined := strings.Join(problems, "\n")
-	if !strings.Contains(joined, "疑似镜头时长累计漂移") {
-		t.Fatalf("从某一行起后续全部未覆盖时应给出漂移提示，得到 %v", problems)
+	if !strings.Contains(joined, "第 3 行") || !strings.Contains(joined, "第 4 行") {
+		t.Fatalf("未覆盖的行仍要逐行报出来，得到 %v", problems)
+	}
+	if !strings.Contains(joined, "am dialogue beats") {
+		t.Fatalf("有未覆盖行时应指向重算节拍的命令，得到 %v", problems)
+	}
+}
+
+// TestValidateCastSceneWithoutBeatsNotMisreportedAsDrift 钉住被删掉的那条
+// 启发式的已知误导：某个镜头压根没写 beats 时，症状同样是"从某一行起后面
+// 全部未覆盖"，旧提示会一口咬定是"镜头时长累计漂移"，把人支去改时长——
+// 而真正要做的是把节拍补上。现在的提示对两种病因都成立。
+func TestValidateCastSceneWithoutBeatsNotMisreportedAsDrift(t *testing.T) {
+	root := castProject(t, sceneWithoutBeats())
+	problems := CastProblems(root, "minimax")
+	joined := strings.Join(problems, "\n")
+	if !strings.Contains(joined, "第 3 行") || !strings.Contains(joined, "第 4 行") {
+		t.Fatalf("没写 beats 的镜头覆盖的两行都要报出来，得到 %v", problems)
+	}
+	if strings.Contains(joined, "时长累计漂移") {
+		t.Fatalf("镜头没写 beats 不是时长漂移，不得给出这个结论：%v", problems)
+	}
+	if !strings.Contains(joined, "am dialogue beats") {
+		t.Fatalf("应指向重算节拍的命令，得到 %v", problems)
+	}
+}
+
+// TestValidateCastCleanProjectHasNoBeatsHint 确认那条提示只在真的有未覆盖行
+// 时才出现：一个完好的多角色项目不该收到任何提示。
+func TestValidateCastCleanProjectHasNoBeatsHint(t *testing.T) {
+	root := castProject(t)
+	problems := CastProblems(root, "minimax")
+	if strings.Contains(strings.Join(problems, "\n"), "am dialogue beats") {
+		t.Fatalf("项目完好时不该出现重算节拍的提示，得到 %v", problems)
 	}
 }
 

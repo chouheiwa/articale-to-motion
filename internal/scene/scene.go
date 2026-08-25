@@ -390,7 +390,14 @@ func castSection(s Scene) string {
 		}
 		beats = append(beats, fmt.Sprintf("%s %.3f–%.3f%s", beat.Speaker, beat.Start, beat.End, mark))
 	}
-	b.WriteString("- 台词节拍（镜头本地时间，秒）：" + strings.Join(beats, "，") + "\n")
+	if len(beats) == 0 {
+		// am dialogue beats 对"有 cast 块、整镜没人说话"的镜头写出空数组，
+		// 这是正常产物（角色在台上做反应）。留一个空的"台词节拍："读起来
+		// 像节拍算漏了，明说没人说话。
+		b.WriteString("- 台词节拍：本镜头无人说话，角色只做反应，不要表现说话。\n")
+	} else {
+		b.WriteString("- 台词节拍（镜头本地时间，秒）：" + strings.Join(beats, "，") + "\n")
+	}
 	if hasVoiceOver {
 		// 一拍只说明「这段时间这个人在说话」，不说明他可见。标了画外音的说话人
 		// 不在 on_stage 里，把他画出来就是多出一个本不该在这个镜头露面的角色。

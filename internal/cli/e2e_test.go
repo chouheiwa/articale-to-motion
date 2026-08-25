@@ -5,6 +5,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -304,9 +305,10 @@ func TestEndToEndCastNarrationValidate(t *testing.T) {
 		t.Fatalf("dialogue assemble 失败：%v（%s）", err, out)
 	}
 
-	// 6. 写一个带 cast 块的 scene.json：cast.beats 精确复现上面两行的全局
-	// 时间戳，pack_dir 指向镜头目录内自带的一份角色包拷贝——scene.Load 不
-	// 允许 pack_dir 逃出镜头目录，项目根的 cast/heiwa 不能直接引用。
+	// 6. 写一个带 cast 块、但不含 beats 的 scene.json：节拍不由 agent 手算，
+	// 而是下一步交给 am dialogue beats 从 dialogue.json 切出来。pack_dir 指向
+	// 镜头目录内自带的一份角色包拷贝——scene.Load 不允许 pack_dir 逃出镜头
+	// 目录，项目根的 cast/heiwa 不能直接引用。
 	sceneDir := filepath.Join(project, "scenes", "scene-001")
 	if err := os.MkdirAll(sceneDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -328,10 +330,6 @@ func TestEndToEndCastNarrationValidate(t *testing.T) {
     "ground_y": 0.78,
     "on_stage": [
       {"id": "heiwa", "x": 0.5, "pose": "idle", "facing": "right"}
-    ],
-    "beats": [
-      {"speaker": "heiwa", "start": 0, "end": 1.0},
-      {"speaker": "heiwa", "start": 1.2, "end": 1.7}
     ]
   }
 }
@@ -340,7 +338,57 @@ func TestEndToEndCastNarrationValidate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// 7. 项目级一致性校验：班底、对白时间线、镜头节拍三者必须互相吻合。
+	// 7. 重算镜头节拍：把 dialogue.json 的全局时间切成镜头本地时间写回
+	// scene.json。这一步之前 scene.json 里根本没有 beats，validate cast 必然
+	// 报"没有被任何镜头的 cast.beats 覆盖"——先证明这一点，再证明跑完
+	// 命令就通过了，否则下面那个"通过"说明不了是这条命令的功劳。
+	if out, err := runCLI(t, project, "validate", "cast"); err == nil {
+		t.Fatalf("还没重算节拍时 validate cast 不该通过：%s", out)
+	} else if !strings.Contains(out, "没有被任何镜头的 cast.beats 覆盖") {
+		t.Fatalf("期望报台词行未被覆盖，得到：%s", out)
+	}
+
+	if out, err := runCLI(t, project, "dialogue", "beats"); err != nil {
+		t.Fatalf("dialogue beats 失败：%v（%s）", err, out)
+	}
+
+	var written struct {
+		Cast struct {
+			PackDir string `json:"pack_dir"`
+			Beats   []struct {
+				Speaker string  `json:"speaker"`
+				Start   float64 `json:"start"`
+				End     float64 `json:"end"`
+			} `json:"beats"`
+		} `json:"cast"`
+	}
+	sceneBody, err := os.ReadFile(filepath.Join(sceneDir, "scene.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(sceneBody, &written); err != nil {
+		t.Fatalf("重算后的 scene.json 不是合法 JSON：%v（%s）", err, sceneBody)
+	}
+	if written.Cast.PackDir != "cast" {
+		t.Errorf("pack_dir 不该被这条命令碰，得到 %q", written.Cast.PackDir)
+	}
+	if len(written.Cast.Beats) != 2 {
+		t.Fatalf("两段配音应切出两拍，得到 %+v", written.Cast.Beats)
+	}
+	// 全局时间轴是 [0, 1.0] 与 [1.2, 1.7]（段间 200ms 静音），镜头起点为 0，
+	// 所以本地时间与全局时间相同。实测时长与声明时长有几十毫秒出入，用 30ms
+	// 容差比对。
+	for i, want := range [][2]float64{{0, 1.0}, {1.2, 1.7}} {
+		got := written.Cast.Beats[i]
+		if got.Speaker != "heiwa" {
+			t.Errorf("第 %d 拍的说话人应是 heiwa，得到 %q", i+1, got.Speaker)
+		}
+		if math.Abs(got.Start-want[0]) > 0.03 || math.Abs(got.End-want[1]) > 0.03 {
+			t.Errorf("第 %d 拍应约为 [%v, %v]，得到 [%v, %v]", i+1, want[0], want[1], got.Start, got.End)
+		}
+	}
+
+	// 8. 项目级一致性校验：班底、对白时间线、镜头节拍三者必须互相吻合。
 	out, err := runCLI(t, project, "validate", "cast")
 	if err != nil {
 		t.Fatalf("validate cast 应当通过，实际失败：%v（%s）", err, out)

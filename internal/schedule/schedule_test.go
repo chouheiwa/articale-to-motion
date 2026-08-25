@@ -291,3 +291,30 @@ func TestCoverageProblemsSkipsSpanCheckWhenNoSRT(t *testing.T) {
 		t.Errorf("没给字幕跨度时不该做跨度比对：%v", problems)
 	}
 }
+
+// TestStartOffsetsAccumulatesDurations 钉住"镜头全局起点"这条累加规则只有
+// 一处实现：正向（am dialogue beats 把全局台词切成镜头本地节拍）与反向
+// （am validate cast 把镜头本地节拍换算回全局时间）必须同源。
+func TestStartOffsetsAccumulatesDurations(t *testing.T) {
+	scenes := []scene.Scene{
+		{ID: "scene-001", DurationSeconds: 2.5},
+		{ID: "scene-002", DurationSeconds: 1.25},
+		{ID: "scene-003", DurationSeconds: 3},
+	}
+	offsets := StartOffsets(scenes)
+	want := []float64{0, 2.5, 3.75}
+	if len(offsets) != len(want) {
+		t.Fatalf("起点数量应与镜头数一致：得到 %v", offsets)
+	}
+	for i := range want {
+		if offsets[i] != want[i] {
+			t.Errorf("第 %d 个镜头的全局起点应为 %v，得到 %v", i, want[i], offsets[i])
+		}
+	}
+}
+
+func TestStartOffsetsEmpty(t *testing.T) {
+	if got := StartOffsets(nil); len(got) != 0 {
+		t.Fatalf("没有镜头时应返回空切片，得到 %v", got)
+	}
+}
