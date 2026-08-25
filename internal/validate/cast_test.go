@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/chouheiwa/articale-to-motion/internal/dialogue"
 )
 
 // castPackYAML 是测试用最小可自洽角色包清单模板：%s 依次是 id、name、
@@ -604,5 +606,28 @@ func TestValidateCastRosterSourceMissingDNA(t *testing.T) {
 	joined := strings.Join(problems, "\n")
 	if len(problems) == 0 || !strings.Contains(joined, "dna.md") || !strings.Contains(joined, "zhaocai") {
 		t.Fatalf("期望报班底源目录缺少 dna.md，得到 %v", problems)
+	}
+}
+
+// TestLoadDialogueResultErrorsUseDialogueRelPathConstant 钉住"错误信息硬编码
+// 路径"这条缺陷的修复：把 dialogue.DialogueRelPath 换成一个独一无二的标记值，
+// 让 CastProblems 在一个本来完全自洽的项目上也去错误的位置找 dialogue.json，
+// 断言报出的消息引用的是这个标记，而不是写死的 "production/dialogue.json"
+// 字面量。落地路径以后一改，这条测试会先于用户发现报错文案对不上（若退回
+// 硬编码字面量，本测试立即变红）。
+func TestLoadDialogueResultErrorsUseDialogueRelPathConstant(t *testing.T) {
+	root := castProject(t)
+	const marker = "MUTATED-MARKER-DIR/dialogue.json"
+	original := dialogue.DialogueRelPath
+	dialogue.DialogueRelPath = marker
+	defer func() { dialogue.DialogueRelPath = original }()
+
+	problems := CastProblems(root, "minimax")
+	joined := strings.Join(problems, "\n")
+	if !strings.Contains(joined, marker) {
+		t.Fatalf("报错应引用 DialogueRelPath 常量（当前标记 %q），得到 %v", marker, problems)
+	}
+	if strings.Contains(joined, "production/dialogue.json") {
+		t.Fatalf("报错不该再包含硬编码的旧路径字面量：%v", problems)
 	}
 }

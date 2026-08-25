@@ -18,6 +18,21 @@ import (
 // 后可能带一点浮点误差，严格 < / > 会把本该合法的边界值判成非法。
 const floatEps = 1e-9
 
+// BeatOverlapToleranceSeconds 是判定相邻两拍是否重叠时用的容差，导出给
+// internal/castbeats 复用。
+//
+// 那个包在切分 dialogue.json、写 cast.beats 之前会自己做一次重叠守卫；
+// 如果那道守卫比这里更松，一段重叠量正好落在两者之间的输入就会在那边被
+// 放行、切出的节拍写进 scene.json 之后又在这里被拒——命令退出码是 0，
+// 产物却过不了校验，重跑也不会自愈（详见 2026-08-24 多角色叙事 spec
+// 的"跨模块容差错配"记录）。两边共用同一个值，让"上游放行"直接蕴含
+// "下游一定放行"，不再靠两个常量凑巧一致维持。
+//
+// 值与 floatEps 相同，但单独导出一个名字：floatEps 还覆盖 x / ground_y
+// 边界、beat 时长边界等其他用途，那些用途不需要跨包保持同步，混在一个
+// 跨包契约里反而让"改哪个值会影响谁"变得不清楚。
+const BeatOverlapToleranceSeconds = floatEps
+
 const (
 	TextOpen  = "<scene-text>"
 	TextClose = "</scene-text>"
@@ -290,8 +305,8 @@ func validateCast(s Scene) error {
 		// 顺序没错但时间段首尾相接得不够干净——分开说更好改。用前一拍的 start
 		// 而不是笼统的"是否重叠"来判断走哪条分支，是因为只要 start 没有倒退，
 		// 不管区间怎么交叠都只是同一种"时间没让够"的问题。
-		if beat.Start < prevEnd-floatEps {
-			if beat.Start < c.Beats[prevIndex].Start-floatEps {
+		if beat.Start < prevEnd-BeatOverlapToleranceSeconds {
+			if beat.Start < c.Beats[prevIndex].Start-BeatOverlapToleranceSeconds {
 				return fmt.Errorf("cast.beats 未按 start 递增排列：第 %d 拍 start=%v 早于第 %d 拍 start=%v",
 					i, beat.Start, prevIndex, c.Beats[prevIndex].Start)
 			}
@@ -384,7 +399,20 @@ func castSection(s Scene) string {
 		onStage[actor.ID] = true
 	}
 	var b strings.Builder
-	if len(c.OnStage) == 0 {
+	// noStageNoBeats 是 on_stage 与 beats 都是空数组的退化组合：am dialogue
+	// beats 会给"整段完全没有台词覆盖"的纯 B-roll 镜头写出这个组合（实测见
+	// internal/castbeats 的
+	// TestApplyProducesEmptyOnStageWithEmptyBeatsForCoverageFreeScene），
+	// 不是坏输入，validateCast 不拒绝它。但下面两段
+	// 各自的措辞都假设了对方不为空——"台词全部是画外音"蕴含"有台词"，
+	// "角色只做反应"蕴含"有角色在台上"——直接拼起来就是自相矛盾。这个
+	// 分支单独给一句站得住的话，跳过后面两段互斥的措辞。
+	noStageNoBeats := len(c.OnStage) == 0 && len(c.Beats) == 0
+	switch {
+	case noStageNoBeats:
+		b.WriteString(fmt.Sprintf("\n角色（本镜头无角色出场）：本镜头没有台词覆盖、台上也没有角色，"+
+			"按纯 B-roll/转场处理；不得把任何角色画进画面，也无需加载 %s 技能。\n", CharacterRigSkillName))
+	case len(c.OnStage) == 0:
 		// 纯转场 / 纯 B-roll / 纯图表镜头被台词盖过时的形态：有 beats、没有台上
 		// 角色。这里绝不能说「本镜头有角色出场」——渲染 agent 会照着把角色画
 		// 进图表镜头里。
@@ -396,7 +424,7 @@ func castSection(s Scene) string {
 		// 加载技能、一边禁止装载 rig 且刻意省掉驱动库复制条款，提示词自相矛盾。
 		b.WriteString(fmt.Sprintf("\n角色（本镜头无角色出场）：台词全部是画外音；"+
 			"不得把任何角色画进画面，也无需加载 %s 技能。\n", CharacterRigSkillName))
-	} else {
+	default:
 		b.WriteString(fmt.Sprintf("\n%s：本镜头有角色出场，必须使用 character-rig 技能的 cast.js 驱动。\n", CastRequiredHeading))
 	}
 	for _, actor := range c.OnStage {
@@ -425,7 +453,12 @@ func castSection(s Scene) string {
 		// am dialogue beats 对"有 cast 块、整镜没人说话"的镜头写出空数组，
 		// 这是正常产物（角色在台上做反应）。留一个空的"台词节拍："读起来
 		// 像节拍算漏了，明说没人说话。
-		b.WriteString("- 台词节拍：本镜头无人说话，角色只做反应，不要表现说话。\n")
+		//
+		// noStageNoBeats 时不写这句：台上根本没有角色，"角色只做反应"这句话
+		// 本身就不成立，上面的标题已经把情况说清楚了。
+		if !noStageNoBeats {
+			b.WriteString("- 台词节拍：本镜头无人说话，角色只做反应，不要表现说话。\n")
+		}
 	} else {
 		b.WriteString("- 台词节拍（镜头本地时间，秒）：" + strings.Join(beats, "，") + "\n")
 	}

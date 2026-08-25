@@ -99,11 +99,11 @@ func CastProblems(root, provider string) []string {
 
 	srtPath := filepath.Join(root, dialogue.SRTRelPath)
 	if span, err := srt.ReadSpan(srtPath); err != nil {
-		problems = append(problems, fmt.Sprintf("读取 transcription-production.srt 失败：%v", err))
+		problems = append(problems, fmt.Sprintf("读取 %s 失败：%v", dialogue.SRTRelPath, err))
 	} else if span.Cues != len(result.Lines) {
 		problems = append(problems, fmt.Sprintf(
-			"dialogue.json 的字幕行数 %d 与 transcription-production.srt 的字幕条数 %d 不一致",
-			len(result.Lines), span.Cues))
+			"%s 的字幕行数 %d 与 %s 的字幕条数 %d 不一致",
+			dialogue.DialogueRelPath, len(result.Lines), dialogue.SRTRelPath, span.Cues))
 	}
 
 	for _, line := range result.Lines {
@@ -123,17 +123,17 @@ func CastProblems(root, provider string) []string {
 func loadDialogueResult(path string) (*dialogue.Result, []string) {
 	body, err := os.ReadFile(path)
 	if err != nil {
-		return nil, []string{fmt.Sprintf("找不到或无法读取 production/dialogue.json：%v", err)}
+		return nil, []string{fmt.Sprintf("找不到或无法读取 %s：%v", dialogue.DialogueRelPath, err)}
 	}
 	var result dialogue.Result
 	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, []string{fmt.Sprintf("production/dialogue.json 不是合法 JSON：%v", err)}
+		return nil, []string{fmt.Sprintf("%s 不是合法 JSON：%v", dialogue.DialogueRelPath, err)}
 	}
 	if result.Schema != dialogue.SchemaVersion {
-		return nil, []string{fmt.Sprintf("production/dialogue.json 的 schema 必须是 %s，收到 %q", dialogue.SchemaVersion, result.Schema)}
+		return nil, []string{fmt.Sprintf("%s 的 schema 必须是 %s，收到 %q", dialogue.DialogueRelPath, dialogue.SchemaVersion, result.Schema)}
 	}
 	if len(result.Lines) == 0 {
-		return nil, []string{"production/dialogue.json 没有任何字幕行"}
+		return nil, []string{fmt.Sprintf("%s 没有任何字幕行", dialogue.DialogueRelPath)}
 	}
 	return &result, nil
 }
@@ -256,9 +256,9 @@ func sceneCastProblems(root string, lines []dialogue.Line) []string {
 //
 // 换成一条无条件成立的提示：不论病因是漏拍、过期节拍还是时长写错，出路
 // 都是同一条——去跑重算命令，让 dialogue.json 重新当唯一真相源。
-const beatsRecomputeHint = "以上未被覆盖的台词行不要逐行手改 beats：" +
+var beatsRecomputeHint = "以上未被覆盖的台词行不要逐行手改 beats：" +
 	"确认各镜头的 duration_seconds 与配音一致、且有台词盖过的镜头都写了 cast 块之后，" +
-	"执行 am dialogue beats——它会按 production/dialogue.json 重算全部镜头的 cast.beats"
+	"执行 am dialogue beats——它会按 " + dialogue.DialogueRelPath + " 重算全部镜头的 cast.beats"
 
 // mergeBeatsBySpeaker 按说话人分组，把同一说话人换算到全局时间后的区间
 // 按 start 排序，再合并相邻或首尾相接（容差内）的区间。跨镜头切点的一句

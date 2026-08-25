@@ -347,6 +347,41 @@ func TestBuildPromptCastSectionWithEmptyStage(t *testing.T) {
 	}
 }
 
+// TestBuildPromptCastSectionEmptyStageAndBeats 钉住"退化组合下提示词自相
+// 矛盾"这条缺陷的修复：on_stage 与 beats 都是空数组时，am dialogue beats
+// 会给"整段完全没有台词覆盖"的纯 B-roll 镜头写出这个组合（不是坏输入，
+// validateCast 不拒绝它，见 internal/castbeats 的
+// TestProbeEmptyOnStageEmptyBeatsProducibleByApply 系列复现）。
+//
+// 旧实现会同时输出"台词全部是画外音"（蕴含"有台词"）与"本镜头无人说话，
+// 角色只做反应"（蕴含"有角色在台上"），两句话直接互相矛盾。修复后这个
+// 组合只应输出一句站得住的话，且不得再出现那两句互斥的措辞。
+func TestBuildPromptCastSectionEmptyStageAndBeats(t *testing.T) {
+	dir := writeSceneWithCast(t, `{"pack_dir":"cast","ground_y":0.78,"on_stage":[],"beats":[]}`)
+	s, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := BuildPrompt(s, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(prompt, "角色（本镜头无角色出场）：本镜头没有台词覆盖、台上也没有角色") {
+		t.Errorf("退化组合应给出不自相矛盾的单句说明：%s", prompt)
+	}
+	for _, unwanted := range []string{
+		"台词全部是画外音", // 蕴含"有台词"，但 beats 是空的，没有任何台词。
+		"角色只做反应",   // 蕴含"有角色在台上"，但 on_stage 是空的，没有角色。
+		"角色（强制）：",
+		"本镜头有角色出场",
+		"cast.js",
+	} {
+		if strings.Contains(prompt, unwanted) {
+			t.Errorf("on_stage 与 beats 都为空时不该出现 %q：%s", unwanted, prompt)
+		}
+	}
+}
+
 // TestBuildPromptCastSectionWithoutBeats 角色在台上、整镜没人说话：
 // am dialogue beats 对这类镜头写出 "beats": []，提示词里不能只留一个
 // "台词节拍：" 的空头，那读起来像节拍算漏了。

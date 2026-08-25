@@ -306,6 +306,120 @@ func TestApplyRejectsOverlappingLines(t *testing.T) {
 	}
 }
 
+// TestApplyRejectsTinyOverlapBetweenFloatEpsAndMinBeatSeconds 钉住跨模块容差
+// 错配的修复：6e-7 秒的重叠落在 (1e-9, 1e-6] 区间——大于 scene 包判定 beats
+// 重叠的容差（floatEps，1e-9），却小于本包曾经拿来当重叠容差用的
+// minBeatSeconds（1e-6）。旧实现会在这里放行，切出的节拍写进 scene.json
+// 之后又会被 scene.Load 以"时间重叠"拒绝：命令退出码 0，产物却过不了校验，
+// 重跑也不会自愈，用户只能手改 dialogue.json。
+//
+// 现在两边共用 scene.BeatOverlapToleranceSeconds，这种输入必须在这里就被拒绝。
+func TestApplyRejectsTinyOverlapBetweenFloatEpsAndMinBeatSeconds(t *testing.T) {
+	root := castProject(t)
+	// heiwa 止于 1.0000006，zhaocai 起于 1.0——重叠恰好 6e-7 秒。
+	writeDialogue(t, root, "heiwa", 0.0, 1.0000006, "zhaocai", 1.0, 2.0)
+	writeScene(t, root, "scene-001", 2.0, castBlockNoBeats)
+
+	_, err := Apply(root)
+	if err == nil || !strings.Contains(err.Error(), "重叠") {
+		t.Fatalf("6e-7 秒的重叠应当在 am dialogue beats 阶段就被拒绝，得到：%v", err)
+	}
+
+	// 幂等：重跑必须得到完全相同的拒绝，而不是在中途写出一个自己都加载
+	// 不了的 scene.json 之后才报错。
+	_, err2 := Apply(root)
+	if err2 == nil || err2.Error() != err.Error() {
+		t.Fatalf("重跑应得到与第一次完全相同的拒绝，得到：%v", err2)
+	}
+}
+
+// TestLoadDialogueLinesErrorsUseDialogueRelPathConstant 钉住"错误信息硬编码
+// 路径"这条缺陷的修复：把包变量 DialogueRelPath 改成一个独一无二的标记值，
+// 逐一触发 loadDialogueLines 的每条报错分支，断言消息里出现的是这个标记，
+// 而不是写死的 "production/dialogue.json" 字面量。落地路径以后一改，
+// 这条测试会先于用户发现报错文案对不上（若退回硬编码字面量，本测试立即变红）。
+func TestLoadDialogueLinesErrorsUseDialogueRelPathConstant(t *testing.T) {
+	const marker = "MUTATED-MARKER-DIR/dialogue.json"
+	original := DialogueRelPath
+	DialogueRelPath = marker
+	defer func() { DialogueRelPath = original }()
+
+	assertUsesMarker := func(t *testing.T, err error) {
+		t.Helper()
+		if err == nil {
+			t.Fatal("期待报错，得到 nil")
+		}
+		if !strings.Contains(err.Error(), marker) {
+			t.Fatalf("报错应引用 DialogueRelPath 常量（当前标记 %q），得到：%v", marker, err)
+		}
+		if strings.Contains(err.Error(), "production/dialogue.json") {
+			t.Fatalf("报错不该再包含硬编码的旧路径字面量：%v", err)
+		}
+	}
+
+	t.Run("找不到文件", func(t *testing.T) {
+		root := t.TempDir()
+		_, err := loadDialogueLines(filepath.Join(root, marker))
+		assertUsesMarker(t, err)
+	})
+
+	t.Run("不是合法JSON", func(t *testing.T) {
+		root := t.TempDir()
+		p := filepath.Join(root, marker)
+		write(t, p, "不是 JSON")
+		_, err := loadDialogueLines(p)
+		assertUsesMarker(t, err)
+	})
+
+	t.Run("schema不对", func(t *testing.T) {
+		root := t.TempDir()
+		p := filepath.Join(root, marker)
+		write(t, p, `{"schema":"wrong","lines":[]}`)
+		_, err := loadDialogueLines(p)
+		assertUsesMarker(t, err)
+	})
+
+	t.Run("没有任何行", func(t *testing.T) {
+		root := t.TempDir()
+		p := filepath.Join(root, marker)
+		write(t, p, `{"schema":"cast-dialogue/v1","lines":[]}`)
+		_, err := loadDialogueLines(p)
+		assertUsesMarker(t, err)
+	})
+
+	t.Run("时间倒挂", func(t *testing.T) {
+		root := t.TempDir()
+		p := filepath.Join(root, marker)
+		write(t, p, `{"schema":"cast-dialogue/v1","lines":[
+			{"srtIndex":1,"speaker":"heiwa","startSeconds":1.0,"endSeconds":0.5}
+		]}`)
+		_, err := loadDialogueLines(p)
+		assertUsesMarker(t, err)
+	})
+
+	t.Run("与上一行重叠", func(t *testing.T) {
+		root := t.TempDir()
+		p := filepath.Join(root, marker)
+		write(t, p, `{"schema":"cast-dialogue/v1","lines":[
+			{"srtIndex":1,"speaker":"heiwa","startSeconds":0.0,"endSeconds":1.2},
+			{"srtIndex":2,"speaker":"zhaocai","startSeconds":1.0,"endSeconds":2.0}
+		]}`)
+		_, err := loadDialogueLines(p)
+		assertUsesMarker(t, err)
+	})
+
+	t.Run("有台词行没有被任何镜头盖住", func(t *testing.T) {
+		root := castProject(t)
+		p := filepath.Join(root, marker)
+		write(t, p, `{"schema":"cast-dialogue/v1","lines":[
+			{"srtIndex":1,"speaker":"heiwa","startSeconds":0.0,"endSeconds":3.0}
+		]}`)
+		writeScene(t, root, "scene-001", 1.0, castBlockNoBeats)
+		_, err := Apply(root)
+		assertUsesMarker(t, err)
+	})
+}
+
 // TestApplyLeavesPlainScenesAlone 老模式零破坏：没有 cast 块、也没有台词
 // 盖过的镜头，scene.json 一个字节都不许动。
 func TestApplyLeavesPlainScenesAlone(t *testing.T) {
@@ -319,6 +433,39 @@ func TestApplyLeavesPlainScenesAlone(t *testing.T) {
 	}
 	if read(t, path) != before {
 		t.Fatalf("无 cast 块又无台词的老镜头不得被改写：\n改前:\n%s\n改后:\n%s", before, read(t, path))
+	}
+}
+
+const castBlockEmptyOnStage = `,
+  "cast": {
+    "pack_dir": "cast-pack",
+    "ground_y": 0.78,
+    "on_stage": []
+  }`
+
+// TestApplyProducesEmptyOnStageWithEmptyBeatsForCoverageFreeScene 钉住一个
+// 以实测确认过的事实（不是猜的）：给一个完全没有台词覆盖、却预先写了
+// on_stage:[] 空 cast 块的纯 B-roll 镜头跑 Apply，会正常写出 beats:[]——
+// on_stage 和 beats 都是空数组的组合是本命令的正常产物，不是坏输入。
+//
+// internal/scene 的 castSection 必须能处理这个组合而不自相矛盾（见
+// TestBuildPromptCastSectionEmptyStageAndBeats），validateCast 也不能
+// 拒绝它——拒绝会让本命令自己的产物过不了校验。
+func TestApplyProducesEmptyOnStageWithEmptyBeatsForCoverageFreeScene(t *testing.T) {
+	root := castProject(t)
+	writeDialogue(t, root, "heiwa", 0.0, 1.0)
+	writeScene(t, root, "scene-001", 1.0, castBlockNoBeats)
+	path2 := writeScene(t, root, "scene-002", 1.0, castBlockEmptyOnStage)
+
+	if _, err := Apply(root); err != nil {
+		t.Fatalf("Apply 不应报错：%v", err)
+	}
+	body := read(t, path2)
+	if !strings.Contains(body, `"on_stage": []`) {
+		t.Fatalf("scene-002 的 on_stage 应保持为 []，得到：%s", body)
+	}
+	if !strings.Contains(body, `"beats": []`) {
+		t.Fatalf("scene-002 没有台词覆盖时应写出 beats: []，得到：%s", body)
 	}
 }
 

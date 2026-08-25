@@ -88,10 +88,10 @@ func Apply(root string) (Report, error) {
 	for _, index := range uncovered {
 		l := lines[index]
 		problems = append(problems, fmt.Sprintf(
-			"production/dialogue.json 第 %d 行（说话人 %s，%.3f–%.3f 秒）没有被任何镜头盖住，"+
+			"%s 第 %d 行（说话人 %s，%.3f–%.3f 秒）没有被任何镜头盖住，"+
 				"全部镜头合计只有 %.3f 秒：这是镜头 duration_seconds 与配音对不上，"+
 				"先对齐镜头时长再重算节拍",
-			l.SRTIndex, l.Speaker, l.StartSeconds, l.EndSeconds, total))
+			DialogueRelPath, l.SRTIndex, l.Speaker, l.StartSeconds, l.EndSeconds, total))
 	}
 	if len(problems) > 0 {
 		return Report{}, fmt.Errorf("无法重算镜头节拍：\n  - %s", strings.Join(problems, "\n  - "))
@@ -120,29 +120,36 @@ func Apply(root string) (Report, error) {
 // 重叠必须在这里拦：重叠的输入切出来的就是重叠的节拍，写进 scene.json 之后
 // scene.Load 会直接拒绝加载——那时错误指向的是本命令刚写坏的镜头，而不是
 // 真正有问题的 dialogue.json。
+//
+// 重叠判定用 scene.BeatOverlapToleranceSeconds（不是本包的 minBeatSeconds）：
+// minBeatSeconds 的量级（1 微秒）是为"一拍最短写多长"这件事选的，比
+// scene.validateCast 实际拒绝重叠的容差（1e-9）松了三个数量级——曾经真的
+// 用 minBeatSeconds 当过重叠容差，(1e-9, 1e-6] 区间内的重叠会在这里放行、
+// 切出的节拍却在 scene.Load 那边被拒，命令退出码 0 之后紧跟着一个过不了
+// 校验的产物。两处判的是同一件事，必须用同一个容差。
 func loadDialogueLines(path string) ([]dialogue.Line, error) {
 	body, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("找不到或无法读取 production/dialogue.json：%w"+
-			"（多角色项目的对白时间线由 am dialogue assemble 产出，请先执行它）", err)
+		return nil, fmt.Errorf("找不到或无法读取 %s：%w"+
+			"（多角色项目的对白时间线由 am dialogue assemble 产出，请先执行它）", DialogueRelPath, err)
 	}
 	var result dialogue.Result
 	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, fmt.Errorf("production/dialogue.json 不是合法 JSON：%w", err)
+		return nil, fmt.Errorf("%s 不是合法 JSON：%w", DialogueRelPath, err)
 	}
 	if result.Schema != dialogue.SchemaVersion {
-		return nil, fmt.Errorf("production/dialogue.json 的 schema 必须是 %s，收到 %q", dialogue.SchemaVersion, result.Schema)
+		return nil, fmt.Errorf("%s 的 schema 必须是 %s，收到 %q", DialogueRelPath, dialogue.SchemaVersion, result.Schema)
 	}
 	if len(result.Lines) == 0 {
-		return nil, fmt.Errorf("production/dialogue.json 没有任何台词行")
+		return nil, fmt.Errorf("%s 没有任何台词行", DialogueRelPath)
 	}
 	for i, l := range result.Lines {
 		if l.EndSeconds <= l.StartSeconds {
-			return nil, fmt.Errorf("production/dialogue.json 第 %d 行时间倒挂：[%v, %v]", l.SRTIndex, l.StartSeconds, l.EndSeconds)
+			return nil, fmt.Errorf("%s 第 %d 行时间倒挂：[%v, %v]", DialogueRelPath, l.SRTIndex, l.StartSeconds, l.EndSeconds)
 		}
-		if i > 0 && l.StartSeconds < result.Lines[i-1].EndSeconds-minBeatSeconds {
-			return nil, fmt.Errorf("production/dialogue.json 第 %d 行与上一行重叠：上一行止于 %.3f 秒，本行起于 %.3f 秒",
-				l.SRTIndex, result.Lines[i-1].EndSeconds, l.StartSeconds)
+		if i > 0 && l.StartSeconds < result.Lines[i-1].EndSeconds-scene.BeatOverlapToleranceSeconds {
+			return nil, fmt.Errorf("%s 第 %d 行与上一行重叠：上一行止于 %.3f 秒，本行起于 %.3f 秒",
+				DialogueRelPath, l.SRTIndex, result.Lines[i-1].EndSeconds, l.StartSeconds)
 		}
 	}
 	return result.Lines, nil
