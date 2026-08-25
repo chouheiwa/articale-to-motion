@@ -254,19 +254,16 @@ func TestEndToEndCastNarrationValidate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// cast new 只落地角色包目录，不登记进项目班底——登记是 cast add 的职责。
-	// 这里手工登记，模拟人工编辑 cast.yaml 把角色纳入班底的真实操作。
+	// cast new 自己就把 cast/heiwa 登记进了班底，这里不再手工编辑 cast.yaml。
+	// 断言这一点：登记是这条端到端链路能继续往下走的前提，漏掉的话后面
+	// am validate cast 会以"班底为空"失败，而那条错误信息离真正的原因很远。
 	rosterPath := filepath.Join(project, "cast.yaml")
 	rosterBody, err := os.ReadFile(rosterPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	registered := strings.Replace(string(rosterBody), "packs: []", "packs: [cast/heiwa]", 1)
-	if registered == string(rosterBody) {
-		t.Fatalf("cast.yaml 里找不到待替换的空 packs：%s", rosterBody)
-	}
-	if err := os.WriteFile(rosterPath, []byte(registered), 0o644); err != nil {
-		t.Fatal(err)
+	if !strings.Contains(string(rosterBody), "cast/heiwa") {
+		t.Fatalf("cast new 应已把 cast/heiwa 登记进班底，实际 cast.yaml：%s", rosterBody)
 	}
 
 	// 3. 校验角色包：改完 character.yaml 必须重新跑一次，否则 character.json

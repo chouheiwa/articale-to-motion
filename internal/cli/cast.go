@@ -60,7 +60,8 @@ func newCastNewCommand(stdout io.Writer) *cobra.Command {
 		Use:   "new ID",
 		Args:  exactArgs(1, "ID"),
 		Short: "生成一个可自洽的角色包骨架",
-		Long: `在 cast/ID/ 下写出 character.yaml、rig.svg、dna.md 三件套骨架。
+		Long: `在 cast/ID/ 下写出 character.yaml、rig.svg、dna.md 三件套骨架，
+并把 cast/ID 登记进项目根的 cast.yaml（不存在则按约定默认值新建）。
 
 骨架里的 voiceId 留空：真实音色由人工在 character.yaml 里补上，dna.md 会
 提示这一点。写完立即用 cast.Load 自检，一旦不自洽就删除已写文件并报错——
@@ -109,7 +110,14 @@ func runCastNew(stdout io.Writer, id string) error {
 	if err := pack.WriteJSON(dir); err != nil {
 		return cleanupAndFail(dir, err)
 	}
-	fmt.Fprintf(stdout, "角色包骨架已生成：%s\n", dir)
+	// new 必须自己登记进班底：它硬编码写到 cast/<id>/，而 add 见到目标目录
+	// 已存在就拒绝，两条命令对 cast/ 的假设互斥——不在这里登记，new 出来的
+	// 角色包就没有任何命令能进班底，只能手改 cast.yaml，否则
+	// am validate cast 一直报"班底为空"。registerCastPack 是幂等的。
+	if err := registerCastPack(".", filepath.ToSlash(dir)); err != nil {
+		return cleanupAndFail(dir, fmt.Errorf("更新 %s 失败：%w", cast.RosterFile, err))
+	}
+	fmt.Fprintf(stdout, "角色包骨架已生成：%s，并已登记进 %s\n", dir, cast.RosterFile)
 	fmt.Fprintln(stdout, "请在 character.yaml 里填入真实 voiceId、summary，并按需要调整 rig.svg 后再交付。")
 	return nil
 }

@@ -448,3 +448,91 @@ func TestDialogueAssembleEndToEnd(t *testing.T) {
 		t.Errorf("输出应提到总时长（约 1.7 秒）：%q", out)
 	}
 }
+
+// TestCastNewRegistersIntoRoster 钉住 new 的登记副作用。
+//
+// 为什么必须由 new 自己登记：new 硬编码写到 cast/<id>/，而 add 见到目标
+// 目录已存在就拒绝（"角色 X 已存在于 cast/X"）——两条命令对 cast/ 的假设
+// 互斥，new 出来的角色包因此没有任何命令能登记进班底，只能手改 cast.yaml，
+// 否则 am validate cast 永远报"班底为空"。
+func TestCastNewRegistersIntoRoster(t *testing.T) {
+	root := t.TempDir()
+	if out, err := runCLI(t, root, "cast", "new", "heiwa"); err != nil {
+		t.Fatalf("cast new 失败：%v（%s）", err, out)
+	}
+	roster, err := os.ReadFile(filepath.Join(root, "cast.yaml"))
+	if err != nil {
+		t.Fatalf("cast.yaml 应已生成：%v", err)
+	}
+	if !strings.Contains(string(roster), "cast/heiwa") {
+		t.Errorf("cast.yaml 应登记 cast/heiwa，实际：%s", roster)
+	}
+	if !strings.Contains(string(roster), "ground_y") {
+		t.Errorf("cast.yaml 应带默认 defaults，实际：%s", roster)
+	}
+}
+
+// TestCastNewAppendsToExistingRoster 覆盖 am init --narration cast 的真实
+// 起点：cast.yaml 已存在且 packs 为空列表。new 要往里追加而不是重建，
+// 且第二个角色不能顶掉第一个。
+func TestCastNewAppendsToExistingRoster(t *testing.T) {
+	root := t.TempDir()
+	existing := "schema: cast/v1\npacks: []\ndefaults:\n    ground_y: 0.66\n    gap_ms:\n        turn: 240\n        interject: 100\n"
+	if err := os.WriteFile(filepath.Join(root, "cast.yaml"), []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"heiwa", "zhaocai"} {
+		if out, err := runCLI(t, root, "cast", "new", id); err != nil {
+			t.Fatalf("cast new %s 失败：%v（%s）", id, err, out)
+		}
+	}
+	roster, err := os.ReadFile(filepath.Join(root, "cast.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"cast/heiwa", "cast/zhaocai"} {
+		if !strings.Contains(string(roster), want) {
+			t.Errorf("cast.yaml 应登记 %s，实际：%s", want, roster)
+		}
+	}
+	// 已有 defaults 必须原样保留，不能被新建时的约定默认值覆盖。
+	if !strings.Contains(string(roster), "0.66") {
+		t.Errorf("cast.yaml 已有的 ground_y 被覆盖了，实际：%s", roster)
+	}
+}
+
+// TestCastNewLeavesNoEmptyRosterComplaint 是这条链路的验收。
+//
+// 起点刻意是 am init --narration cast 的真实产物（cast.yaml 已存在、
+// packs 为空列表），不是空目录：validate.CastProblems 在没有 cast.yaml 时
+// 直接返回 nil（单口播项目不该被多角色规则管），空目录下这条断言会
+// 无条件通过，什么也证明不了。
+//
+// 也刻意用项目级的 am validate cast 而不是包级的 am cast validate——
+// 后者压根不查班底。断言不是"整体通过"：刚 new 出来的骨架 voiceId 是空的，
+// 项目级校验本来就会因为音色缺口失败，那是另一件事。这里只钉一件事：
+// 不再出现"班底为空"。
+func TestCastNewLeavesNoEmptyRosterComplaint(t *testing.T) {
+	root := t.TempDir()
+	initLike := "schema: cast/v1\npacks: []\ndefaults:\n    ground_y: 0.78\n    gap_ms:\n        turn: 240\n        interject: 100\n"
+	if err := os.WriteFile(filepath.Join(root, "cast.yaml"), []byte(initLike), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// am validate cast 先解析项目配置，配置不全会在走到班底检查之前就退出，
+	// 让下面的断言无条件通过。这两行是让校验真的跑到班底那一步的前提。
+	if err := os.WriteFile(filepath.Join(root, "article-to-motion.conf"),
+		[]byte("ORCHESTRATOR=codex\nRENDERER=codex\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, root, "cast", "new", "heiwa"); err != nil {
+		t.Fatalf("cast new 失败：%v（%s）", err, out)
+	}
+	out, err := runCLI(t, root, "validate", "cast")
+	report := out
+	if err != nil {
+		report += err.Error()
+	}
+	if strings.Contains(report, "班底为空") {
+		t.Errorf("new 之后不该再报班底为空，实际：%s", report)
+	}
+}

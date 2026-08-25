@@ -132,6 +132,7 @@ am dialogue assemble
 
 ## 七、角色包的引入
 
-- 角色包通过 `am cast add <外部角色包目录>` 引入一个已存在的角色（会自动登记进项目根 `cast.yaml` 的 `packs` 列表），或 `am cast new <id>` 现场生成一个新角色骨架（`character.yaml` + `rig.svg` + `dna.md`）后手工补全真实 `voiceId`、外观与人设。**`am cast new` 不会自动登记进 `cast.yaml`**：新角色骨架落地后，要手工把它加进项目根 `cast.yaml` 的 `packs` 列表，否则这个角色对班底而言不存在，过不了 `am cast validate`（不传参数时）和 `am validate cast`。
+- 角色包通过 `am cast add <外部角色包目录>` 引入一个已存在的角色，或 `am cast new <id>` 现场生成一个新角色骨架（`character.yaml` + `rig.svg` + `dna.md`）后手工补全真实 `voiceId`、外观与人设。两条命令都会自动把角色登记进项目根 `cast.yaml` 的 `packs` 列表，不需要手工编辑 `cast.yaml`。
+- 登记是幂等的：重复引入同一路径不会在 `packs` 里留下重复项，`cast.yaml` 已有的 `defaults` 也原样保留。
 - 写对话体脚本之前，先确认脚本里会用到的每一个说话人 id 都已经登记；未登记的说话人既过不了 `am cast validate`，也过不了渲染前的镜头级校验。
 - 手改 `cast/<id>/character.yaml` 之后要重新跑一次 `am cast validate` 才会同步 `character.json`；渲染机实际读取的是 `character.json`，不会因为 yaml 改过就自动感知。

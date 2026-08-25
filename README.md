@@ -92,7 +92,7 @@ am scene run-all scenes/ --jobs 3 --retries 2 --report-json production/run-repor
 一个角色包是 `cast/<id>/` 下的一个目录：`character.yaml` 是唯一真相源（音色、rig 关节、姿势、可选的多视图与转身路径），配一份（或每个视图各一份）`rig.svg` 骨架图，`dna.md` 写人设供编排 agent 读、不参与渲染。
 
 ```bash
-am cast new heiwa                  # 生成一个可自洽的角色包骨架（voiceId 留空待填）
+am cast new heiwa                  # 生成角色包骨架并登记进 cast.yaml（voiceId 留空待填）
 am cast add ../shared-characters/heiwa   # 引入外部角色包：拷贝进 cast/ 并登记进 cast.yaml
 am cast validate                   # 校验 cast.yaml 登记的全部角色包，重新生成 character.json
 am cast preview cast/heiwa         # 每个命名姿势渲一张 contact sheet，人眼验收角度是否合理

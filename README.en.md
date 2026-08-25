@@ -94,7 +94,7 @@ In a project created with `am init --narration cast`, the presence of `cast.yaml
 A character pack is a directory under `cast/<id>/`: `character.yaml` is the single source of truth (voice, rig joints, poses, optional multi-view/turn paths), paired with one `rig.svg` per view, plus a `dna.md` that documents the character for the orchestrating agent — it is not used at render time.
 
 ```bash
-am cast new heiwa                        # scaffold a self-consistent character pack (voiceId left blank)
+am cast new heiwa                        # scaffold a pack and register it in cast.yaml (voiceId left blank)
 am cast add ../shared-characters/heiwa   # import an external pack: copy into cast/ and register in cast.yaml
 am cast validate                         # validate every pack registered in cast.yaml, regenerate character.json
 am cast preview cast/heiwa               # render a contact sheet per named pose for a visual sanity check
