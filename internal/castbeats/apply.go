@@ -15,8 +15,10 @@ import (
 )
 
 // DialogueRelPath 是对白时间线在项目里的固定位置，与 am dialogue assemble
-// 的产出位置一致。
-var DialogueRelPath = filepath.Join("production", "dialogue.json")
+// 的产出位置一致。是 dialogue.DialogueRelPath 的别名，不要另造第三处：
+// 写方（dialogue.Assemble）、打印方（internal/cli 的 runDialogueAssemble）、
+// 读方（internal/validate/cast.go、本包）都只应引用这一份真相源。
+var DialogueRelPath = dialogue.DialogueRelPath
 
 // SceneBeats 是单个镜头的重算结果。
 type SceneBeats struct {

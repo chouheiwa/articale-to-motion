@@ -143,7 +143,7 @@ func Assemble(ctx context.Context, opts Options) (Result, error) {
 		return Result{}, err
 	}
 
-	voicePath := filepath.Join(opts.Root, "production", "audio", "voice.wav")
+	voicePath := filepath.Join(opts.Root, VoiceRelPath)
 	if err := runner.Concat(ctx, pieces, voicePath); err != nil {
 		return Result{}, err
 	}
@@ -167,10 +167,10 @@ func Assemble(ctx context.Context, opts Options) (Result, error) {
 		}
 	}
 
-	if err := WriteSRT(filepath.Join(opts.Root, "transcription-production.srt"), result.Lines); err != nil {
+	if err := WriteSRT(filepath.Join(opts.Root, SRTRelPath), result.Lines); err != nil {
 		return Result{}, err
 	}
-	if err := result.WriteJSON(filepath.Join(opts.Root, "production", "dialogue.json")); err != nil {
+	if err := result.WriteJSON(filepath.Join(opts.Root, DialogueRelPath)); err != nil {
 		return Result{}, err
 	}
 	return result, nil

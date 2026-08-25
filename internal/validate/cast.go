@@ -87,7 +87,7 @@ func CastProblems(root, provider string) []string {
 		}
 	}
 
-	dialoguePath := filepath.Join(root, "production", "dialogue.json")
+	dialoguePath := filepath.Join(root, dialogue.DialogueRelPath)
 	result, dialogueProblems := loadDialogueResult(dialoguePath)
 	problems = append(problems, dialogueProblems...)
 	if result == nil {
@@ -97,7 +97,7 @@ func CastProblems(root, provider string) []string {
 
 	problems = append(problems, dialogueLineProblems(result.Lines)...)
 
-	srtPath := filepath.Join(root, "transcription-production.srt")
+	srtPath := filepath.Join(root, dialogue.SRTRelPath)
 	if span, err := srt.ReadSpan(srtPath); err != nil {
 		problems = append(problems, fmt.Sprintf("读取 transcription-production.srt 失败：%v", err))
 	} else if span.Cues != len(result.Lines) {

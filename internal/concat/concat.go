@@ -171,7 +171,20 @@ func (r Runner) Concat(ctx context.Context, paths []string, dest string) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
-	listPath := filepath.Join(filepath.Dir(dest), ".am-concat-list.txt")
+	// 用 CreateTemp 拿一个进程内唯一的清单文件名：固定文件名在同一目录并发跑
+	// 多个 Concat 时会互相覆盖对方还没读完的清单（与 internal/dialogue/audio.go
+	// 的 Concat 同样的问题、同样的修法）。
+	listFile, err := os.CreateTemp(filepath.Dir(dest), ".am-concat-list-*.txt")
+	if err != nil {
+		return err
+	}
+	listPath := listFile.Name()
+	if err := listFile.Close(); err != nil {
+		os.Remove(listPath)
+		return err
+	}
+	defer os.Remove(listPath)
+
 	var list strings.Builder
 	for _, path := range paths {
 		absolute, err := filepath.Abs(path)
@@ -184,7 +197,6 @@ func (r Runner) Concat(ctx context.Context, paths []string, dest string) error {
 	if err := fsutil.AtomicWrite(listPath, []byte(list.String()), 0o644); err != nil {
 		return err
 	}
-	defer os.Remove(listPath)
 
 	cmd := exec.CommandContext(ctx, r.ffmpeg, "-v", "error", "-y",
 		"-f", "concat", "-safe", "0", "-i", listPath,

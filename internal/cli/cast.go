@@ -421,26 +421,30 @@ func newCastPreviewCommand(stdout io.Writer) *cobra.Command {
 两者缺一都会失败并说明缺的是哪个命令。`,
 		Example: `  am cast preview cast/heiwa`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			pack, err := cast.Load(args[0])
-			if err != nil {
-				return err
-			}
-			outDir := filepath.Join("production", "cast-preview")
-			sheets, err := cast.Preview(pack, outDir)
-			if err != nil {
-				return err
-			}
-			viewNames := make([]string, 0, len(sheets))
-			for viewName := range sheets {
-				viewNames = append(viewNames, viewName)
-			}
-			sort.Strings(viewNames)
-			for _, viewName := range viewNames {
-				fmt.Fprintf(stdout, "预览图已生成（视图 %s）：%s\n", viewName, sheets[viewName])
-			}
-			return nil
+			return runCastPreview(stdout, args[0])
 		},
 	}
+}
+
+func runCastPreview(stdout io.Writer, packDir string) error {
+	pack, err := cast.Load(packDir)
+	if err != nil {
+		return err
+	}
+	outDir := filepath.Join("production", "cast-preview")
+	sheets, err := cast.Preview(pack, outDir)
+	if err != nil {
+		return err
+	}
+	viewNames := make([]string, 0, len(sheets))
+	for viewName := range sheets {
+		viewNames = append(viewNames, viewName)
+	}
+	sort.Strings(viewNames)
+	for _, viewName := range viewNames {
+		fmt.Fprintf(stdout, "预览图已生成（视图 %s）：%s\n", viewName, sheets[viewName])
+	}
+	return nil
 }
 
 // dialogueDefaultPlanPath 是 am dialogue assemble 未传 --plan 时的默认路径，
@@ -498,23 +502,27 @@ func newDialogueBeatsCommand(stdout io.Writer) *cobra.Command {
 与配音对不上，先对齐时长再重算。任一检查不通过就一个文件都不写。`,
 		Example: `  am dialogue beats`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			report, err := castbeats.Apply(".")
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(stdout, "镜头节拍已按 %s 重算（%d 行台词）：\n", castbeats.DialogueRelPath, report.Lines)
-			for _, s := range report.Scenes {
-				mark := "（未变）"
-				if s.Changed {
-					mark = ""
-				}
-				fmt.Fprintf(stdout, "  %s  %d 拍%s\n", s.ID, s.Count, mark)
-			}
-			fmt.Fprintf(stdout, "已更新 %d 个 scene.json\n", report.Updated)
-			return nil
+			return runDialogueBeats(stdout)
 		},
 	}
 	return cmd
+}
+
+func runDialogueBeats(stdout io.Writer) error {
+	report, err := castbeats.Apply(".")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "镜头节拍已按 %s 重算（%d 行台词）：\n", castbeats.DialogueRelPath, report.Lines)
+	for _, s := range report.Scenes {
+		mark := "（未变）"
+		if s.Changed {
+			mark = ""
+		}
+		fmt.Fprintf(stdout, "  %s  %d 拍%s\n", s.ID, s.Count, mark)
+	}
+	fmt.Fprintf(stdout, "已更新 %d 个 scene.json\n", report.Updated)
+	return nil
 }
 
 func newDialogueAssembleCommand(stdout io.Writer) *cobra.Command {
@@ -527,16 +535,18 @@ func newDialogueAssembleCommand(stdout io.Writer) *cobra.Command {
 		Long: fmt.Sprintf(`读取 --plan 指定的 plan.json，把里面登记的每一段配音统一格式、按需插入
 段间静音后拼接成一条完整音轨，同时算出全局时间轴，产出三个文件：
 
-  production/audio/voice.wav       拼接后的完整配音
-  transcription-production.srt     按全局时间轴生成的字幕
-  production/dialogue.json         装配结果的结构化时间线（schema %s）
+  %s       拼接后的完整配音
+  %s     按全局时间轴生成的字幕
+  %s         装配结果的结构化时间线（schema %s）
 
 装配过程内置两道漂移断言：逐段声明时长与实测时长的比对、总时长漂移
 （容差 %.3f 秒）比对，任一超出容差都会失败并点名具体是第几段、哪个文件、
 声明多少、实测多少——本命令原样透出这些错误，不额外包装。
 
 --expect-total 是可选的第三道校验：外部（通常是编排 agent）期望的总时长，
-用于额外核对；不传就只做上面两道内部一致性断言。`, dialogue.SchemaVersion, dialogue.DriftToleranceSeconds),
+用于额外核对；不传就只做上面两道内部一致性断言。`,
+			dialogue.VoiceRelPath, dialogue.SRTRelPath, dialogue.DialogueRelPath,
+			dialogue.SchemaVersion, dialogue.DriftToleranceSeconds),
 		Example: `  am dialogue assemble
   am dialogue assemble --plan production/audio/plan.json --expect-total 42.5`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -558,9 +568,9 @@ func runDialogueAssemble(ctx context.Context, stdout io.Writer, planPath string,
 		return err
 	}
 	fmt.Fprintln(stdout, "对白已装配：")
-	fmt.Fprintf(stdout, "  音频：%s\n", filepath.Join("production", "audio", "voice.wav"))
-	fmt.Fprintln(stdout, "  字幕：transcription-production.srt")
-	fmt.Fprintf(stdout, "  时间线：%s\n", filepath.Join("production", "dialogue.json"))
+	fmt.Fprintf(stdout, "  音频：%s\n", dialogue.VoiceRelPath)
+	fmt.Fprintf(stdout, "  字幕：%s\n", dialogue.SRTRelPath)
+	fmt.Fprintf(stdout, "  时间线：%s\n", dialogue.DialogueRelPath)
 	fmt.Fprintf(stdout, "总时长：%.3f 秒\n", result.TotalSeconds())
 	return nil
 }

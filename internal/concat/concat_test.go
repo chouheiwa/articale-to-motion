@@ -2,11 +2,13 @@ package concat
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/chouheiwa/articale-to-motion/internal/envutil"
@@ -213,9 +215,70 @@ func TestConcatProducesContinuousMaster(t *testing.T) {
 	if media.Audio != nil {
 		t.Error("静音母版不该有音轨")
 	}
-	// 清单文件是中间产物，不能留在交付目录里。
-	if _, err := os.Stat(filepath.Join(dir, "production", ".am-concat-list.txt")); err == nil {
-		t.Error("拼接清单没有清理")
+	// 清单文件是中间产物，不能留在交付目录里。清单文件名现在是 CreateTemp
+	// 生成的随机名（见并发测试），用通配符匹配而不是旧的固定名。
+	leftovers, err := filepath.Glob(filepath.Join(dir, "production", ".am-concat-list-*.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(leftovers) != 0 {
+		t.Errorf("拼接清单没有清理：%v", leftovers)
+	}
+}
+
+// TestConcatConcurrentRunsDoNotClobberEachOther 守住临时清单文件名的并发安全：
+// 固定文件名 .am-concat-list.txt 在同一目录下并发跑两个 Concat 会互相覆盖对方
+// 还没读完的清单，产出错误的拼接结果（缺一段、内容错乱）或直接失败。用
+// os.CreateTemp 拿唯一文件名后，两次并发调用各自读到自己的清单，互不干扰。
+func TestConcatConcurrentRunsDoNotClobberEachOther(t *testing.T) {
+	tc := toolchain(t)
+	runner, err := NewRunner(envutil.EnvMap(), tc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	a := clip(t, dir, "a.mp4", "testsrc=size=320x240:rate=30:duration=1")
+	b := clip(t, dir, "b.mp4", "testsrc=size=320x240:rate=30:duration=2")
+
+	destA := filepath.Join(dir, "out-a.mp4")
+	destB := filepath.Join(dir, "out-b.mp4")
+
+	var wg sync.WaitGroup
+	errs := make(chan error, 2)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		// out-a 只拼 a（1 秒/30 帧）。
+		if err := runner.Concat(context.Background(), []string{a}, destA); err != nil {
+			errs <- fmt.Errorf("并发拼接 A 失败：%w", err)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		// out-b 拼 a+b（1+2 秒/90 帧），两个 goroutine 同时往 dir 下写清单。
+		if err := runner.Concat(context.Background(), []string{a, b}, destB); err != nil {
+			errs <- fmt.Errorf("并发拼接 B 失败：%w", err)
+		}
+	}()
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Fatal(err)
+	}
+
+	framesA, err := tc.CountFrames(destA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if framesA != 30 {
+		t.Errorf("并发场景下 out-a 帧数 = %d，期望 30——清单被另一次 Concat 覆盖会产出错误的帧数", framesA)
+	}
+	framesB, err := tc.CountFrames(destB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if framesB != 90 {
+		t.Errorf("并发场景下 out-b 帧数 = %d，期望 90（30 + 60）——清单被另一次 Concat 覆盖会产出错误的帧数", framesB)
 	}
 }
 
