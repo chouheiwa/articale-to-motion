@@ -28,6 +28,31 @@ var (
 	delimiterMatch = regexp.MustCompile(`(?i)<\s*/?\s*scene-text`)
 )
 
+// requiredSceneFields 与 optionalSceneFields 是 scene.json 字段契约的唯一真相源：
+// Load 的未知字段/缺字段校验、以及 internal/cli 里 `am scene --help` 的说明文字
+// 都从这里派生，不再各写一份、彼此漂移。改字段集时只改这两个切片。
+var (
+	requiredSceneFields = []string{"id", "duration_seconds", "output", "transcript", "text"}
+	optionalSceneFields = []string{"style_guide", "renderer", "cast"}
+)
+
+// RequiredFields 返回 scene.json 的必填字段名（副本，调用方可自由修改）。
+func RequiredFields() []string { return append([]string(nil), requiredSceneFields...) }
+
+// OptionalFields 返回 scene.json 的可选字段名（副本，调用方可自由修改）。
+func OptionalFields() []string { return append([]string(nil), optionalSceneFields...) }
+
+func allowedSceneFields() map[string]bool {
+	allowed := make(map[string]bool, len(requiredSceneFields)+len(optionalSceneFields))
+	for _, key := range requiredSceneFields {
+		allowed[key] = true
+	}
+	for _, key := range optionalSceneFields {
+		allowed[key] = true
+	}
+	return allowed
+}
+
 type Scene struct {
 	Directory       string  `json:"-"`
 	ID              string  `json:"id"`
@@ -109,13 +134,13 @@ func Load(directory string) (Scene, error) {
 	if err := json.Unmarshal(body, &fields); err != nil {
 		return Scene{}, fmt.Errorf("scene.json 不是合法 JSON：%w", err)
 	}
-	allowed := map[string]bool{"id": true, "duration_seconds": true, "output": true, "transcript": true, "text": true, "style_guide": true, "renderer": true, "cast": true}
+	allowed := allowedSceneFields()
 	for key := range fields {
 		if !allowed[key] {
 			return Scene{}, fmt.Errorf("scene.json 含未知字段：%s", key)
 		}
 	}
-	for _, key := range []string{"id", "duration_seconds", "output", "transcript", "text"} {
+	for _, key := range requiredSceneFields {
 		if _, ok := fields[key]; !ok {
 			return Scene{}, fmt.Errorf("scene.json 缺少必填字段：%s", key)
 		}
@@ -372,7 +397,7 @@ func castSection(s Scene) string {
 		b.WriteString(fmt.Sprintf("\n角色（本镜头无角色出场）：台词全部是画外音；"+
 			"不得把任何角色画进画面，也无需加载 %s 技能。\n", CharacterRigSkillName))
 	} else {
-		b.WriteString("\n角色（强制）：本镜头有角色出场，必须使用 character-rig 技能的 cast.js 驱动。\n")
+		b.WriteString(fmt.Sprintf("\n%s：本镜头有角色出场，必须使用 character-rig 技能的 cast.js 驱动。\n", CastRequiredHeading))
 	}
 	for _, actor := range c.OnStage {
 		view := actor.View

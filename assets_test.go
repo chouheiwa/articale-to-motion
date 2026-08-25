@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/chouheiwa/articale-to-motion/internal/cast"
+	"github.com/chouheiwa/articale-to-motion/internal/scene"
 )
 
 // TestBuiltinSkillsIncludesCharacterRig 守住角色驱动库的下发。
@@ -36,6 +37,23 @@ func TestCharacterRigShipsDriverAndManifest(t *testing.T) {
 		if _, err := fs.Stat(sharedTree(t), castSkillPath(name)); err != nil {
 			t.Errorf("character-rig 技能缺少 %s：%v", name, err)
 		}
+	}
+}
+
+// TestCharacterRigSkillMentionsCastRequiredHeading 覆盖遗留缺口⑥：
+// 「角色（强制）」是 internal/scene.castSection 产出、internal/scene/skills.go
+// 的角色驱动门控消费、character-rig/SKILL.md:115 引用的三处共同契约锚点。
+// 前两处已经收拢成 scene.CastRequiredHeading 这一个 Go 常量（改一处、两处
+// 同步），但 SKILL.md 是纯文本，改错这里不会编译失败，只能靠这条断言把它
+// 钉在同一个字面量上——三处但凡有一处漂移，"下方出现「角色（强制）」段"
+// 这句话对读它的人（无论是渲染 agent 还是维护者）就变成假话。
+func TestCharacterRigSkillMentionsCastRequiredHeading(t *testing.T) {
+	body, err := fs.ReadFile(sharedTree(t), castSkillPath("SKILL.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), scene.CastRequiredHeading) {
+		t.Errorf("character-rig/SKILL.md 应引用契约标题 %q，与 scene.CastRequiredHeading 保持一致", scene.CastRequiredHeading)
 	}
 }
 

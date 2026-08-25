@@ -41,6 +41,16 @@ const TextToLottieSkillName = "text-to-lottie"
 // CharacterRigSkillName 是角色驱动技能目录名。
 const CharacterRigSkillName = "character-rig"
 
+// CastRequiredHeading 是 castSection 在"本镜头有角色出场"时输出的段标题
+// （不含前导换行与冒号），三处共同的契约锚点：castSection 产出它、
+// characterRigPrompt 的角色驱动门控靠"下方是否出现这个标题"决定要不要让
+// 渲染 agent 加载 character-rig 技能、character-rig/SKILL.md 里的复制义务
+// 说明也引用同一个标题告诉读者去哪找这条硬要求。前两处共享这一个 Go 常量，
+// 保证不会各自改动后措辞漂移；SKILL.md 是纯文本，没法引用 Go 常量，改动
+// 后不会编译失败，只能靠 assets_test.go 的断言把它钉在这个字面量上
+// （断言位置见 TestCharacterRigSkillMentionsCastRequiredHeading）。
+const CastRequiredHeading = "角色（强制）"
+
 // SkillDescriptor 描述一个可自动发现的技能。
 // SkillSource 说明技能是怎么进到用户项目里的。
 //
@@ -392,14 +402,14 @@ func textToLottiePrompt(skillsDir string) string {
 func characterRigPrompt(skillsDir string) string {
 	if skillsDir != "" {
 		return fmt.Sprintf("角色驱动（按需）：\n"+
-			"- 本镜头如有角色出场（下方出现「角色（强制）」段），必须加载 %s 技能。本机该技能目录为：\n    %s\n"+
+			"- 本镜头如有角色出场（下方出现「%s」段），必须加载 %s 技能。本机该技能目录为：\n    %s\n"+
 			"  实现前必须读其中的 %s：它定义角色包目录结构、驱动库的挂载与转身/说话接口，以及四条硬规则。\n"+
 			"- 没有角色的镜头忽略本段，不要自行引入角色。\n",
-			CharacterRigSkillName, filepath.Join(skillsDir, CharacterRigSkillName), skillManifestFile)
+			CastRequiredHeading, CharacterRigSkillName, filepath.Join(skillsDir, CharacterRigSkillName), skillManifestFile)
 	}
 	return fmt.Sprintf("角色驱动（按需）：\n"+
-		"- 本镜头如有角色出场（下方出现「角色（强制）」段），必须加载 %s 技能。\n"+
+		"- 本镜头如有角色出场（下方出现「%s」段），必须加载 %s 技能。\n"+
 		"  （本机未能定位该技能目录，请使用你自身的技能加载机制载入。）\n"+
 		"- 没有角色的镜头忽略本段，不要自行引入角色。\n",
-		CharacterRigSkillName)
+		CastRequiredHeading, CharacterRigSkillName)
 }

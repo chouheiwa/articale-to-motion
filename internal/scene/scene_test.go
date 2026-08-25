@@ -233,6 +233,13 @@ func TestLoadRejectsBadCast(t *testing.T) {
 "beats":[{"speaker":"zhaocai","start":0,"end":2}]}`, "找不到对应角色包"},
 		{"view 未声明", `{"pack_dir":"cast","ground_y":0.78,
 "on_stage":[{"id":"heiwa","x":0.3,"pose":"idle","facing":"right","view":"back"}],"beats":[]}`, "back"},
+		// spec §7.3 明列的一条：pose 名必须存在于角色包（testCastYAML 只声明了
+		// idle 与 pointing，dancing 不存在）。此前无测试守护——把
+		// validateCast 里这条 if 改成 if false（永不拒绝）仍然全绿，见本用例
+		// 提交时的验证记录。want 挑"姿势列表"，是 pack.Poses 查找失败这条
+		// 分支独有的措辞，其余分支不会产出这个子串。
+		{"pose 不在角色包姿势列表中", `{"pack_dir":"cast","ground_y":0.78,
+"on_stage":[{"id":"heiwa","x":0.3,"pose":"dancing","facing":"right"}],"beats":[]}`, "姿势列表"},
 		{"beats 重叠", `{"pack_dir":"cast","ground_y":0.78,
 "on_stage":[{"id":"heiwa","x":0.3,"pose":"idle","facing":"right"}],
 "beats":[{"speaker":"heiwa","start":0,"end":3},{"speaker":"heiwa","start":2,"end":3.5}]}`, "重叠"},
@@ -475,10 +482,16 @@ func TestBuildPromptCastSection(t *testing.T) {
 	// "角色（强制）：" 是这一条的门控依据，不只是措辞：skillPromptSections 按
 	// 「下方出现『角色（强制）』段」决定要不要让渲染 agent 加载 character-rig。
 	// 真有角色的镜头必须继续顶着这个标题，否则门控从「误判为有」翻成「漏判为无」。
+	// "ground_y=0.780" 精确核对地平线数值：此前 castSection 里整行
+	// `- 地平线：ground_y=%.3f（画面高度比例）` 删掉这条断言也不会变红——
+	// ground_y 是决定角色尺寸与站位的载荷参数，漏了这行角色会浮空且不
+	// 报错。挑带 "=0.780" 的完整片段而不是单独的 "0.780"，避免将来别的
+	// 数值巧合等于 0.780 时把断言的意图从"存在这一行"稀释成"某处出现
+	// 这个数字"。
 	for _, want := range []string{"角色（强制）：", "cast.js", "cast/heiwa/dna.md", "heiwa", "0.34", "pointing", "0.000", "3.200",
 		"requestAnimationFrame", "不得留空台或入场中间态",
 		"必须把 character-rig 技能目录下的 cast.js 复制进本镜头目录",
-		"不得引用镜头目录之外的路径"} {
+		"不得引用镜头目录之外的路径", "地平线：ground_y=0.780"} {
 		if !strings.Contains(prompt, want) {
 			t.Errorf("提示词缺 %q", want)
 		}

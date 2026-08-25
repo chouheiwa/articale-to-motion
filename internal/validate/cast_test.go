@@ -272,6 +272,36 @@ func emptyRoster() func(*castFixtureOptions) {
 	return func(o *castFixtureOptions) { o.emptyRoster = true }
 }
 
+// dialogueSpeakerNotInRoster 把最后一行的说话人换成班底里不存在的
+// "ghost"——覆盖 spec §7.3 明列、此前无测试守护的一条：dialogue.json 的
+// 说话人必须都在 cast.yaml 班底内。timing 不变，只换 speaker 字段，避免
+// 牵连 dialogueLineProblems 的时序/重叠校验。
+func dialogueSpeakerNotInRoster() func(*castFixtureOptions) {
+	return func(o *castFixtureOptions) {
+		lines := make([]castDialogueLine, len(defaultCastLines))
+		copy(lines, defaultCastLines)
+		lines[len(lines)-1].speaker = "ghost"
+		o.dialogueLines = lines
+		o.srtLines = lines
+	}
+}
+
+// dialogueLinesOverlap 让第 2 行提前 0.5 秒起，与第 1 行的 [0,1] 区间重叠
+// 0.5 秒——覆盖 spec §7.3 明列、此前无测试守护的另一条：dialogue.json 逐行
+// 不得重叠。只改时间，不改说话人，与"说话人不在班底"这条互相独立。
+func dialogueLinesOverlap() func(*castFixtureOptions) {
+	return func(o *castFixtureOptions) {
+		lines := []castDialogueLine{
+			{speaker: "heiwa", startSeconds: 0, endSeconds: 1, text: "台词一"},
+			{speaker: "zhaocai", startSeconds: 0.5, endSeconds: 2, text: "台词二与上一行重叠"},
+			{speaker: "heiwa", startSeconds: 2, endSeconds: 3, text: "台词三"},
+			{speaker: "zhaocai", startSeconds: 3, endSeconds: 4, text: "台词四"},
+		}
+		o.dialogueLines = lines
+		o.srtLines = lines
+	}
+}
+
 // missingDNAFromRosterSource 删掉班底源目录（cast/<id>/）里的 dna.md，
 // 模拟 am cast new 生成后被人手误删；镜头目录内的拷贝（若有）不受影响，
 // 用来单独打这条检查——它跟"镜头引用路径缺 dna.md"是两条互相独立的检查。
@@ -437,6 +467,33 @@ func TestValidateCastDialogueCoversEverySRTLine(t *testing.T) {
 	problems := CastProblems(root, "minimax")
 	if len(problems) == 0 || !strings.Contains(strings.Join(problems, "\n"), "字幕") {
 		t.Fatalf("期望报 dialogue.json 未覆盖全部字幕行，得到 %v", problems)
+	}
+}
+
+// TestValidateCastDialogueSpeakerMustBeInRoster 覆盖遗留缺口④之一：spec
+// §7.3 明列"dialogue.json 的说话人必须都在班底内"，此前没有任何测试守护
+// 这条——把 CastProblems 里对应的 if 改成 if false（永不拒绝）仍然全绿。
+// want 挑"不在班底里"：这是 line.Speaker 查 packs 失败这条分支独有的措辞
+// （拼错的说话人名字既进不了 on_stage，也进不了 packs，其余检查用的都是
+// 不同的错误文案），不会被别的分支意外撑住。
+func TestValidateCastDialogueSpeakerMustBeInRoster(t *testing.T) {
+	root := castProject(t, dialogueSpeakerNotInRoster())
+	problems := CastProblems(root, "minimax")
+	const want = `不在班底里`
+	if len(problems) == 0 || !strings.Contains(strings.Join(problems, "\n"), want) {
+		t.Fatalf("期望报 %q，得到 %v", want, problems)
+	}
+}
+
+// TestValidateCastDialogueLinesMustNotOverlap 覆盖遗留缺口④之二：spec
+// §7.3 明列"dialogue.json 逐行重叠"必须被拦下，此前无测试守护。want 挑
+// "与上一行重叠"，是 dialogueLineProblems 里这条分支独有的措辞。
+func TestValidateCastDialogueLinesMustNotOverlap(t *testing.T) {
+	root := castProject(t, dialogueLinesOverlap())
+	problems := CastProblems(root, "minimax")
+	const want = `与上一行重叠`
+	if len(problems) == 0 || !strings.Contains(strings.Join(problems, "\n"), want) {
+		t.Fatalf("期望报 %q，得到 %v", want, problems)
 	}
 }
 

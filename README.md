@@ -58,6 +58,8 @@ SCENE_JOBS=3
 
 优先级为环境变量、项目 `.env`、配置文件、内置默认。项目 `.env` 不允许保存 API Key、Token、Secret 或 Password。
 
+画幅之外，叙事模式是 `am init` 的第二个一次性维度：`--narration cast` 额外写出 `cast.yaml` 与 `cast/` 目录，进入多角色对话模式，见下方「多角色叙事」；不传则维持默认的单口播模式，行为与之前完全一致。
+
 ## 工作流
 
 已有定稿 SRT 时，将它保存为 `transcription.srt`，然后运行：
@@ -82,6 +84,30 @@ am scene run-all scenes/ --jobs 3 --retries 2 --report-json production/run-repor
 ```
 
 已有合格产物会跳过；输入更新后的产物标记为 stale，使用 `--force` 明确重渲染。中断时停止新任务、终止在飞进程组，并写出部分报告。
+
+## 多角色叙事
+
+用 `am init --narration cast` 建的项目里，`cast.yaml`（登记班底）与 `cast/` 目录的存在本身就是模式开关：老项目没有这两样东西，行为一个字不变。
+
+一个角色包是 `cast/<id>/` 下的一个目录：`character.yaml` 是唯一真相源（音色、rig 关节、姿势、可选的多视图与转身路径），配一份（或每个视图各一份）`rig.svg` 骨架图，`dna.md` 写人设供编排 agent 读、不参与渲染。
+
+```bash
+am cast new heiwa                  # 生成一个可自洽的角色包骨架（voiceId 留空待填）
+am cast add ../shared-characters/heiwa   # 引入外部角色包：拷贝进 cast/ 并登记进 cast.yaml
+am cast validate                   # 校验 cast.yaml 登记的全部角色包，重新生成 character.json
+am cast preview cast/heiwa         # 每个命名姿势渲一张 contact sheet，人眼验收角度是否合理
+```
+
+手改 `character.yaml` 后不会自动同步：`character.json` 只在 `new`/`add`/`validate` 成功时重新生成，渲染机读取的是后者，改完一律先跑一次 `am cast validate`。这条命令还会顺带提醒当前 `TTS_PROVIDER` 是否缺音色（不影响退出码，供作者在做完角色包的第一时间就看到）；发布前的硬校验在 `am validate cast`，见下方「校验与归档」。
+
+分说话人合成的配音需要重建成一条时间线，再按拆定的镜头切成节拍——这两步都是"算错了不会报错，只会让成片嘴和字对不上"的机械计算，因此收进 Go：
+
+```bash
+am dialogue assemble               # 读 production/audio/plan.json，拼出 voice.wav / SRT / dialogue.json
+am dialogue beats                  # 镜头拆定后，按 dialogue.json 重算各 scene.json 的 cast.beats
+```
+
+作业规程（对话体脚本怎么分段、镜头 `scene.json` 的 `cast` 块怎么写）随项目下发在 `PROMPT-CAST-ADDENDUM.md`，`cast.yaml` 存在时生效。
 
 ## 安全模式
 
@@ -117,6 +143,10 @@ am concat scenes/ --out production/silent-master.mp4
 am validate publish publish.md --project-root .
 am validate style --project-root .
 am validate style --project-root . --regenerate-examples  # 需要 rsvg-convert 与 magick
+
+# 多角色项目：班底、对白时间线（dialogue.json）与镜头节拍是否互相吻合；
+# 单口播项目（没有 cast.yaml）自动跳过，退出码 0
+am validate cast --project-root .
 
 # 成片机器验收：画幅、帧率、编码、像素格式、帧数、音轨一次全查，不符项一次列全
 am validate video production/silent-master.mp4 --silent --decode

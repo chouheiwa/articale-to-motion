@@ -361,15 +361,18 @@ PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 pack
 	sceneCmd := &cobra.Command{
 		Use:   "scene",
 		Short: "镜头相关操作",
-		Long: `渲染镜头。可以在 am run 的编排流程里被调用，也可以完全独立使用。
+		Long: fmt.Sprintf(`渲染镜头。可以在 am run 的编排流程里被调用，也可以完全独立使用。
 
 一个镜头是一个目录，至少包含：
   scene.json   执行契约，字段见下
   prompt.md    本镜头的创意方向（可选，缺失时使用内置的通用创意方向）
   transcript   完整字幕，供渲染工具理解上下文
 
-scene.json 只接受五个必填字段 id、duration_seconds、output、transcript、text，
-以及两个可选字段 style_guide、renderer。出现任何未知字段直接失败。
+scene.json 只接受 %d 个必填字段 %s，
+以及 %d 个可选字段 %s（%s 是多角色叙事的角色配置，见 README「多角色叙事」一节）。
+出现任何未知字段直接失败。这份字段清单与 internal/scene.Load 的校验逻辑同源（见
+internal/scene/scene.go 的 requiredSceneFields / optionalSceneFields），改字段
+集时两处不会漂移。
 duration_seconds 保留毫秒精度写成小数秒（如 2.833），不得取整。
 text 不得含 [[USER_MESSAGE]] 或 <scene-text> 定界标记，含则失败。
 
@@ -378,6 +381,8 @@ text 不得含 [[USER_MESSAGE]] 或 <scene-text> 定界标记，含则失败。
 
 渲染输出中只有以 [[USER_MESSAGE]] 开头的行会转给用户，其余进日志文件：
   render-<镜头编号>.stream.jsonl / .stderr.log / .user.log`,
+			len(scene.RequiredFields()), strings.Join(scene.RequiredFields(), "、"),
+			len(scene.OptionalFields()), strings.Join(scene.OptionalFields(), "、"), "cast"),
 	}
 	var tolerance float64
 	runScene := &cobra.Command{

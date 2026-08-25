@@ -210,9 +210,52 @@ func TestParsePackRejectsViewProblems(t *testing.T) {
 		{"视图重名默认视图",
 			goodYAML + "views:\n  front:\n    file: x.svg\n    viewBox: [0,0,400,520]\n    baselineY: 512\n    joints:\n      head: { pivot: [1,1], rotate: [-1,1] }\n",
 			"front"},
+		// 此前这条用例的 mutate 是从 viewsYAML 里删掉 side 的 head 关节整行、
+		// want 只断言 "side"，但 want("side") 同样会被姐妹检查（角度落在区间）
+		// 撑住：关节不存在时 view.Joints[jointName] 取到零值 Joint{}
+		// （Rotate=[0,0]），pointing 姿势的 head 角度 -6 落在 [0,0] 之外，
+		// "超出区间" 分支照样会报出含 "side" 的错误——把关节存在性检查改成
+		// if false（永不拒绝）之后这条用例仍然全绿，验证记录见本用例提交时的
+		// 手工复核。改用一个专用最小 fixture：side 视图完全不声明 head 关节
+		// （只有 tail），配一个只用到 head、角度取 0 的姿势——0 恰好落在零值
+		// Joint 的 [0,0] 区间内，"超出区间" 分支不会被触发，只有存在性检查
+		// 的 "里没有声明" 会报错，从而真正把两条检查的测试隔开。want 挑
+		// "里没有声明"（"角色包 %s 姿势 %s 的关节 %s 在视图 %s 里没有声明"
+		// 这条格式串独有的连续片段，参见 pack.go），"没有声明"单独出现在另外
+		// 三处不相关的错误里（缺 voice/缺 rig 关节），加上"里"前缀后不再撞车。
 		{"姿势用到的关节在某视图缺失",
-			strings.Replace(viewsYAML, "      head:     { pivot: [172, 174], rotate: [-26, 26] }\n", "", 1),
-			"side"},
+			`schema: cast/v1
+id: heiwa
+name: 黑娃
+summary: 跨视图关节存在性测试专用最小角色包
+voice:
+  minimax: { voiceId: "v-1" }
+rig:
+  file: rig.svg
+  viewBox: [0, 0, 400, 520]
+  baselineY: 512
+  joints:
+    head: { pivot: [200, 168], rotate: [-18, 18] }
+views:
+  three-quarter:
+    file: rig-tq.svg
+    viewBox: [0, 0, 400, 520]
+    baselineY: 512
+    joints:
+      head: { pivot: [186, 170], rotate: [-22, 22] }
+  side:
+    file: rig-side.svg
+    viewBox: [0, 0, 400, 520]
+    baselineY: 512
+    joints:
+      tail: { pivot: [280, 288], rotate: [-30, 30] }
+scale:
+  heightRatio: [0.22, 0.32]
+poses:
+  idle: {}
+  lookAround: { head: 0 }
+`,
+			"里没有声明"},
 		{"姿势角度超出该视图区间",
 			strings.Replace(viewsYAML, "frontLeg: { pivot: [160, 334], rotate: [-45, 60] }", "frontLeg: { pivot: [160, 334], rotate: [-10, 10] }", 1),
 			"pointing"},

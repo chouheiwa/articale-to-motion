@@ -15,6 +15,7 @@ import (
 
 	"github.com/chouheiwa/articale-to-motion/internal/cast"
 	"github.com/chouheiwa/articale-to-motion/internal/castbeats"
+	"github.com/chouheiwa/articale-to-motion/internal/config"
 	"github.com/chouheiwa/articale-to-motion/internal/dialogue"
 	"github.com/chouheiwa/articale-to-motion/internal/fsutil"
 	"github.com/spf13/cobra"
@@ -285,7 +286,8 @@ func registerCastPack(root, relPath string) error {
 }
 
 func newCastValidateCommand(stdout io.Writer) *cobra.Command {
-	return &cobra.Command{
+	var provider string
+	cmd := &cobra.Command{
 		Use:   "validate [PACK...]",
 		Short: "校验角色包",
 		Long: `校验角色包能否通过 cast.Load，并重新生成它们的 character.json。
@@ -298,18 +300,45 @@ func newCastValidateCommand(stdout io.Writer) *cobra.Command {
 传参数时，把每个参数当成角色包目录，逐个 cast.Load，与是否登记进
 cast.yaml 无关。
 
-任一角色包校验失败就返回非零退出码；问题按包分组打印，一次看到全部，不是
-修一个报一个。
+任一角色包 rig/schema 校验失败就返回非零退出码；问题按包分组打印，一次看到
+全部，不是修一个报一个。
 
 校验通过顺带重新生成 character.json（渲染机实际读取的格式）。手改
 character.yaml 后如果没跑这条命令，character.json 就是旧的且不会有任何
-报错或警告——渲染机会静默用回旧值。改完 yaml，渲染前一律先跑一次。`,
+报错或警告——渲染机会静默用回旧值。改完 yaml，渲染前一律先跑一次。
+
+顺带提醒当前 TTS_PROVIDER 是否缺音色（不影响退出码，只在通过行后面追加
+提醒）：这是作者做完角色包后第一个会跑的命令，音色缺口应当在这时就被看到，
+而不是等到 am validate cast 在发布前才拦下——那条硬校验仍然存在，不受这里
+影响。--provider 缺省取 am config get TTS_PROVIDER，解析不到完整项目配置
+（比如还没跑过 am init、ORCHESTRATOR/RENDERER 尚未配置）就跳过这项提醒，
+不连带让 rig 校验也失败——这里的音色检查是附带诊断，不是本命令的主职责。`,
 		Example: `  am cast validate
-  am cast validate cast/heiwa cast/xiaoming`,
+  am cast validate cast/heiwa cast/xiaoming
+  am cast validate --provider bailian`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCastValidate(stdout, args)
+			return runCastValidate(stdout, args, resolveCastValidateProvider(provider))
 		},
 	}
+	cmd.Flags().StringVar(&provider, "provider", "", "校验音色缺口时按哪个 TTS provider，缺省取 am config get TTS_PROVIDER")
+	return cmd
+}
+
+// resolveCastValidateProvider 解析 am cast validate 顺带做的音色检查要用的
+// provider。与 am validate cast 不同：那条命令的职责就是发布前的硬校验，
+// config.Load 失败理应让整条命令失败；这里的音色检查只是附带诊断，config
+// 解析不出来（常见于刚 cast new 完、还没配置 ORCHESTRATOR/RENDERER 的
+// 半成品项目）就跳过检查而不是让 rig 校验也连带报错——返回空字符串，
+// 调用方据此不查。
+func resolveCastValidateProvider(explicit string) string {
+	if explicit != "" {
+		return explicit
+	}
+	cfg, err := config.Load(".", nil)
+	if err != nil {
+		return ""
+	}
+	return cfg.TTSProvider
 }
 
 type castTarget struct {
@@ -317,7 +346,7 @@ type castTarget struct {
 	dir  string
 }
 
-func runCastValidate(stdout io.Writer, args []string) error {
+func runCastValidate(stdout io.Writer, args []string, provider string) error {
 	targets, err := castValidateTargets(args)
 	if err != nil {
 		return err
@@ -326,7 +355,7 @@ func runCastValidate(stdout io.Writer, args []string) error {
 		fmt.Fprintln(stdout, "没有找到需要校验的角色包")
 		return nil
 	}
-	report, failed := validateCastTargets(targets)
+	report, failed := validateCastTargets(targets, provider)
 	fmt.Fprint(stdout, report)
 	if len(failed) > 0 {
 		return fmt.Errorf("以下角色包未通过校验：%s", strings.Join(failed, "、"))
@@ -388,7 +417,13 @@ func discoverCastPacks(root string) ([]castTarget, error) {
 
 // validateCastTargets 逐个 cast.Load，成功则重新生成 character.json。
 // 返回按包分组的报告文本，以及未通过校验的包名列表。
-func validateCastTargets(targets []castTarget) (string, []string) {
+//
+// provider 为空时跳过音色提醒（见 resolveCastValidateProvider）；非空时对
+// 每个通过 rig 校验的包顺带查一次 pack.VoiceFor(provider)，缺口只追加一行
+// 提醒，不计入 failed——音色缺口不应该让刚 cast new 出来的骨架就过不了这
+// 条命令（骨架的 voiceId 本来就留空，直到作者填真实值），真正的硬校验在
+// am validate cast。
+func validateCastTargets(targets []castTarget, provider string) (string, []string) {
 	var report strings.Builder
 	var failed []string
 	for _, target := range targets {
@@ -402,6 +437,12 @@ func validateCastTargets(targets []castTarget) (string, []string) {
 			failed = append(failed, target.name)
 			fmt.Fprintf(&report, "[%s]\n  - %v\n", target.name, err)
 			continue
+		}
+		if provider != "" {
+			if _, voiceErr := pack.VoiceFor(provider); voiceErr != nil {
+				fmt.Fprintf(&report, "[%s] 通过（提醒：%v；发布前 am validate cast 会把这个问题拦成失败）\n", target.name, voiceErr)
+				continue
+			}
 		}
 		fmt.Fprintf(&report, "[%s] 通过\n", target.name)
 	}

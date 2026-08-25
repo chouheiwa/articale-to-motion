@@ -180,6 +180,71 @@ func TestCastValidateWithoutRosterOrCastDirSucceeds(t *testing.T) {
 	}
 }
 
+// TestCastValidateWarnsMissingVoiceWithExplicitProvider 覆盖遗留缺口③：
+// am cast validate 此前完全不查音色，只有 am validate cast 查。骨架
+// 生成的 voiceId 留空是设计如此（castSkeletonDNA 的待办项），所以这里
+// 断言的是"通过但带提醒"而不是"失败"——真正的硬校验仍在 am validate cast，
+// 这里只是让作者在做完角色包的第一时间就看到音色缺口。
+//
+// want 子串挑的是 VoiceFor 的错误文案里独有的"缺少 voiceId"，不是
+// "通过"或包名——那两个任何一条校验路径的输出都可能出现，撑不住这个
+// 断言要验证的行为（音色检查真的跑了）。
+func TestCastValidateWarnsMissingVoiceWithExplicitProvider(t *testing.T) {
+	root := t.TempDir()
+	if _, err := runCLI(t, root, "cast", "new", "heiwa"); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, root, "cast", "validate", "--provider", "minimax")
+	if err != nil {
+		t.Fatalf("音色缺口不应让命令失败：%v（%s）", err, out)
+	}
+	if !strings.Contains(out, "缺少 voiceId") {
+		t.Errorf("输出应提醒缺少 voiceId，实际：%s", out)
+	}
+	if !strings.Contains(out, "am validate cast") {
+		t.Errorf("提醒应指出发布前的硬校验命令，实际：%s", out)
+	}
+}
+
+// TestCastValidateSilentOnVoiceWhenProviderUnresolvable 覆盖③的另一半：
+// 刚 cast new 完、还没配置 ORCHESTRATOR/RENDERER 的半成品项目（本用例的
+// t.TempDir() 就是这种状态）不应该因为解析不出完整项目配置而报错或报出
+// 无意义的提醒——音色检查是附带诊断，config 解析不出来就该安静跳过。
+func TestCastValidateSilentOnVoiceWhenProviderUnresolvable(t *testing.T) {
+	root := t.TempDir()
+	if _, err := runCLI(t, root, "cast", "new", "heiwa"); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, root, "cast", "validate")
+	if err != nil {
+		t.Fatalf("解析不出 provider 时不应报错：%v（%s）", err, out)
+	}
+	if strings.Contains(out, "voiceId") {
+		t.Errorf("provider 解析不到时不应提及音色，实际：%s", out)
+	}
+}
+
+// TestCastValidateDefaultProviderResolvesFromConfig 验证不传 --provider
+// 时按 am config get TTS_PROVIDER 的规则解析（默认 minimax），而不是
+// 只有显式传参才生效——防止实现只接线 --provider 忘了接默认路径。
+func TestCastValidateDefaultProviderResolvesFromConfig(t *testing.T) {
+	root := t.TempDir()
+	if _, err := runCLI(t, root, "cast", "new", "heiwa"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "article-to-motion.conf"),
+		[]byte("ORCHESTRATOR=codex\nRENDERER=codex\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, root, "cast", "validate")
+	if err != nil {
+		t.Fatalf("音色缺口不应让命令失败：%v（%s）", err, out)
+	}
+	if !strings.Contains(out, "缺少 voiceId") {
+		t.Errorf("默认 provider（minimax）也应触发音色提醒，实际：%s", out)
+	}
+}
+
 func TestCastPreviewGeneratesContactSheet(t *testing.T) {
 	root := t.TempDir()
 	if _, err := runCLI(t, root, "cast", "new", "heiwa"); err != nil {

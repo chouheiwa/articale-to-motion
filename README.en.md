@@ -58,6 +58,8 @@ SCENE_JOBS=3
 
 Priority: environment variables > project `.env` > config file > built-in defaults. The project `.env` must not store API Keys, Tokens, Secrets, or Passwords.
 
+Narration mode is the second one-time dimension at init, alongside canvas: `--narration cast` additionally writes `cast.yaml` and an empty `cast/` directory, entering multi-role dialogue mode (see "Multi-role narration" below). Omit it and the project stays in the default single-narrator mode, unchanged from before.
+
 ## Run
 
 For an existing final `transcription.srt`:
@@ -85,6 +87,30 @@ Existing outputs are skipped; inputs newer than the output mark it as stale — 
 
 AI CLIs run in project-scoped safe mode by default. `am --unsafe run` explicitly restores bypass/auto-approval behavior and should only be used for trusted projects. Extra environment variables in safe mode must be named in `AM_PASSTHROUGH_ENV`.
 
+## Multi-role narration
+
+In a project created with `am init --narration cast`, the presence of `cast.yaml` (the project's roster) and the `cast/` directory is itself the mode switch: an older project without them behaves exactly as before.
+
+A character pack is a directory under `cast/<id>/`: `character.yaml` is the single source of truth (voice, rig joints, poses, optional multi-view/turn paths), paired with one `rig.svg` per view, plus a `dna.md` that documents the character for the orchestrating agent — it is not used at render time.
+
+```bash
+am cast new heiwa                        # scaffold a self-consistent character pack (voiceId left blank)
+am cast add ../shared-characters/heiwa   # import an external pack: copy into cast/ and register in cast.yaml
+am cast validate                         # validate every pack registered in cast.yaml, regenerate character.json
+am cast preview cast/heiwa               # render a contact sheet per named pose for a visual sanity check
+```
+
+Editing `character.yaml` by hand does not auto-sync: `character.json` — what the renderer actually reads — is only regenerated when `new`/`add`/`validate` succeeds, so always re-run `am cast validate` after a manual edit. That command also flags a missing voice entry for the current `TTS_PROVIDER` (without affecting the exit code, so it surfaces right after you build the pack); the hard gate before publishing is `am validate cast` (see "Validate, archive, and develop" below).
+
+Per-speaker synthesized audio needs to be rebuilt into one timeline and then sliced into per-scene beats once scenes are cut — both are "silently wrong if miscalculated" arithmetic, so they live in Go rather than in the orchestrating agent:
+
+```bash
+am dialogue assemble   # read production/audio/plan.json, produce voice.wav / SRT / dialogue.json
+am dialogue beats      # after scenes are cut, recompute each scene.json's cast.beats from dialogue.json
+```
+
+The authoring conventions (how to segment dialogue scripts, how to fill a scene's `cast` block) ship with the project as `PROMPT-CAST-ADDENDUM.md`, in effect whenever `cast.yaml` exists.
+
 ## Inspect frames and concatenate
 
 A successful render is not a correct picture: text can be unreadable against the artwork, CJK glyphs can silently fall back to boxes, an animation can freeze halfway — all of that still exits 0. Extracting frames and looking at them is the only way to catch it early.
@@ -107,6 +133,10 @@ am concat scenes/ --out production/silent-master.mp4
 am validate publish publish.md --project-root .
 am validate style --project-root .
 am validate style --project-root . --regenerate-examples  # requires rsvg-convert and magick
+
+# Multi-role projects: does the roster, the dialogue timeline (dialogue.json), and every
+# scene's beats agree? Single-narrator projects (no cast.yaml) are skipped, exit 0
+am validate cast --project-root .
 
 # Machine acceptance: canvas, frame rate, codec, pixel format, frame count, audio
 # — all checked at once, with every mismatch reported in a single pass
