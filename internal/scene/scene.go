@@ -259,13 +259,19 @@ func validateCast(s Scene) error {
 			}
 			voiceOver[beat.Speaker] = true
 		}
-		// 乱序（后一拍 start 早于前一拍 start）与重叠（后一拍 start 落进前一拍
-		// [start,end) 区间）用同一个判断拦：只要后一拍的 start 没有不小于前一拍
-		// 的 end，两种情况都成立。错误信息把两拍的下标和各自的 start/end 都带
-		// 上，不用回翻 JSON 就能定位到具体是哪两拍、哪种问题。
+		// 乱序（后一拍 start 早于前一拍 start）与重叠（后一拍 start 没有早于
+		// 前一拍 start，但仍落进前一拍 [start,end) 区间）分两条错误信息报出：
+		// 对作者来说这是两类不同的错误——前者是拍的声明顺序整体倒退，后者是
+		// 顺序没错但时间段首尾相接得不够干净——分开说更好改。用前一拍的 start
+		// 而不是笼统的"是否重叠"来判断走哪条分支，是因为只要 start 没有倒退，
+		// 不管区间怎么交叠都只是同一种"时间没让够"的问题。
 		if beat.Start < prevEnd-floatEps {
-			return fmt.Errorf("cast.beats 未按 start 递增排列或与前一拍重叠：第 %d 拍 [%v, %v] 与第 %d 拍 [%v, %v]",
-				prevIndex, c.Beats[prevIndex].Start, c.Beats[prevIndex].End, i, beat.Start, beat.End)
+			if beat.Start < c.Beats[prevIndex].Start-floatEps {
+				return fmt.Errorf("cast.beats 未按 start 递增排列：第 %d 拍 start=%v 早于第 %d 拍 start=%v",
+					i, beat.Start, prevIndex, c.Beats[prevIndex].Start)
+			}
+			return fmt.Errorf("cast.beats 第 %d 拍与第 %d 拍时间重叠：[%v, %v] 与 [%v, %v]",
+				i, prevIndex, beat.Start, beat.End, c.Beats[prevIndex].Start, c.Beats[prevIndex].End)
 		}
 		prevEnd = beat.End
 		prevIndex = i

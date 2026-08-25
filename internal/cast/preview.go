@@ -99,6 +99,11 @@ func PoseSVG(pack Pack, viewName, poseName string) (string, error) {
 	return src, nil
 }
 
+// trimFloat 把角度/坐标格式化成最多 3 位小数，供 PoseSVG 生成的验收预览图
+// 使用。3 位小数会截断 character.yaml 里精度更高的 pivot/rotate 值，但这
+// 条路径只服务人眼验收：am cast preview 输出的 SVG/PNG 从不参与实际渲染，
+// cast.js 的 pose() 直接读 character.json 里的原始浮点值、不经过这个函数，
+// 所以这里的精度损失不会传导到成片。
 func trimFloat(value float64) string {
 	return strings.TrimSuffix(strings.TrimRight(fmt.Sprintf("%.3f", value), "0"), ".")
 }

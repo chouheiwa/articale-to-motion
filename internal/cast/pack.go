@@ -43,6 +43,13 @@ type Joint struct {
 	Rotate [2]float64 `yaml:"rotate" json:"rotate"`
 }
 
+// Rig 描述某一个视图（默认视图，或 views 里的某一个）的骨架：SVG 文件、
+// 画布坐标系与脚底基准线、以及这个视图自己的可动关节。
+//
+// 姿势（Pose）按关节名跨视图共享，但 Joint 本身——pivot 与 rotate 区
+// 间——是逐视图独立声明的，不做跨视图继承：正面与侧面的手臂支点位置、
+// 能转到的角度上限本就不同（透视压缩了侧面的活动范围），硬共享一份会
+// 在某个视图下产出物理上不成立的旋转，且不会在解析期报错。
 type Rig struct {
 	File      string           `yaml:"file" json:"file"`
 	ViewBox   [4]float64       `yaml:"viewBox" json:"viewBox"`
@@ -50,6 +57,10 @@ type Rig struct {
 	Joints    map[string]Joint `yaml:"joints" json:"joints"`
 }
 
+// Scale 只给角色占画面高度的区间，不给定值：具体镜头离摄像机的远近由
+// 排镜头时的创作判断决定，同一个角色在特写与远景里合理的占比本就不同。
+// 校验只保证 0 < lo < hi < 1（见 ParsePack），把落在区间内挑哪个值的
+// 决定权留给调用方。
 type Scale struct {
 	HeightRatio [2]float64 `yaml:"heightRatio" json:"heightRatio"`
 }
@@ -75,6 +86,12 @@ type Turn struct {
 // turnKeyPattern 约束 turns 的键必须写成 <from>-><to>。
 var turnKeyPattern = regexp.MustCompile(`^([a-z][a-z0-9-]*)->([a-z][a-z0-9-]*)$`)
 
+// Pack 是一个角色包（character.yaml）反序列化后的完整内容：跨 provider
+// 的音色声明、默认视图与可选的多视图 rig、转身路径、缩放区间与姿势库。
+//
+// Dir 不参与序列化（yaml/json 均标 "-"）：它是 ParsePack 读取时记下的本机
+// 绝对路径，只用来在同一次调用里定位同目录的 rig.svg 等文件；这条路径
+// 换台机器就失效，写进 character.json 既没有意义，也会泄漏本机目录结构。
 type Pack struct {
 	Dir     string           `yaml:"-" json:"-"`
 	Schema  string           `yaml:"schema" json:"schema"`
@@ -183,6 +200,11 @@ func validateRigFields(id, viewName string, rig Rig) error {
 			return fmt.Errorf("角色包 %s 的视图 %s 关节 %s 的 rotate 区间无效：%v", id, viewName, name, joint.Rotate)
 		}
 	}
+	// 这里不像 internal/scene 对 beats 时间戳那样加浮点容差：baselineY 与
+	// viewBox 都是角色作者手写在 YAML 里的字面量，不是加减法运算的中间结
+	// 果，不存在误差累积会把一个本该合法的值判成越界。等号边界本身也该
+	// 拒绝——baselineY 恰好落在视口顶/上边缘意味着脚底基准线与画布边缘
+	// 重合，姿势稍有偏移（比如抬腿）就会出画。
 	if rig.BaselineY <= rig.ViewBox[1] || rig.BaselineY > rig.ViewBox[1]+rig.ViewBox[3] {
 		return fmt.Errorf("角色包 %s 的视图 %s 的 baselineY=%v 落在 viewBox 之外", id, viewName, rig.BaselineY)
 	}

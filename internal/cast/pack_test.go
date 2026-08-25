@@ -98,6 +98,24 @@ func TestVoiceForMissingProvider(t *testing.T) {
 	}
 }
 
+// TestVoiceForPresentProviderMissingVoiceID 覆盖 provider 存在、但该 provider
+// 的 voiceId 为空串的分支：这与"provider 整个不存在"是不同的失败原因，此前
+// 只测了后者。
+func TestVoiceForPresentProviderMissingVoiceID(t *testing.T) {
+	body := strings.Replace(goodYAML, `voiceId: "v-2"`, `voiceId: ""`, 1)
+	pack, err := ParsePack(writePack(t, body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pack.VoiceFor("bailian"); err == nil || !strings.Contains(err.Error(), "voiceId") {
+		t.Fatalf("provider 存在但 voiceId 为空时应报错含 voiceId，得到 %v", err)
+	}
+	// minimax 的 voiceId 未受影响，不应被这条校验株连。
+	if _, err := pack.VoiceFor("minimax"); err != nil {
+		t.Fatalf("minimax 应该有音色：%v", err)
+	}
+}
+
 func TestLoadAggregatesRigProblems(t *testing.T) {
 	dir := writePack(t, goodYAML)
 	bad := strings.Replace(goodSVG, "</svg>", `<animate attributeName="opacity"/><script>1</script></svg>`, 1)
@@ -255,5 +273,30 @@ func TestViewNamesDedupesDefaultView(t *testing.T) {
 	names := pack.ViewNames()
 	if len(names) != 1 || names[0] != DefaultView {
 		t.Errorf("ViewNames() = %v，期望去重后只有 [%s]", names, DefaultView)
+	}
+}
+
+// TestViewNamesDedupesDefaultViewAmongMixedViews 覆盖三视图混合的情形：
+// Views 里既有与默认视图重名的 front，也有正常声明的 side、three-quarter。
+// ViewNames() 必须只返回三项、按字典序排列、且 front 不重复出现两次。
+func TestViewNamesDedupesDefaultViewAmongMixedViews(t *testing.T) {
+	pack := Pack{
+		ID:  "heiwa",
+		Rig: Rig{File: "rig.svg"},
+		Views: map[string]Rig{
+			DefaultView:     {File: "dup.svg"},
+			"side":          {File: "side.svg"},
+			"three-quarter": {File: "tq.svg"},
+		},
+	}
+	names := pack.ViewNames()
+	want := []string{"front", "side", "three-quarter"}
+	if len(names) != len(want) {
+		t.Fatalf("ViewNames() = %v，期望恰好 %v", names, want)
+	}
+	for i, name := range want {
+		if names[i] != name {
+			t.Fatalf("ViewNames() = %v，期望按序 %v", names, want)
+		}
 	}
 }
