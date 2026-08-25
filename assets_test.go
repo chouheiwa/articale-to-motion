@@ -54,7 +54,7 @@ func TestCastDriverReadsJSONNotYAML(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 只看代码，不看注释：注释里正需要写清楚为什么不读 YAML、为什么不用 rAF。
-	code := stripJSLineComments(string(body))
+	code := stripJSComments(string(body))
 	if !strings.Contains(code, "/character.json") {
 		t.Error("cast.js 没有读取 character.json")
 	}
@@ -96,11 +96,11 @@ func TestCastDriverConstantsMatchGo(t *testing.T) {
 	// 出现过。cast.js 的注释里也会顺口写到这些值（例如 mount 的参数说明里那句
 	// “初始视图名，默认 'front'”），光找 "'front'" 会被注释撑住：把
 	// DEFAULT_VIEW 改成别的值测试照样 PASS，这一条就成了假保证。
-	// 不指望 stripJSLineComments 兜住——它不认识正则字面量，cast.js 里
-	// /["']/ 之后的注释根本没被剥掉，那是另一个范围的既有缺陷。
+	// 锚在赋值上而不是靠 stripJSComments 兜底：这两道防线各挡一半。剥注释挡的是
+	// 「注释里顺口写到这个值」，锚 “= ” 挡的是「值出现在别处（选择器、错误文案）」。
 	// data-no-mirror 是选择器不是赋值，按 [attr] 的完整写法锚定：紧邻的那条
 	// 注释里只有裸的 data-no-mirror，带方括号的只可能是真选择器。
-	code := stripJSLineComments(string(body))
+	code := stripJSComments(string(body))
 	for _, want := range []string{
 		"= '" + cast.SchemaVersion + "'",
 		"= '" + cast.DefaultView + "'",
@@ -219,6 +219,55 @@ for (const t of [0, 1.9, 2.05, 2.1, 3, 4.9, 5.1, 6]) {
 console.log('压扁零点/换视图对齐、镜像曲线、呼吸包络、几何、乱序求值一致性 —— 全部通过');
 `
 
+// TestStripJSCommentsHandlesRegexLiterals 守住上面那些静态断言的地基。
+//
+// stripJSComments 只要在任何一处认错上下文，扫描就会整体错位，而错位的方向决定
+// 危害：把代码当字符串吞掉的话，本文件里全部禁令与常量断言都会静默失效（PASS
+// 但什么都没查）。cast.js 早先就吃过这个亏——一个 /["']/ 让文件后六成的注释都
+// 没被剥掉。所以这里喂一段把四种上下文全凑齐的样本，逐字比对剥离结果。
+func TestStripJSCommentsHandlesRegexLiterals(t *testing.T) {
+	const src = `const cls = /["']/;      // 正则里的引号不是引号：这条注释必须被剥掉
+const url = 'https://a.b//c'; // 字符串里的 // 不是注释开头
+const raw = "他说 /* 别删我 */";  // 字符串里的块注释记号也不是注释
+/* 跨行块注释
+   第二行 */
+const div = total / count;  // 这个斜杠是除号，不能当成正则开头
+const tpl = ` + "`" + `第 ${idx / 2} 段 ${label.replace(/\s+/g, '')}` + "`" + `; // 模板串里两种都有
+const esc = /a\/b/g.test(url); // 正则里转义过的斜杠不算结束
+setTimeout(fn, 0); // 这行注释里的 setTimeout( 必须被剥掉，代码里的那个不许被剥掉
+`
+	const want = `const cls = /["']/;
+const url = 'https://a.b//c';
+const raw = "他说 /* 别删我 */";
+
+
+const div = total / count;
+const tpl = ` + "`" + `第 ${idx / 2} 段 ${label.replace(/\s+/g, '')}` + "`" + `;
+const esc = /a\/b/g.test(url);
+setTimeout(fn, 0);
+`
+	got := stripJSComments(src)
+	// 行尾空白是「注释被换成换行」留下的，不影响任何 strings.Contains 断言，
+	// 逐行右裁后再比，这样期望值写起来才是可读的。
+	trimLines := func(s string) string {
+		lines := strings.Split(s, "\n")
+		for i := range lines {
+			lines[i] = strings.TrimRight(lines[i], " \t")
+		}
+		return strings.Join(lines, "\n")
+	}
+	if trimLines(got) != trimLines(want) {
+		t.Errorf("剥离结果不对：\n--- got ---\n%s\n--- want ---\n%s", got, want)
+	}
+	// 再单独钉两条最要命的：注释里的禁令词必须消失，代码里的必须留下。
+	if strings.Contains(got, "这条注释必须被剥掉") || strings.Contains(got, "这行注释里的") {
+		t.Error("正则/字符串之后的行注释没有被剥掉：假红回来了")
+	}
+	if !strings.Contains(got, "setTimeout(fn, 0)") {
+		t.Error("代码里的 setTimeout( 被吃掉了：假绿——禁令断言从此形同虚设")
+	}
+}
+
 func sharedTree(t *testing.T) fs.FS {
 	t.Helper()
 	shared, err := Shared()
@@ -232,44 +281,187 @@ func castSkillPath(name string) string {
 	return ".agents/skills/character-rig/" + name
 }
 
-// stripJSLineComments 去掉 // 行注释，只留下可执行代码。
+// regexPrefixKeywords 是「后面跟的 / 一定是正则字面量开头，不是除号」的关键字。
 //
-// 逐字符扫描并跟踪引号状态：直接按 strings.Index 找 "//" 会把字符串字面量里
-// 的 https:// 之类当成注释开头，把整行后半截连同真正的代码一起吃掉——那会让
-// 上面几条禁令悄悄失效（被吃掉的代码再违规也检查不到）。cast.js 里没有块注释，
-// 所以只处理行注释。
-func stripJSLineComments(src string) string {
-	var out strings.Builder
-	var quote rune
-	escaped := false
+// JS 的 / 有歧义：`a / b` 是除法，`return /x/` 是正则。判别方式是看前一个有意义
+// 的 token 能不能作为一个值的结尾——能（标识符、数字、字符串、) ] }）就是除号，
+// 不能（运算符、逗号、左括号，以及这里这些关键字）就是正则。
+var regexPrefixKeywords = map[string]bool{
+	"return": true, "typeof": true, "instanceof": true, "in": true, "of": true,
+	"new": true, "delete": true, "void": true, "throw": true, "case": true,
+	"do": true, "else": true, "yield": true, "await": true,
+}
+
+func isJSIdentRune(c rune) bool {
+	return c == '_' || c == '$' || (c >= '0' && c <= '9') ||
+		(c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+// regexCanFollow 判断刚扫到的 / 是正则开头还是除号，依据是已产出代码的末尾。
+//
+// 已知边界：`if (a) /re/.test(b)` 这种「) 之后直接跟正则」会被判成除号。JS 不看
+// 语法上下文就无法区分它和 `f(a) / 2`，而真正的解析器不许引入。cast.js 里的正则
+// 都跟在 = 或 ( 之后，判别不到这条边界；真写出这种写法，效果是把它当除号扫，
+// 正则里的引号会被当成字符串开头——也就是退回本函数存在之前的老毛病，
+// 而 TestStripJSCommentsHandlesRegexLiterals 会在样本里守住常见形态。
+func regexCanFollow(out []rune) bool {
+	i := len(out) - 1
+	for i >= 0 && (out[i] == ' ' || out[i] == '\t' || out[i] == '\n' || out[i] == '\r') {
+		i--
+	}
+	if i < 0 {
+		return true
+	}
+	switch c := out[i]; {
+	case c == ')' || c == ']' || c == '}':
+		return false
+	case c == '\'' || c == '"' || c == '`':
+		return false
+	case isJSIdentRune(c):
+		j := i
+		for j >= 0 && isJSIdentRune(out[j]) {
+			j--
+		}
+		return regexPrefixKeywords[string(out[j+1:i+1])]
+	default:
+		return true
+	}
+}
+
+// stripJSComments 去掉 // 行注释与 /* */ 块注释，只留下可执行代码。
+//
+// 逐字符扫描并跟踪全部四种「不是代码」的上下文：字符串、模板串（含 ${} 里嵌回
+// 代码那一层）、正则字面量、注释。任何一种漏认都会让后面的扫描整体错位，而错位
+// 的方向决定了危害：
+//
+//   - 把注释当代码（漏剥）只是假红——注释里写到 setTimeout 之类的禁令词会误报，
+//     看一眼就知道；
+//   - 把代码当注释或当字符串（多剥、或吞掉一大段）是假绿——上面那些禁令与常量
+//     断言全部悄悄失效，测试照样 PASS。
+//
+// 这个函数此前只认引号，不认正则字面量：cast.js 里 `if (/["']/.test(selectors))`
+// 的那个字符组被当成开引号，从那一行到文件末尾（约六成篇幅）的注释一句都没被剥
+// 掉。危害当时是假红，但只要有人在它前面再写一个带引号的正则，假绿就回来了。
+//
+// 不引第三方 JS 解析器：这是测试里的一段静态检查，依赖一个 JS parser 会把
+// go test 的可运行性绑到一堆与本仓库无关的东西上。
+func stripJSComments(src string) string {
 	runes := []rune(src)
+	out := make([]rune, 0, len(runes))
+	// 模板串栈：进入 `…` 压一层，进入其中的 ${…} 再压一层代码帧。
+	// depths 记每个代码帧里未闭合的 { 数，用来分辨 ${} 的收尾 } 与普通块的 }。
+	inTemplate := []bool{false}
+	depths := []int{0}
+	top := func() int { return len(inTemplate) - 1 }
+
 	for i := 0; i < len(runes); i++ {
 		c := runes[i]
-		if quote != 0 {
-			out.WriteRune(c)
+		if inTemplate[top()] {
 			switch {
-			case escaped:
-				escaped = false
-			case c == '\\':
-				escaped = true
-			case c == quote:
-				quote = 0
+			case c == '\\' && i+1 < len(runes):
+				out = append(out, c, runes[i+1])
+				i++
+			case c == '`':
+				out = append(out, c)
+				inTemplate = inTemplate[:top()]
+				depths = depths[:len(depths)-1]
+			case c == '$' && i+1 < len(runes) && runes[i+1] == '{':
+				out = append(out, c, '{')
+				i++
+				inTemplate = append(inTemplate, false)
+				depths = append(depths, 0)
+			default:
+				out = append(out, c)
 			}
 			continue
 		}
-		if c == '\'' || c == '"' || c == '`' {
-			quote = c
-			out.WriteRune(c)
-			continue
-		}
+
+		// 行注释：整行吃掉，只留换行，保住后续行号。
 		if c == '/' && i+1 < len(runes) && runes[i+1] == '/' {
 			for i < len(runes) && runes[i] != '\n' {
 				i++
 			}
-			out.WriteRune('\n')
+			out = append(out, '\n')
 			continue
 		}
-		out.WriteRune(c)
+		// 块注释：整段吃掉，内部每个换行照写一个，同样是为了保住行号。
+		if c == '/' && i+1 < len(runes) && runes[i+1] == '*' {
+			i += 2
+			for i < len(runes) && !(runes[i] == '*' && i+1 < len(runes) && runes[i+1] == '/') {
+				if runes[i] == '\n' {
+					out = append(out, '\n')
+				}
+				i++
+			}
+			i++ // 停在 '/' 上，交给外层 i++ 跨过去
+			continue
+		}
+		// 正则字面量：连同字符组与标志一起原样抄下来，里面的引号不算引号。
+		if c == '/' && regexCanFollow(out) {
+			out = append(out, c)
+			inClass := false
+			for i++; i < len(runes); i++ {
+				r := runes[i]
+				out = append(out, r)
+				if r == '\\' && i+1 < len(runes) {
+					i++
+					out = append(out, runes[i])
+					continue
+				}
+				if r == '\n' { // 未闭合的正则不存在，按行止损
+					break
+				}
+				if r == '[' {
+					inClass = true
+				} else if r == ']' {
+					inClass = false
+				} else if r == '/' && !inClass {
+					break
+				}
+			}
+			for i+1 < len(runes) && isJSIdentRune(runes[i+1]) { // 标志位 g/i/m/s/u/y
+				i++
+				out = append(out, runes[i])
+			}
+			continue
+		}
+		if c == '\'' || c == '"' {
+			out = append(out, c)
+			for i++; i < len(runes); i++ {
+				r := runes[i]
+				out = append(out, r)
+				if r == '\\' && i+1 < len(runes) {
+					i++
+					out = append(out, runes[i])
+					continue
+				}
+				if r == c || r == '\n' {
+					break
+				}
+			}
+			continue
+		}
+		if c == '`' {
+			out = append(out, c)
+			inTemplate = append(inTemplate, true)
+			depths = append(depths, 0)
+			continue
+		}
+		if c == '{' {
+			depths[len(depths)-1]++
+		} else if c == '}' {
+			if depths[len(depths)-1] == 0 && top() > 0 {
+				// ${…} 收尾：回到外层模板串。
+				out = append(out, c)
+				inTemplate = inTemplate[:top()]
+				depths = depths[:len(depths)-1]
+				continue
+			}
+			if depths[len(depths)-1] > 0 {
+				depths[len(depths)-1]--
+			}
+		}
+		out = append(out, c)
 	}
-	return out.String()
+	return string(out)
 }

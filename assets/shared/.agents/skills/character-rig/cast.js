@@ -182,10 +182,12 @@ const cast = (() => {
   //
   // owner 为 null 表示宿主级入口（window.__hf / window.__player 的 seek）：
   // 它推的是整页的时间，所有角色都该跟着走。
-  // owner 是某条 timeline 时，只能渲染绑在那条 timeline 上的角色——
-  // HyperFrames 的 window.__timelines 本身就是 map、支持子 composition，
-  // 同页出现第二条时间线时，推 A 把 B 也一起渲染就是串台：B 的时间根本没动，
-  // 却按 A 的时间画了一帧。不报错，只是另一个角色的帧全是错的。
+  // owner 是某条 timeline 时，只渲染「归它管」的角色——绑在它自己身上的，
+  // 以及绑在挂进它的子 timeline 上的（见 ownedBy）。
+  // 不能一律全渲染：HyperFrames 的 window.__timelines 本身就是 map、支持子
+  // composition，同页出现第二条互不相干的时间线时，推 A 把 B 也一起渲染就是
+  // 串台：B 的时间根本没动，却按 A 的时间画了一帧。不报错，只是另一个角色的
+  // 帧全是错的。
   //
   // 出帧的时间**取角色自己那条 timeline 的 time()，不用 seek 的入参**。
   // 入参是宿主的单位与坐标系，本库无从假设：宿主若按毫秒 seek
@@ -194,10 +196,33 @@ const cast = (() => {
   // 单位就不是「偶尔错一帧」，而是每一帧都被覆盖成错的，角色全程冻在终态、
   // 不报错。timeline 的 time() 是本库唯一认得的坐标系，schedule 里的时间也
   // 都在这个坐标系里。
+
+  // ownedBy：owner 是不是 timeline 本身、或它的某一级祖先。
+  //
+  // 子 composition 的时间线是**挂在**父时间线上的：宿主只调 parent.seek(t)，
+  // child.seek 一次都不会被调用，而 GSAP 的 seek 默认 suppressEvents=true、
+  // child 里那条驱动 tween 的 onUpdate 也不触发。只认「timeline === owner」的话，
+  // 绑在 child 上的角色从头到尾冻在 mount 姿势，退出码 0、不报错。
+  // 所以沿 GSAP 的 parent 链往上找：owner 在链上，就说明宿主推 owner 的同时
+  // 也把这条子时间线推过了，该补渲染。
+  //
+  // 时间仍取角色自己那条 timeline 的 time()（见 renderActors），拿到的是子
+  // 时间线的本地时间——schedule 里的时刻正是记在这个坐标系里的。
+  // 深度上限只是防御性的：GSAP 的 parent 链不会成环，真成环了也不该在这里挂死。
+  const OWNER_CHAIN_LIMIT = 64;
+  function ownedBy(owner, timeline) {
+    let node = timeline;
+    for (let depth = 0; node && depth < OWNER_CHAIN_LIMIT; depth++) {
+      if (node === owner) return true;
+      node = node.parent;
+    }
+    return false;
+  }
+
   function renderActors(time, owner) {
     for (const actor of actors) {
-      if (owner && actor.timeline() !== owner) continue;
       const timeline = actor.timeline();
+      if (owner && !ownedBy(owner, timeline)) continue;
       actor.render(timeline ? timeline.time() : time);
     }
   }
@@ -241,6 +266,18 @@ const cast = (() => {
 
   // ======================= I/O 与 SVG 预处理 =======================
 
+  // TIMELINE_METHODS：本库真正会在传入的 timeline 上调用的方法，逐个校验。
+  // to() 单列在下面（它决定这个对象到底像不像一条 timeline，措辞也不一样）。
+  const TIMELINE_METHODS = [
+    // 舞台状态按「timeline 当前时间」现算，拿不到准确时间就只能从每条 tween
+    // 自己的进度反推，而停在进度 0 的那条反推出的是它自己的起点、不是 timeline
+    // 真正所在的时刻，于是又退回成「取值依赖渲染顺序」。
+    ['time', '本库按 timeline 当前时间现算每一帧'],
+    // renderAt 用它区分「调用者算错了时间」与「时间线根本到不了 t（被 GSAP
+    // 钳在 duration 上）」——后者才是绝大多数现场的真实成因。
+    ['duration', 'renderAt 要用它判断请求的时刻是不是超出了时间线总长'],
+  ];
+
   function requireTimeline(tl, method) {
     if (!tl || typeof tl.to !== 'function') {
       throw new Error(
@@ -248,12 +285,14 @@ const cast = (() => {
           '角色动画必须挂在它上面，否则逐帧 seek 出的成片是错的且不报错'
       );
     }
-    // time() 是硬要求，不做兜底：舞台状态按「timeline 当前时间」现算，拿不到
-    // 准确时间就只能从每条 tween 自己的进度反推，而停在进度 0 的那条反推出的
-    // 是它自己的起点、不是 timeline 真正所在的时刻，于是又退回成「取值依赖
-    // 渲染顺序」。GSAP 的 timeline 一定有 time()。
-    if (typeof tl.time !== 'function') {
-      throw new Error(`cast.${method}() 收到的 timeline 没有 time() 方法：本库按 timeline 当前时间现算每一帧`);
+    // time() 与 duration() 都是硬要求，不做兜底。清单必须与本库真正会调的方法
+    // 一致：漏一个，鸭子类型对象就会一路走到调用点才抛裸 TypeError
+    // （renderAt 里的 boundTimeline.duration() 就是这么一个调用点），
+    // 那条英文报错既不说明是谁的错，也不告诉人该传什么。
+    for (const [name, why] of TIMELINE_METHODS) {
+      if (typeof tl[name] !== 'function') {
+        throw new Error(`cast.${method}() 收到的 timeline 没有 ${name}() 方法：${why}`);
+      }
     }
     return tl;
   }
@@ -629,7 +668,12 @@ const cast = (() => {
     // 时硬切了视图」，正是硬规则 2/6 要防的那件事。
     //
     // 姿势 tween 与 speak/listen 不动游标，可任意顺序穿插、也可与转身重叠。
-    function assertForward(at, end, method) {
+    //
+    // assertForward 只校验、不改任何状态。推进游标由调用方在**全部校验都过了
+    // 之后**连同 current.view / current.sign 一起做：一次被拒绝的声明不该在
+    // 时间线或游标上留下任何痕迹，否则抓着异常继续往下写的人会拿到一条被那次
+    // 失败悄悄改长了的时间线（driver tween 覆盖到片尾，duration 也就跟着变）。
+    function assertForward(at, method) {
       if (at < current.until - 1e-9) {
         throw new Error(
           `角色 ${pack.id} 的 cast.${method}(at=${at}) 与上一次转身/翻转的区间重叠` +
@@ -638,7 +682,6 @@ const cast = (() => {
             '（pose、to、speak、listen 不受此限）'
         );
       }
-      current.until = end;
     }
 
     // 覆盖全片的驱动 tween：区间之外的帧也要重算，不能只在事件窗口里出帧。
@@ -750,10 +793,13 @@ const cast = (() => {
       // flip 是左右镜像翻转：scaleX 从 +1 连续走到 -1，过零那一瞬间最窄。
       // 这是「朝向」维度，与「视图」维度正交。
       flip(tl, { at = 0, dur = DEFAULT_TURN_MS / 1000 } = {}) {
+        // 校验全部在前，改状态全部在后：bind 会延长驱动 tween，放在校验之前
+        // 就等于让一次被拒绝的 flip 改掉时间线时长。
+        assertForward(at, 'flip');
         bind(tl, 'flip', at + dur);
-        assertForward(at, at + dur, 'flip');
         stageSchedule.push({ start: at, end: at + dur, seq: [current.view], sign: current.sign, mirror: true });
         current.sign = -current.sign;
+        current.until = at + dur;
         return handle;
       },
 
@@ -776,8 +822,9 @@ const cast = (() => {
           );
         }
         const seconds = dur == null ? spec.durationMs / 1000 : dur;
+        // 同 flip：校验在前，bind（会延长驱动 tween）与游标推进都在校验之后。
+        assertForward(at, 'turn');
         bind(tl, 'turn', at + seconds);
-        assertForward(at, at + seconds, 'turn');
         stageSchedule.push({
           start: at,
           end: at + seconds,
@@ -786,6 +833,7 @@ const cast = (() => {
           mirror: false,
         });
         current.view = toView;
+        current.until = at + seconds;
         return handle;
       },
 
