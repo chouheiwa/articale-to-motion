@@ -386,7 +386,7 @@ func validateStyleSchema(tokens map[string]any) (preset.Preset, error) {
 	return active, nil
 }
 
-// autoEmbeddedFonts 是 HyperFrames 0.8.1 会自动下载并内联的字体族
+// autoEmbeddedFonts 是 HyperFrames 0.8.14 会自动下载并内联的字体族
 // （CANONICAL_FONTS，背后是 @fontsource/* 包）。清单里没有任何简体中文字体：
 // 唯一的 CJK 项 Noto Sans JP 缺失大量简体字，不能当替代品。
 var autoEmbeddedFonts = map[string]bool{

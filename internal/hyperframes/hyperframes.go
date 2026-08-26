@@ -9,9 +9,9 @@
 //
 //   - 项目不自包含。整个项目拷到另一台机器就渲不出来，技能不在里面。
 //   - 污染用户 HOME，一次安装会写进本机所有已安装 agent 的目录。
-//   - 版本固定名存实亡。下发的 PROMPT 要求「固定 HyperFrames 版本为 X」，
-//     可机器上只有一份技能：项目 A 固定 0.8.1、项目 B 固定 0.7.108，
-//     谁后初始化谁说了算，另一个项目的固定版本悄悄失效。
+//   - 项目之间互相覆盖。下发的 PROMPT 要求「固定 HyperFrames 版本为 X」，
+//     可机器上只有一份技能：两个项目固定不同版本时谁后初始化谁说了算，
+//     另一个项目的固定版本悄悄失效。
 //
 // 所以这里改成：在项目之外开一个临时 HOME 让上游安装器照常工作，再把它产出的
 // 技能树整体搬进项目的 .agents/skills/。scene.ResolveSkill 本来就优先项目级
@@ -35,6 +35,24 @@ import (
 // SkillsSubdir 是技能在项目里的落点，与 scene.portableSkillsDir 一致。
 const SkillsSubdir = ".agents/skills"
 
+// PinnedVersion 是 am init 安装的 HyperFrames 上游版本。
+//
+// 固定版本不自动前进是刻意的：技能内容变化会直接改变成片动效。升级前要对比
+// 两版 skills/ 树与自动内联字体清单（@fontsource 包集合），确认动效 rule 与
+// 字体清单没变，并同步 internal/validate 的 autoEmbeddedFonts 注释、
+// internal/scene 的动效分类注释。
+//
+// ⚠️ 这个版本号固定的是 CLI 二进制，不是技能内容：上游 `hyperframes skills`
+// 直接 git clone 仓库默认分支取 skills/，安装器没有任何指定 ref 的口子。
+// 实测 0.8.1 与 0.8.14 装出来的 26 个技能逐字节相同，且都等于当天 main 的
+// 状态——所以两次 am init 之间技能可能已经变了，与这里的版本号无关。
+// 详见 README「HyperFrames 版本固定的边界」。
+//
+// 这里是唯一来源：命令行、错误信息、--help 与下发提示词里的锁定指令都从它
+// 取值（提示词经 internal/preset/gen 的 {{HYPERFRAMES_VERSION}} 占位符注入，
+// 由根目录 assets_test.go 的 TestPresetsPinSameHyperFramesVersionAsBinary 守住）。
+const PinnedVersion = "0.8.14"
+
 // manifestFile 是判定一个目录是不是技能的依据，与 scene 包一致。
 const manifestFile = "SKILL.md"
 
@@ -42,7 +60,8 @@ const manifestFile = "SKILL.md"
 type Options struct {
 	// ProjectDir 是用户项目根目录。
 	ProjectDir string
-	// Version 是要固定安装的上游版本，例如 "0.8.1"。
+	// Version 是要固定安装的上游 CLI 版本，例如 "0.8.14"。它固定的是 CLI
+	// 二进制，不是技能内容——见 PinnedVersion 的说明。
 	Version string
 	// Env 是当前进程环境。安装器要在改写过 HOME 的副本里运行，
 	// 但 PATH、代理、npm 配置这些必须沿用，否则公司内网装不上。
@@ -88,7 +107,17 @@ func Install(ctx context.Context, opts Options) (Result, error) {
 	if _, err := os.Stat(source); err != nil {
 		return Result{}, fmt.Errorf("安装器没有产出 %s，无法确定它把技能装到了哪里", SkillsSubdir)
 	}
-	return copySkills(source, filepath.Join(opts.ProjectDir, SkillsSubdir), opts.Protected)
+	result, err := copySkills(source, filepath.Join(opts.ProjectDir, SkillsSubdir), opts.Protected)
+	if err != nil {
+		return Result{}, err
+	}
+	// 记录这次到底装到了哪一版技能。PinnedVersion 只固定 CLI 二进制，技能
+	// 内容来自上游默认分支，同一个版本号在不同日期装出来可以不同——没有这
+	// 份记录，事后无从查证，两个项目动效不一样也只能靠肉眼比成片。
+	if err := WriteManifest(opts.ProjectDir, opts.Version, result.Installed); err != nil {
+		return Result{}, err
+	}
+	return result, nil
 }
 
 // resolveNPX 返回可直接执行的 npx 路径，以及它所在的 bin 目录。

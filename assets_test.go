@@ -5,10 +5,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/chouheiwa/articale-to-motion/internal/cast"
+	"github.com/chouheiwa/articale-to-motion/internal/hyperframes"
 	"github.com/chouheiwa/articale-to-motion/internal/scene"
 )
 
@@ -482,4 +484,44 @@ func stripJSComments(src string) string {
 		out = append(out, c)
 	}
 	return string(out)
+}
+
+// TestPresetsPinSameHyperFramesVersionAsBinary 守住下发提示词与二进制固定
+// 版本之间的一致性。
+//
+// PROMPT-PRODUCTION.md 第八阶段要求渲染 agent 建一个「渲染器锁定文件」，
+// 把 HyperFrames 版本钉死。这个版本号原先是在模板里硬写的字面量，与
+// hyperframes.PinnedVersion 之间没有任何绑定——改了常量忘了模板，am init
+// 装的是新版技能、而下发给渲染 agent 的锁定指令仍指向旧版，两边悄悄错开。
+//
+// 断言的是「每份产物里出现的 hyperframes@ 版本全部等于 PinnedVersion」，
+// 而不是「包含 PinnedVersion」：后者在模板同时留着新旧两个版本号时也会通过。
+func TestPresetsPinSameHyperFramesVersionAsBinary(t *testing.T) {
+	// 走 embed.FS 而不是磁盘路径：真正发到用户手上的是嵌进二进制的这一份，
+	// 磁盘上的生成物与它一致由 go generate 后的 git diff 门禁另行保证。
+	prompts, err := fs.Glob(Files, "assets/presets/*/PROMPT-PRODUCTION.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(prompts) == 0 {
+		t.Fatal("嵌入树里没有任何 PROMPT-PRODUCTION.md，检查 //go:embed 模式")
+	}
+	want := "hyperframes@" + hyperframes.PinnedVersion
+	pattern := regexp.MustCompile(`hyperframes@[0-9][0-9A-Za-z.\-]*`)
+	for _, path := range prompts {
+		body, err := fs.ReadFile(Files, path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := pattern.FindAllString(string(body), -1)
+		if len(found) == 0 {
+			t.Errorf("%s 没有固定 HyperFrames 版本", path)
+			continue
+		}
+		for _, got := range found {
+			if got != want {
+				t.Errorf("%s 固定的是 %s，与二进制的 %s 不一致", path, got, want)
+			}
+		}
+	}
 }

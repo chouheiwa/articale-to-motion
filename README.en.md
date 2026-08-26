@@ -34,9 +34,15 @@ Canvas is chosen once at init and written to `frame.md`. Built-in presets:
 
 Non-interactive environments (CI, pipes) must pass `--canvas` explicitly; there is no silent default.
 
-`am init` refuses to overwrite existing files with different content. By default it installs the pinned HyperFrames 0.8.1 skills into the project's `.agents/skills/`, alongside the binary-delivered `text-to-lottie` and `algorithmic-art`; use `--skip-hyperframes` for offline or CI environments.
+`am init` refuses to overwrite existing files with different content. By default it installs the pinned HyperFrames 0.8.14 skills into the project's `.agents/skills/`, alongside the binary-delivered `text-to-lottie` and `algorithmic-art`; use `--skip-hyperframes` for offline or CI environments.
 
-Skills go into the project rather than `$HOME` because that is the only way version pinning holds: the upstream installer only honours `homedir`, so a machine has exactly one copy — with project A pinned to 0.8.1 and project B to 0.7.108, whichever was initialized last wins. The install never writes to your HOME; the upstream installer runs in a temporary directory outside the project and its output is moved in.
+Skills go into the project rather than `$HOME` because that is the only way projects stop clobbering each other: the upstream installer only honours `homedir`, so a machine has exactly one copy — with two projects pinned to different versions, whichever was initialized last wins. The install never writes to your HOME; the upstream installer runs in a temporary directory outside the project and its output is moved in.
+
+#### What the pin does and does not cover
+
+**The pinned version fixes the CLI binary, not the skill content.** Upstream `hyperframes skills` shallow-clones the repository's default branch and takes `skills/` from it; the installer offers no way to name a tag or commit. Installing with `hyperframes@0.8.1` and `hyperframes@0.8.14` on the same machine yields byte-identical skill trees, both matching whatever `main` held that day — so running `am init` weeks apart can produce different skills while the version string never changes.
+
+`am init` therefore records what it actually installed in `.agents/skills/hyperframes-upstream.json`: the CLI version plus a content digest per upstream skill directory. When two projects behave differently, diff those records instead of eyeballing rendered frames. Skills travel with the project (commit them), so a project is stable once initialized; the drift only shows up between newly initialized projects.
 
 Initialization also writes the binary's built-in skill tree to the project's `.agents/skills/`, where the renderer discovers it automatically:
 

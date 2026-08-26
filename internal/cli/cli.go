@@ -36,14 +36,9 @@ import (
 
 const Version = "1.0.0"
 
-// hyperframesVersion 是 am init 安装的 HyperFrames 官方技能版本。
-//
-// 固定版本不自动前进是刻意的：技能内容变化会直接改变成片动效。升级前要对比
-// 两版 skills/ 树与 fontData.generated.ts，确认动效 rule 与自动内联字体清单
-// 没变，并同步 internal/validate 的 autoEmbeddedFonts 注释。
-//
-// 这里是唯一来源：命令行、错误信息与 --help 都从它取值，避免三处字面量各自漂移。
-const hyperframesVersion = "0.8.1"
+// hyperframesVersion 是本包内的简写，真相在 internal/hyperframes.PinnedVersion
+// ——那里同时是下发提示词里锁定指令的取值来源，避免两处字面量各自漂移。
+const hyperframesVersion = hyperframes.PinnedVersion
 
 // narrationSolo、narrationCast 是 am init --narration 的两个合法取值。
 //
@@ -225,10 +220,15 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 装进项目的 .agents/skills/，与内置技能树同一个目录。离线或 CI 用
 --skip-hyperframes 跳过；该开关不影响内置技能树，它随二进制下发。
 
-技能装进项目而不是装进 HOME，是因为版本固定只有这样才成立：上游安装器只认
-homedir，一台机器上只有一份技能，项目 A 固定 0.8.1、项目 B 固定 0.7.108 时
-谁后初始化谁说了算。装进项目还让项目自包含——整个目录拷到另一台机器就能渲染。
+技能装进项目而不是装进 HOME，是因为项目之间互不覆盖只有这样才成立：上游
+安装器只认 homedir，一台机器上只有一份技能，两个项目固定不同版本时谁后
+初始化谁说了算。装进项目还让项目自包含——整个目录拷到另一台机器就能渲染。
 安装全程不写用户 HOME：上游安装器在项目外的临时目录里运行，产物再搬进项目。
+
+版本固定的是 CLI 二进制，不是技能内容：上游安装器 git clone 仓库默认分支
+取 skills/，没有指定 tag 的口子，隔一段时间再初始化拿到的技能可能已经变了。
+安装后会在 .agents/skills/` + hyperframes.ManifestFile + ` 里记下这次装到了什么
+（CLI 版本 + 每个上游技能的内容摘要），供跨项目比对。
 
 上游技能与内置技能重名时保留内置版本并告警，不会覆盖本仓库 fork 过的技能。
 

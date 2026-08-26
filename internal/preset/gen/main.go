@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/chouheiwa/articale-to-motion/internal/hyperframes"
 	"github.com/chouheiwa/articale-to-motion/internal/preset"
 	"github.com/chouheiwa/articale-to-motion/internal/styleimage"
 )
@@ -85,7 +86,12 @@ func Render(p preset.Preset, tpl Templates) (map[string][]byte, error) {
 	}
 	frontmatter := strings.Replace(tpl.Frontmatter, canvasMarker, block, 1)
 	label := p.Canvas.Label()
-	subst := func(s string) string { return strings.ReplaceAll(s, "{{CANVAS}}", label) }
+	// 版本号从 internal/hyperframes 取，不在模板里写字面量：改了常量忘了模板，
+	// 下发给渲染 agent 的锁定指令会停在旧版本上，而 am init 装的已经是新版。
+	subst := func(s string) string {
+		s = strings.ReplaceAll(s, "{{CANVAS}}", label)
+		return strings.ReplaceAll(s, "{{HYPERFRAMES_VERSION}}", hyperframes.PinnedVersion)
+	}
 
 	// 原文件结构是 ---\n<frontmatter>---<body>，body 自带前导换行。
 	compose := func(body string) []byte {

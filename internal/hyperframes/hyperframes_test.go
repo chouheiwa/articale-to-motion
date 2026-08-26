@@ -328,3 +328,85 @@ func TestInstallReportsInstallerFailure(t *testing.T) {
 		t.Errorf("安装器失败应当报错并点名版本：%v", err)
 	}
 }
+
+// TestInstallRecordsUpstreamManifest 守住上游技能的来源记录。
+//
+// 为什么需要它：PinnedVersion 固定的只是 CLI 二进制。上游 `hyperframes skills`
+// 直接 git clone 仓库默认分支取 skills/，没有任何指定 ref 的口子——实测
+// 0.8.1 与 0.8.14 装出来的技能逐字节相同，都等于当天 main 的状态。也就是说
+// 两次 am init 之间技能内容可能已经变了，而版本号一个字都没动。
+//
+// 这条记录把"这个项目到底装到了哪一版技能"从无从查证变成可比对的事实：
+// 两个项目的 manifest 一比就知道差在哪个技能上。
+func TestInstallRecordsUpstreamManifest(t *testing.T) {
+	binDir := fakeToolchain(t, []string{"hyperframes-animation", "hyperframes-core"})
+	project := t.TempDir()
+	if _, err := Install(context.Background(), Options{
+		ProjectDir: project,
+		Version:    "9.9.9",
+		Env:        map[string]string{"PATH": binDir, "HOME": t.TempDir()},
+		Output:     &bytes.Buffer{},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	m, err := ReadManifest(project)
+	if err != nil {
+		t.Fatalf("读取来源记录失败：%v", err)
+	}
+	if m.CLIVersion != "9.9.9" {
+		t.Errorf("CLIVersion = %q，期望 9.9.9", m.CLIVersion)
+	}
+	for _, name := range []string{"hyperframes-animation", "hyperframes-core"} {
+		if m.Skills[name] == "" {
+			t.Errorf("来源记录缺少技能 %s：%v", name, m.Skills)
+		}
+	}
+	if len(m.Skills) != 2 {
+		t.Errorf("来源记录应当只覆盖上游技能，实际 %v", m.Skills)
+	}
+}
+
+// TestUpstreamManifestHashTracksContent 是上一条的配套：记录里的哈希必须
+// 真的跟着内容走。只断言"字段非空"挡不住把常量字符串写进去这种实现。
+func TestUpstreamManifestHashTracksContent(t *testing.T) {
+	binDir := fakeToolchain(t, []string{"hyperframes-core"})
+	project := t.TempDir()
+	opts := Options{
+		ProjectDir: project,
+		Version:    "9.9.9",
+		Env:        map[string]string{"PATH": binDir, "HOME": t.TempDir()},
+		Output:     &bytes.Buffer{},
+	}
+	if _, err := Install(context.Background(), opts); err != nil {
+		t.Fatal(err)
+	}
+	first, err := ReadManifest(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	skill := filepath.Join(project, SkillsSubdir, "hyperframes-core", manifestFile)
+	body, err := os.ReadFile(skill)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(skill, append(body, []byte("\n上游改了一行\n")...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	changed, err := SkillDigest(filepath.Join(project, SkillsSubdir, "hyperframes-core"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed == first.Skills["hyperframes-core"] {
+		t.Error("技能内容改了，摘要却没变——哈希没有覆盖文件内容")
+	}
+	if err := os.WriteFile(skill, body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	restored, err := SkillDigest(filepath.Join(project, SkillsSubdir, "hyperframes-core"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if restored != first.Skills["hyperframes-core"] {
+		t.Error("内容还原后摘要没有回到原值——哈希不稳定")
+	}
+}
