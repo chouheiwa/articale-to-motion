@@ -3,8 +3,8 @@ package hyperframes
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -43,7 +43,7 @@ func TestCopySkillsMovesWholeTree(t *testing.T) {
 	})
 	writeSkill(t, source, "hyperframes-core", nil)
 
-	result, err := copySkills(source, dest, nil)
+	result, err := copySkills([]string{source}, dest, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestCopySkillsPreservesExecutableBit(t *testing.T) {
 	if err := os.WriteFile(script, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := copySkills(source, dest, nil); err != nil {
+	if _, err := copySkills([]string{source}, dest, nil); err != nil {
 		t.Fatal(err)
 	}
 	info, err := os.Stat(filepath.Join(dest, "hyperframes-cli", "scripts", "render.sh"))
@@ -96,7 +96,7 @@ func TestCopySkillsProtectsBuiltinSkills(t *testing.T) {
 
 	writeSkill(t, dest, "text-to-lottie", map[string]string{manifestFile: "本仓库 fork 版本\n"})
 
-	result, err := copySkills(source, dest, map[string]bool{"text-to-lottie": true})
+	result, err := copySkills([]string{source}, dest, map[string]bool{"text-to-lottie": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func TestCopySkillsReplacesRatherThanMerges(t *testing.T) {
 	writeSkill(t, source, "hyperframes-animation", map[string]string{"rules/new.md": "新版"})
 	writeSkill(t, dest, "hyperframes-animation", map[string]string{"rules/removed-upstream.md": "旧版残留"})
 
-	if _, err := copySkills(source, dest, nil); err != nil {
+	if _, err := copySkills([]string{source}, dest, nil); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(dest, "hyperframes-animation", "rules", "removed-upstream.md")); err == nil {
@@ -140,7 +140,7 @@ func TestCopySkillsIgnoresNonSkillDirectories(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(source, "README.md"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	result, err := copySkills(source, dest, nil)
+	result, err := copySkills([]string{source}, dest, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestCopySkillsFailsWhenNothingInstalled(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(source, "README.md"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := copySkills(source, dest, nil); err == nil {
+	if _, err := copySkills([]string{source}, dest, nil); err == nil {
 		t.Error("产物里没有技能时应当报错，而不是静默成功")
 	}
 }
@@ -171,93 +171,23 @@ func TestCopyTreeRejectsSymlinks(t *testing.T) {
 	if err := os.Symlink("/somewhere/else", filepath.Join(source, "linked", "ref")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := copySkills(source, dest, nil); err == nil {
+	if _, err := copySkills([]string{source}, dest, nil); err == nil {
 		t.Error("含符号链接的技能应当报错，而不是搬进去一个失效链接")
 	}
 }
 
 // TestInstallerEnvIsolatesHomeButKeepsNpmReachable 锁住这次改动的核心取舍。
-func TestInstallerEnvIsolatesHomeButKeepsNpmReachable(t *testing.T) {
-	env := map[string]string{"HOME": "/Users/someone", "PATH": "/usr/bin", "HTTPS_PROXY": "http://proxy:8080"}
-	got := installerEnv("/tmp/am-hyperframes-123", "/opt/node/bin", env)
-
-	if got["HOME"] != "/tmp/am-hyperframes-123" {
-		t.Errorf("HOME 没有被隔离：%s", got["HOME"])
-	}
-	// 不接缓存的话每个项目都要重新下载整包，几百 MB 的临时占用还拿不到复用。
-	if got["npm_config_cache"] != "/Users/someone/.npm" {
-		t.Errorf("npm 缓存没有接回真实位置：%s", got["npm_config_cache"])
-	}
-	// 不接 .npmrc 的话私有 registry、代理和鉴权全部丢失，公司内网直接装不上。
-	if got["npm_config_userconfig"] != "/Users/someone/.npmrc" {
-		t.Errorf("npm 用户配置没有接回真实位置：%s", got["npm_config_userconfig"])
-	}
-	if got["HTTPS_PROXY"] != "http://proxy:8080" {
-		t.Error("其余环境变量应当原样沿用")
-	}
-	if !strings.HasPrefix(got["PATH"], "/opt/node/bin") {
-		t.Errorf("真实 node 目录应当在 PATH 首位：%s", got["PATH"])
-	}
-}
-
-// TestInstallerEnvRespectsExplicitNpmSettings：用户显式配过就不要覆盖。
-func TestInstallerEnvRespectsExplicitNpmSettings(t *testing.T) {
-	env := map[string]string{
-		"HOME":                  "/Users/someone",
-		"npm_config_cache":      "/mnt/shared/npm-cache",
-		"npm_config_userconfig": "/etc/npmrc",
-	}
-	got := installerEnv("/tmp/x", "", env)
-	if got["npm_config_cache"] != "/mnt/shared/npm-cache" {
-		t.Errorf("覆盖了用户显式设置的缓存：%s", got["npm_config_cache"])
-	}
-	if got["npm_config_userconfig"] != "/etc/npmrc" {
-		t.Errorf("覆盖了用户显式设置的 npmrc：%s", got["npm_config_userconfig"])
-	}
-}
-
-// --- 用假 node/npx 走完整条 Install 路径 ---
-
-func fakeToolchain(t *testing.T, skills []string) (binDir string) {
-	t.Helper()
-	if runtime.GOOS == "windows" {
-		t.Skip("测试用 sh 脚本模拟工具链")
-	}
-	binDir = t.TempDir()
-	// 假 node：只回答 process.execPath，指向自己所在目录。
-	node := filepath.Join(binDir, "node")
-	if err := os.WriteFile(node, []byte("#!/bin/sh\nprintf '%s' '"+node+"'\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	// 假 npx：模拟上游安装器，往 $HOME/.agents/skills 写技能。
-	var body strings.Builder
-	// 用绝对路径：安装器跑在受控 PATH 下，/bin 不在里面。
-	body.WriteString("#!/bin/sh\nset -eu\n/bin/mkdir -p \"$HOME/.agents/skills\"\n")
-	for _, name := range skills {
-		fmt.Fprintf(&body, "/bin/mkdir -p \"$HOME/.agents/skills/%s\"\n", name)
-		fmt.Fprintf(&body, "printf '# %s\\n' > \"$HOME/.agents/skills/%s/SKILL.md\"\n", name, name)
-	}
-	body.WriteString("printf 'installed\\n'\n")
-	if err := os.WriteFile(filepath.Join(binDir, "npx"), []byte(body.String()), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return binDir
-}
-
 func TestInstallWritesIntoProjectAndNotHome(t *testing.T) {
-	binDir := fakeToolchain(t, []string{"hyperframes-animation", "hyperframes-core"})
+	url, commit := fixtureRepo(t, "v9.9.9", []string{"hyperframes-animation"}, []string{"hyperframes-core"})
 	project := t.TempDir()
 	home := t.TempDir()
-
-	var out bytes.Buffer
 	result, err := Install(context.Background(), Options{
-		ProjectDir: project,
-		Version:    "0.8.1",
-		Env:        map[string]string{"PATH": binDir, "HOME": home},
-		Output:     &out,
+		ProjectDir: project, Version: "9.9.9", RepoURL: url, ExpectCommit: commit, ExpectSkills: 2,
+		Env:    map[string]string{"PATH": os.Getenv("PATH"), "HOME": home},
+		Output: &bytes.Buffer{},
 	})
 	if err != nil {
-		t.Fatalf("安装失败：%v\n%s", err, out.String())
+		t.Fatalf("安装失败：%v", err)
 	}
 	if len(result.Installed) != 2 {
 		t.Errorf("应当装入 2 个技能：%v", result.Installed)
@@ -267,20 +197,20 @@ func TestInstallWritesIntoProjectAndNotHome(t *testing.T) {
 			t.Errorf("技能 %s 没有落进项目：%v", name, err)
 		}
 	}
-	// 核心保证：用户 HOME 一个字节都没动。
+	// 核心保证：用户 HOME 一个字节都没动。git 会读 ~/.gitconfig、写 ~/.gitcredentials，
+	// 所以这条断言在换成 git 之后仍然承重，不是历史遗留。
 	if entries, err := os.ReadDir(home); err == nil && len(entries) != 0 {
 		t.Errorf("用户 HOME 被写入了：%v", entries)
 	}
 }
 
 func TestInstallLeavesNoTempDirectoryBehind(t *testing.T) {
-	binDir := fakeToolchain(t, []string{"hyperframes-core"})
+	url, commit := fixtureRepo(t, "v9.9.9", []string{"hyperframes-core"}, nil)
 	before, _ := filepath.Glob(filepath.Join(os.TempDir(), "am-hyperframes-*"))
 	if _, err := Install(context.Background(), Options{
-		ProjectDir: t.TempDir(),
-		Version:    "0.8.1",
-		Env:        map[string]string{"PATH": binDir, "HOME": t.TempDir()},
-		Output:     &bytes.Buffer{},
+		ProjectDir: t.TempDir(), Version: "9.9.9", RepoURL: url, ExpectCommit: commit, ExpectSkills: 1,
+		Env:    map[string]string{"PATH": os.Getenv("PATH")},
+		Output: &bytes.Buffer{},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -296,12 +226,12 @@ func TestInstallRejectsMissingVersionAndToolchain(t *testing.T) {
 	}
 	_, err := Install(context.Background(), Options{
 		ProjectDir: t.TempDir(),
-		Version:    "0.8.1",
+		Version:    "9.9.9",
 		Env:        map[string]string{"PATH": t.TempDir()},
 		Output:     &bytes.Buffer{},
 	})
 	if err == nil {
-		t.Fatal("PATH 里没有 node 应当报错")
+		t.Fatal("PATH 里没有 git 应当报错")
 	}
 	// 退出码 127 靠这个前缀判定。
 	if !strings.Contains(err.Error(), "缺少必需工具") {
@@ -309,23 +239,15 @@ func TestInstallRejectsMissingVersionAndToolchain(t *testing.T) {
 	}
 }
 
-func TestInstallReportsInstallerFailure(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("测试用 sh 脚本")
-	}
-	binDir := t.TempDir()
-	node := filepath.Join(binDir, "node")
-	os.WriteFile(node, []byte("#!/bin/sh\nprintf '%s' '"+node+"'\n"), 0o755)
-	os.WriteFile(filepath.Join(binDir, "npx"), []byte("#!/bin/sh\necho boom >&2\nexit 3\n"), 0o755)
-
+func TestInstallReportsCloneFailure(t *testing.T) {
 	_, err := Install(context.Background(), Options{
-		ProjectDir: t.TempDir(),
-		Version:    "0.8.1",
-		Env:        map[string]string{"PATH": binDir, "HOME": t.TempDir()},
-		Output:     &bytes.Buffer{},
+		ProjectDir: t.TempDir(), Version: "9.9.9",
+		RepoURL: "file://" + filepath.Join(t.TempDir(), "does-not-exist"),
+		Env:     map[string]string{"PATH": os.Getenv("PATH")},
+		Output:  &bytes.Buffer{},
 	})
-	if err == nil || !strings.Contains(err.Error(), "0.8.1") {
-		t.Errorf("安装器失败应当报错并点名版本：%v", err)
+	if err == nil || !strings.Contains(err.Error(), "v9.9.9") {
+		t.Errorf("克隆失败应当报错并点名 tag：%v", err)
 	}
 }
 
@@ -339,13 +261,12 @@ func TestInstallReportsInstallerFailure(t *testing.T) {
 // 这条记录把"这个项目到底装到了哪一版技能"从无从查证变成可比对的事实：
 // 两个项目的 manifest 一比就知道差在哪个技能上。
 func TestInstallRecordsUpstreamManifest(t *testing.T) {
-	binDir := fakeToolchain(t, []string{"hyperframes-animation", "hyperframes-core"})
+	url, commit := fixtureRepo(t, "v9.9.9", []string{"hyperframes-animation"}, []string{"hyperframes-core"})
 	project := t.TempDir()
 	if _, err := Install(context.Background(), Options{
-		ProjectDir: project,
-		Version:    "9.9.9",
-		Env:        map[string]string{"PATH": binDir, "HOME": t.TempDir()},
-		Output:     &bytes.Buffer{},
+		ProjectDir: project, Version: "9.9.9", RepoURL: url, ExpectCommit: commit, ExpectSkills: 2,
+		Env:    map[string]string{"PATH": os.Getenv("PATH")},
+		Output: &bytes.Buffer{},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -369,13 +290,12 @@ func TestInstallRecordsUpstreamManifest(t *testing.T) {
 // TestUpstreamManifestHashTracksContent 是上一条的配套：记录里的哈希必须
 // 真的跟着内容走。只断言"字段非空"挡不住把常量字符串写进去这种实现。
 func TestUpstreamManifestHashTracksContent(t *testing.T) {
-	binDir := fakeToolchain(t, []string{"hyperframes-core"})
+	url, commit := fixtureRepo(t, "v9.9.9", []string{"hyperframes-core"}, nil)
 	project := t.TempDir()
 	opts := Options{
-		ProjectDir: project,
-		Version:    "9.9.9",
-		Env:        map[string]string{"PATH": binDir, "HOME": t.TempDir()},
-		Output:     &bytes.Buffer{},
+		ProjectDir: project, Version: "9.9.9", RepoURL: url, ExpectCommit: commit, ExpectSkills: 1,
+		Env:    map[string]string{"PATH": os.Getenv("PATH")},
+		Output: &bytes.Buffer{},
 	}
 	if _, err := Install(context.Background(), opts); err != nil {
 		t.Fatal(err)
@@ -408,5 +328,114 @@ func TestUpstreamManifestHashTracksContent(t *testing.T) {
 	}
 	if restored != first.Skills["hyperframes-core"] {
 		t.Error("内容还原后摘要没有回到原值——哈希不稳定")
+	}
+}
+
+// fixtureRepo 造一个本地上游仓库：skills/ 与 .agents/skills/ 两处各放几个技能，
+// 打上 tag。测试用 file:// 克隆它，走的是与真实安装完全相同的代码路径，只是
+// 换了个源——比伪造 git 二进制更接近真实，也完全离线。
+func fixtureRepo(t *testing.T, tag string, topSkills, agentSkills []string) (url, commit string) {
+	t.Helper()
+	repo := t.TempDir()
+	run := func(args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repo
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t",
+			"GIT_COMMITTER_EMAIL=t@t", "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	run("init", "-q", "-b", "main")
+	for _, name := range topSkills {
+		writeSkill(t, filepath.Join(repo, "skills"), name, nil)
+	}
+	for _, name := range agentSkills {
+		writeSkill(t, filepath.Join(repo, ".agents", "skills"), name, nil)
+	}
+	// 两处各放一个不是技能的条目，验证筛选按 SKILL.md 而不是"目录就算"。
+	for dir, name := range map[string]string{
+		filepath.Join(repo, "skills"):            "notes.test.mjs",
+		filepath.Join(repo, ".agents", "skills"): "README.md",
+	} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("//\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run("add", "-A")
+	run("commit", "-qm", "fixture")
+	run("tag", tag)
+	return "file://" + repo, run("rev-parse", "HEAD")
+}
+
+// TestInstallClonesPinnedCommit 是可复现安装的主用例。
+//
+// 上游 `hyperframes skills` 只会 git clone 仓库默认分支，没有任何指定 ref 的
+// 口子——同一个 CLI 版本号隔几天装出来的技能可以不同。这里改成 am 自己按
+// tag 克隆，技能来源因此完全由 PinnedVersion + PinnedSkillsCommit 决定。
+func TestInstallClonesPinnedCommit(t *testing.T) {
+	url, commit := fixtureRepo(t, "v9.9.9", []string{"alpha", "beta"}, []string{"gamma"})
+	project := t.TempDir()
+	result, err := Install(context.Background(), Options{
+		ProjectDir: project, Version: "9.9.9", RepoURL: url, ExpectCommit: commit,
+		ExpectSkills: 3, Env: map[string]string{"PATH": os.Getenv("PATH")},
+		Output: &bytes.Buffer{},
+	})
+	if err != nil {
+		t.Fatalf("安装失败：%v", err)
+	}
+	if got := strings.Join(result.Installed, ","); got != "alpha,beta,gamma" {
+		t.Errorf("装入的技能 = %q，期望 alpha,beta,gamma（两处来源合并，非技能条目剔除）", got)
+	}
+	m, err := ReadManifest(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.UpstreamCommit != commit {
+		t.Errorf("来源记录的 commit = %q，期望 %q", m.UpstreamCommit, commit)
+	}
+}
+
+// TestInstallRefusesMovedTag 守住"完全可复现"这句承诺本身。
+//
+// tag 是可以被 force-push 移动的。移动之后按 tag 克隆会静默拿到另一份技能，
+// 版本号却一个字没变——正是这次改造要消除的失败模式。所以解析出的 commit
+// 与固定值不符时必须硬失败，而不是照装。
+func TestInstallRefusesMovedTag(t *testing.T) {
+	url, commit := fixtureRepo(t, "v9.9.9", []string{"alpha"}, nil)
+	_, err := Install(context.Background(), Options{
+		ProjectDir: t.TempDir(), Version: "9.9.9", RepoURL: url,
+		ExpectCommit: strings.Repeat("0", 40),
+		Env:          map[string]string{"PATH": os.Getenv("PATH")},
+		Output:       &bytes.Buffer{},
+	})
+	if err == nil {
+		t.Fatal("commit 对不上必须失败")
+	}
+	if !strings.Contains(err.Error(), commit) {
+		t.Errorf("错误信息应报出实际 commit 便于排查，实际：%v", err)
+	}
+}
+
+// TestInstallRefusesUnexpectedSkillCount 让"升级时顺手核对"这件事自己会响。
+//
+// 上游哪天把 skills/ 挪个位置，按目录拼装的逻辑会静默少装一批技能——渲染
+// agent 找不到技能不会报错，只会自己发明写法。数量对不上就拒装。
+func TestInstallRefusesUnexpectedSkillCount(t *testing.T) {
+	url, commit := fixtureRepo(t, "v9.9.9", []string{"alpha", "beta"}, nil)
+	_, err := Install(context.Background(), Options{
+		ProjectDir: t.TempDir(), Version: "9.9.9", RepoURL: url, ExpectCommit: commit,
+		ExpectSkills: 26, Env: map[string]string{"PATH": os.Getenv("PATH")},
+		Output: &bytes.Buffer{},
+	})
+	if err == nil || !strings.Contains(err.Error(), "26") {
+		t.Fatalf("技能数量对不上必须失败并报出期望值，实际：%v", err)
 	}
 }

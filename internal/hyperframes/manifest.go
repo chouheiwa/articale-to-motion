@@ -30,8 +30,11 @@ const ManifestSchema = "hyperframes-upstream/v1"
 // 它们的内容由仓库自身管，不属于上游来源问题。
 type Manifest struct {
 	Schema string `json:"schema"`
-	// CLIVersion 是安装时使用的上游 CLI 版本，即 PinnedVersion。
+	// CLIVersion 是安装时使用的上游版本，即 PinnedVersion。
 	CLIVersion string `json:"cliVersion"`
+	// UpstreamCommit 是技能所取自的上游 commit。版本号本身不足以还原技能
+	// 内容（上游安装器不认 ref），这个 commit 才是可复现的凭据。
+	UpstreamCommit string `json:"upstreamCommit"`
 	// Skills 是技能名到该技能目录摘要的映射。
 	Skills map[string]string `json:"skills"`
 }
@@ -82,9 +85,9 @@ func SkillDigest(dir string) (string, error) {
 }
 
 // WriteManifest 把本次安装的上游技能来源记录写进项目。
-func WriteManifest(projectDir, cliVersion string, installed []string) error {
+func WriteManifest(projectDir, cliVersion, commit string, installed []string) error {
 	skillsDir := filepath.Join(projectDir, filepath.FromSlash(SkillsSubdir))
-	m := Manifest{Schema: ManifestSchema, CLIVersion: cliVersion, Skills: map[string]string{}}
+	m := Manifest{Schema: ManifestSchema, CLIVersion: cliVersion, UpstreamCommit: commit, Skills: map[string]string{}}
 	for _, name := range installed {
 		digest, err := SkillDigest(filepath.Join(skillsDir, name))
 		if err != nil {

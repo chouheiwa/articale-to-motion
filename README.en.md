@@ -38,11 +38,19 @@ Non-interactive environments (CI, pipes) must pass `--canvas` explicitly; there 
 
 Skills go into the project rather than `$HOME` because that is the only way projects stop clobbering each other: the upstream installer only honours `homedir`, so a machine has exactly one copy — with two projects pinned to different versions, whichever was initialized last wins. The install never writes to your HOME; the upstream installer runs in a temporary directory outside the project and its output is moved in.
 
-#### What the pin does and does not cover
+#### Why the skill install bypasses the upstream installer
 
-**The pinned version fixes the CLI binary, not the skill content.** Upstream `hyperframes skills` shallow-clones the repository's default branch and takes `skills/` from it; the installer offers no way to name a tag or commit. Installing with `hyperframes@0.8.1` and `hyperframes@0.8.14` on the same machine yields byte-identical skill trees, both matching whatever `main` held that day — so running `am init` weeks apart can produce different skills while the version string never changes.
+Upstream `hyperframes skills` shallow-clones the repository's **default branch** and takes the skills from it; it offers no way to name a tag or commit. Installing with `hyperframes@0.8.1` and `hyperframes@0.8.14` on the same machine yields byte-identical trees, both matching whatever `main` held that day — the version string pins the CLI binary, while skill content (which drives the rendered motion) drifts with upstream trunk.
 
-`am init` therefore records what it actually installed in `.agents/skills/hyperframes-upstream.json`: the CLI version plus a content digest per upstream skill directory. When two projects behave differently, diff those records instead of eyeballing rendered frames. Skills travel with the project (commit them), so a project is stable once initialized; the drift only shows up between newly initialized projects.
+So `am init` does not call it. It shallow-clones the tag `v<version>` itself and takes every directory containing `SKILL.md` from `skills/` and `.agents/skills/`. On the same commit this selection is byte-identical to the upstream installer's output. Three gates keep the result deterministic:
+
+- **Commit check** — tags can be force-moved; if the resolved commit differs from `PinnedSkillsCommit`, the install is refused.
+- **Count check** — if upstream relocates a directory, directory-based assembly would silently install a partial set, and a renderer that cannot find a skill does not fail, it invents its own approach. A count other than `PinnedSkillsCount` is refused.
+- **Environment isolation** — `GIT_LFS_SKIP_SMUDGE=1` (the repo has LFS media; machines with git-lfs would materialize real files while others keep pointers, so the same commit would yield different trees) and `GIT_CONFIG_GLOBAL/SYSTEM=/dev/null` (user filters and autocrlf must not affect the checkout).
+
+The result is recorded in `.agents/skills/hyperframes-upstream.json`: version, upstream commit, and a content digest per skill directory. To move the pin, change `PinnedVersion` / `PinnedSkillsCommit` / `PinnedSkillsCount` in `internal/hyperframes`.
+
+Installing skills requires `git` (no longer Node/npx); use `--skip-hyperframes` for offline or CI environments.
 
 Initialization also writes the binary's built-in skill tree to the project's `.agents/skills/`, where the renderer discovers it automatically:
 

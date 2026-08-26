@@ -225,10 +225,10 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 初始化谁说了算。装进项目还让项目自包含——整个目录拷到另一台机器就能渲染。
 安装全程不写用户 HOME：上游安装器在项目外的临时目录里运行，产物再搬进项目。
 
-版本固定的是 CLI 二进制，不是技能内容：上游安装器 git clone 仓库默认分支
-取 skills/，没有指定 tag 的口子，隔一段时间再初始化拿到的技能可能已经变了。
-安装后会在 .agents/skills/` + hyperframes.ManifestFile + ` 里记下这次装到了什么
-（CLI 版本 + 每个上游技能的内容摘要），供跨项目比对。
+技能不走上游安装器：它只克隆仓库默认分支，没有指定 tag 的口子，同一个版本号
+隔几天装出来的技能可以不同。am 自己按 tag 浅克隆并校验 commit 与技能数量，
+两次初始化的技能树逐字节一致。安装后在 .agents/skills/` + hyperframes.ManifestFile + `
+里记下版本、上游 commit 与每个技能的内容摘要。安装技能需要 git。
 
 上游技能与内置技能重名时保留内置版本并告警，不会覆盖本仓库 fork 过的技能。
 

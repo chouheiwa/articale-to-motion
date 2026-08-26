@@ -34,7 +34,7 @@ go vet ./...
 
 官方技能不能直接跑 `npx hyperframes skills` 装——上游安装器只认 `homedir()`，没有任何选项能改落点（`skills update --dir` 的帮助原文写着 "scopes the prune, not the install"）。装在机器级会让项目之间互相覆盖：一台机器只有一份技能，项目 A 与项目 B 固定不同版本时谁后初始化谁说了算。
 
-注意版本固定的边界：它固定的是 CLI 二进制。上游安装器 `git clone` 仓库默认分支取 `skills/`，没有指定 ref 的口子，技能内容会随上游 `main` 漂移而版本号不变（实测 0.8.1 与 0.8.14 装出来逐字节相同）。`internal/hyperframes` 因此在安装后写一份 `hyperframes-upstream.json` 记录每个上游技能的内容摘要，见 `manifest.go`。
+更要命的是上游安装器根本给不了可复现性：它 `git clone` 仓库默认分支取技能，没有指定 ref 的口子，技能内容随上游 `main` 漂移而版本号不变（实测 0.8.1 与 0.8.14 装出来逐字节相同）。所以 `internal/hyperframes` 不调用它，改为自己按 tag 浅克隆并校验 commit 与技能数量，见 `PinnedSkillsCommit` / `PinnedSkillsCount` 的注释；安装后写一份 `hyperframes-upstream.json` 记录 commit 与每个技能的内容摘要，见 `manifest.go`。
 
 `internal/hyperframes` 的做法是在项目外开一个临时 HOME 让上游安装器照常工作，再把产出搬进项目。三个细节是承重的，改动前先读那里的注释：
 

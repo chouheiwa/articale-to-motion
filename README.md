@@ -34,15 +34,23 @@ cd my-video
 
 非交互环境（CI、管道）必须显式传入 `--canvas`，不会静默取默认值。
 
-`am init` 不覆盖内容不同的已有文件。默认联网安装固定版本 0.8.14 的 HyperFrames 官方技能到项目的 `.agents/skills/`，与随二进制下发的 `text-to-lottie`、`algorithmic-art` 同处一个目录；离线或 CI 环境可使用 `--skip-hyperframes`。
+`am init` 不覆盖内容不同的已有文件。默认联网安装固定版本 0.8.14 的 HyperFrames 官方技能到项目的 `.agents/skills/`，与随二进制下发的 `text-to-lottie`、`algorithmic-art` 同处一个目录；安装依赖 `git`，离线或 CI 环境可使用 `--skip-hyperframes`。
 
 技能装进项目而不是 HOME，是因为项目之间互不覆盖只有这样才成立：上游安装器只认 `homedir`，一台机器上只有一份技能，项目 A 与项目 B 固定不同版本时谁后初始化谁说了算。安装全程不写用户 HOME——上游安装器在项目外的临时目录里运行，产物再搬进项目。
 
-#### HyperFrames 版本固定的边界
+#### 技能安装为什么不走上游安装器
 
-**这个版本号固定的是 CLI 二进制，不是技能内容。** 上游 `hyperframes skills` 直接 `git clone` 仓库的默认分支再取 `skills/`，安装器没有任何指定 tag 或 commit 的口子。实测把同一台机器上的 `hyperframes@0.8.1` 与 `hyperframes@0.8.14` 各装一遍，产出的 26 个技能逐字节相同，且都等于当天 `main` 的状态——也就是说隔一段时间再跑 `am init`，拿到的技能可能已经变了，而版本号一个字都没动。
+上游 `hyperframes skills` 直接 `git clone` 仓库的**默认分支**再取技能，没有任何指定 tag 或 commit 的口子。实测同一台机器上 `hyperframes@0.8.1` 与 `hyperframes@0.8.14` 各装一遍，产出的 26 个技能逐字节相同、都等于当天 `main` 的状态——版本号固定的只是 CLI 二进制，技能内容会随上游主干漂移，而技能内容直接决定成片动效。
 
-所以 `am init` 会在 `.agents/skills/hyperframes-upstream.json` 里记下这次到底装到了什么：CLI 版本，加上每个上游技能目录的内容摘要。两个项目动效对不上时，比这份记录就知道差在哪个技能，不必靠肉眼比成片。技能本身随项目走（建议连同项目一起进版本库），所以单个项目一旦初始化完就是稳定的；漂移只发生在新初始化的项目之间。
+所以 `am init` 不调用它，改为自己按 tag `v<版本>` 浅克隆上游仓库，从 `skills/` 与 `.agents/skills/` 两处取出含 `SKILL.md` 的目录。实测这套筛选在同一个 commit 上与上游安装器的产出**逐字节相同**。三道闸保证结果确定：
+
+- **commit 校验**：tag 可以被 force-push 移动，解析出的 commit 与 `PinnedSkillsCommit` 不符就拒装。
+- **数量校验**：上游哪天挪动目录，按目录拼装会静默少装一批技能，而渲染 agent 找不到技能不会报错、只会自己发明写法。数量与 `PinnedSkillsCount` 不符就拒装。
+- **环境隔离**：`GIT_LFS_SKIP_SMUDGE=1`（仓库里有 LFS 媒体文件，装了 git-lfs 的机器会还原成真文件、没装的留下指针，同一 commit 在两台机器上得到不同的树）、`GIT_CONFIG_GLOBAL/SYSTEM=/dev/null`（用户的 filter、autocrlf 不能参与检出）。
+
+`am init` 还会把结果写进 `.agents/skills/hyperframes-upstream.json`：版本、上游 commit，以及每个技能目录的内容摘要。升级固定版本时改 `internal/hyperframes` 里的 `PinnedVersion` / `PinnedSkillsCommit` / `PinnedSkillsCount` 三个常量。
+
+技能安装依赖 `git`（不再依赖 Node/npx）；离线或 CI 用 `--skip-hyperframes` 跳过。
 
 初始化还会把二进制内置的技能树写到项目的 `.agents/skills/`，渲染工具会自动发现：
 
