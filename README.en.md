@@ -176,3 +176,80 @@ go vet ./...
 ArticleToMotion is licensed under the [Apache License 2.0](./LICENSE). HyperFrames is an independent Apache-2.0 project installed at its pinned release by `am init`.
 
 The `references/` of the built-in `text-to-lottie` skill are trimmed from [diffusionstudio/lottie](https://github.com/diffusionstudio/lottie) (MIT). The copyright notice and the record of what was kept, dropped, and changed live in `LICENSE` and `ATTRIBUTION.md` under `assets/shared/.agents/skills/text-to-lottie/`.
+
+## Optional solo song explainers
+
+Speech remains the default. `am init DIR --canvas vertical-3x4 --delivery song`
+creates `song.yaml`; `am song init` adds song assets to an existing project without
+overwriting different content. Song + cast and mixed speech/song are not supported.
+`am run` selects the song workflow and appends its contract to explicit prompts.
+
+1. Run `am song providers`, choose a platform with `am song configure --provider PLATFORM`,
+   set the displayed environment variable locally, edit `lyrics.txt`, then run `am song doctor`.
+2. Run `am song generate` (two serial candidates), or
+   `am song import song.mp3 --lyrics lyrics.txt`.
+3. Stop for the user to listen and run `am song select CANDIDATE`.
+4. Run `am song prepare`. Review lyrics, terminology and timing; correct the draft
+   if needed, then import with `am song prepare --timeline FILE --reviewed`.
+5. Create integer-frame scenes covering the entire audio, then run
+   `am song cues scenes/` and `am validate song`.
+6. Run `am scene run-all scenes/ --song-timeline production/song/timeline.json`,
+   inspect rendered frames, and concatenate the silent master.
+7. Run `am song mux production/silent-master.mp4 --out final.mp4`.
+
+For browser-based generation without API credentials, run
+`am song configure --provider manual`. The song workflow writes lyrics and style,
+then `am song handoff` displays copyable text and records `waiting_for_audio` in
+`production/song/web-handoff.json`. Pause for the user to generate/download audio
+in their chosen website and provide an attachment or a local file path. Resume in
+the same conversation or with another `am run`; no idle process is required.
+`am song receive AUDIO` imports with the handed-off lyric snapshot and records the
+candidate, without automatically selecting or aligning it. Repeated receipt of the
+same file reuses the candidate. Changed lyrics require `handoff --refresh` and a new
+website generation; if the website changed the lyrics, explicitly import with
+`am song import AUDIO --lyrics FINAL_LYRICS`. Manual `generate` only hands off;
+media/Python dependencies are needed later for receiving/alignment.
+
+`am song providers [PLATFORM]` provides signup/key links, access requirements and
+redacted credential status without a project or network call. `configure` updates
+platform fields while preserving lyrics, style and YAML comments. Supported hosted
+providers are `bailian` (`DASHSCOPE_API_KEY`, Beijing workspace via `--workspace`,
+Fun-Music invitation, ordinary pay-as-you-go key; currently outside Token Plan),
+`elevenlabs` (`ELEVENLABS_API_KEY`, paid Music API access), `mureka` (`MUREKA_API_KEY`, pinned `mureka-9.5`, separate API credits),
+`lyria` (`GEMINI_API_KEY`, `lyria-3.5`, Gemini API model access/billing),
+and `fal` (`FAL_KEY`,
+hosted `fal-ai/ace-step`, no deployment). Hosted `doctor` checks only key presence.
+Bailian ignores style prompts when lyrics are supplied; duration/BPM controls are
+not sent. ElevenLabs uses a fixed-lyrics composition plan. fal uses its own queue
+protocol, distinct from native ACE-Step. Keys stay in the process environment;
+explicitly append their names to `AM_PASSTHROUGH_ENV` for nested `am run` calls.
+No configuration command makes paid requests or stores keys in project files.
+Mureka explicitly requests one song per candidate, persists the task ID and resumes
+polling without resubmission. Lyrics are limited to 5000 characters and the combined
+style/instructions to 1024. Lyria uses synchronous Interactions with `store=false`
+and expects one complete inline MP3 track; ambiguous calls are not retried. Duration
+and BPM are creative hints. Neither provider overwrites source lyrics or reviewed
+timing with model-generated text or timestamps.
+
+MiniMax uses existing `mmx` authentication and defaults to `music-3.0`; some accounts
+return HTTP 410 because music access is closed to new users. ACE-Step
+uses your remote `endpoint`, defaults to `acestep-v15-turbo`, and reads credentials
+only from `ACESTEP_API_KEY`. Nested calls require explicit
+`AM_PASSTHROUGH_ENV=ACESTEP_API_KEY`; never put credentials in project files.
+Identical requests reuse candidates. Known ACE-Step/fal/Mureka tasks resume polling/download;
+ambiguous submissions are not retried. A new `--batch NAME` explicitly creates new
+requests. Providers are never changed automatically.
+
+Install Xingyu v0.6.1 (commit `e647b2f3480a9f46a027352713c8e2072d88450d`, alignment
+extra) and librosa 0.11.0 in a separate Python 3.11–3.13 environment. Set `python`
+in `song.yaml` to its interpreter. Follow Xingyu's model setup instructions;
+`am init` does not install Python packages or model weights. Missing beat analysis
+falls back to lyric-driven animation. Estimated words are excluded from word timing.
+Raw alignment reports and corrections remain under `production/song/alignment/`.
+Review actual sung facts and terminology; sample line-onset error target is ≤200 ms.
+
+The complete audio includes intro, interludes and outro. Total frames are rounded
+up; only the final fraction of a frame is padded with silence. No audio stretching,
+extra BGM or speech ducking is applied. Changed song dependencies reject stale cues;
+regenerate cues and explicitly rerender with `--force`. CI uses mock services;
+real audio and visual quality require separate acceptance evidence.

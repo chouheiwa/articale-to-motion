@@ -24,12 +24,24 @@ type asset struct {
 // 每棵源树的内部路径就是它在项目根下的目标路径，不做任何改写。多棵树写入同一
 // 路径视为素材组织错误并直接报错——静默覆盖会让「哪棵树赢」取决于参数顺序。
 func Initialize(target string, sources ...fs.FS) (InitResult, error) {
+	return InitializeWithFiles(target, nil, sources...)
+}
+
+// InitializeWithFiles atomically adds optional mode configuration to the scaffold.
+func InitializeWithFiles(target string, extra map[string][]byte, sources ...fs.FS) (InitResult, error) {
 	target, _ = filepath.Abs(target)
 	if err := os.MkdirAll(target, 0o755); err != nil {
 		return InitResult{}, fmt.Errorf("创建项目目录: %w", err)
 	}
 	var assets []asset
 	seen := make(map[string]bool)
+	for name, body := range extra {
+		if !fs.ValidPath(name) {
+			return InitResult{}, fmt.Errorf("无效模板路径：%s", name)
+		}
+		assets = append(assets, asset{name: name, body: body})
+		seen[name] = true
+	}
 	for _, source := range sources {
 		err := fs.WalkDir(source, ".", func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {

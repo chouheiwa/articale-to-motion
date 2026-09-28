@@ -361,6 +361,12 @@ func TestBuildPromptInjectsEveryInstalledSkill(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, desc := range RegisteredSkills {
+		if desc.Name == SongExplainerSkillName {
+			if strings.Contains(prompt, desc.Name) {
+				t.Error("speech prompt includes song skill")
+			}
+			continue
+		}
 		if !strings.Contains(prompt, filepath.Join(skills, desc.Name)) {
 			t.Errorf("提示词里没有 %s 的本机路径", desc.Name)
 		}
@@ -380,6 +386,12 @@ func TestBuildPromptDegradesToSkillNamesWhenNothingInstalled(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, desc := range RegisteredSkills {
+		if desc.Name == SongExplainerSkillName {
+			if strings.Contains(prompt, desc.Name) {
+				t.Error("speech prompt includes song skill")
+			}
+			continue
+		}
 		if !strings.Contains(prompt, desc.Name) {
 			t.Errorf("降级后提示词里没有 %s", desc.Name)
 		}

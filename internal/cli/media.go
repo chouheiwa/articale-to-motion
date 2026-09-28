@@ -368,6 +368,9 @@ func newConcatCommand(stdout io.Writer, projectRoot *string) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := songOutputsCurrent(scenes, ""); err != nil {
+				return err
+			}
 			inputs := make([]concat.Input, 0, len(scenes))
 			for _, s := range scenes {
 				inputs = append(inputs, concat.Input{ID: s.ID, Path: s.OutputPath()})

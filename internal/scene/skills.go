@@ -83,7 +83,10 @@ type SkillDescriptor struct {
 
 // RegisteredSkills 是所有自动发现的技能注册表。
 // 新增技能只需在此追加一条，ResolveAllSkills 和 BuildPrompt 自动覆盖。
+const SongExplainerSkillName = "song-explainer"
+
 var RegisteredSkills = []SkillDescriptor{
+	{Name: SongExplainerSkillName, Source: SourceEmbedded, RequiredFiles: []string{skillManifestFile}, PromptSection: songExplainerPrompt},
 	{
 		Name:          AnimationSkillName,
 		Source:        SourceUpstream,
@@ -255,6 +258,9 @@ func ResolveAllSkills(renderer, sceneDir string, environ map[string]string) (map
 func skillPromptSections(resolved map[string]string) string {
 	var sections string
 	for _, desc := range RegisteredSkills {
+		if desc.Name == SongExplainerSkillName {
+			continue
+		}
 		dir := resolved[desc.Name]
 		sections += desc.PromptSection(dir)
 	}
@@ -412,4 +418,11 @@ func characterRigPrompt(skillsDir string) string {
 		"  （本机未能定位该技能目录，请使用你自身的技能加载机制载入。）\n"+
 		"- 没有角色的镜头忽略本段，不要自行引入角色。\n",
 		CastRequiredHeading, CharacterRigSkillName)
+}
+
+func songExplainerPrompt(dir string) string {
+	if dir == "" {
+		return "读取 song-explainer 技能，仅执行单镜头歌词驱动动画规则。\n"
+	}
+	return fmt.Sprintf("读取 %s，仅执行单镜头歌词驱动动画规则。\n", filepath.Join(dir, SongExplainerSkillName, skillManifestFile))
 }

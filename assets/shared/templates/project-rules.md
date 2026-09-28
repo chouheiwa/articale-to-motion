@@ -53,3 +53,13 @@
 - 先跑 `am archive --dry-run`。检出共享文件修改或 ignored 文件时立即停止，原样汇报并交给用户决定。
 - 不得为了让检查通过而删除文件、移动文件、改写 `.gitignore` 或重置工作区。
 - 不得删除项目分支或改写 Git 历史。
+
+## 歌曲讲解（仅 song.yaml 存在时）
+
+遵守 PROMPT-SONG.md 与内置 song-explainer 技能。先生成候选并停下来让用户试听
+选定；禁止代选。网页模式用 am song handoff 给出完整歌词和曲风并暂停，等待用户
+提供音频后用 am song receive 接收，不能把交接命令退出当成音频已生成。
+歌曲相关计算交给 am song prepare / cues，原始对齐报告保留。
+镜头仅使用 song-cues.json 的局部时间，禁止渲染器改写歌曲或全局时间轴。
+完整音频从零覆盖前奏到尾奏；普通节拍不当作重拍，估算字词不用于逐字同步。
+歌曲模式不执行 TTS、对白装配或额外 BGM 侧链。成片使用 am song mux。

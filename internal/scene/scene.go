@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/chouheiwa/articale-to-motion/internal/cast"
+	"github.com/chouheiwa/articale-to-motion/internal/song"
 	"github.com/chouheiwa/articale-to-motion/internal/tools"
 	"gopkg.in/yaml.v3"
 )
@@ -48,7 +49,7 @@ var (
 // 都从这里派生，不再各写一份、彼此漂移。改字段集时只改这两个切片。
 var (
 	requiredSceneFields = []string{"id", "duration_seconds", "output", "transcript", "text"}
-	optionalSceneFields = []string{"style_guide", "renderer", "cast"}
+	optionalSceneFields = []string{"style_guide", "renderer", "cast", "song"}
 )
 
 // RequiredFields 返回 scene.json 的必填字段名（副本，调用方可自由修改）。
@@ -78,7 +79,8 @@ type Scene struct {
 	StyleGuide      string  `json:"style_guide,omitempty"`
 	Renderer        string  `json:"renderer,omitempty"`
 	// Cast 是可选的角色配置。老镜头没有这个字段，Cast 为 nil，行为完全不变。
-	Cast *Cast `json:"cast,omitempty"`
+	Cast *Cast     `json:"cast,omitempty"`
+	Song *song.Cue `json:"song,omitempty"`
 }
 
 // Cast 是镜头的角色配置。老镜头没有这个字段，Scene.Cast 为 nil。
@@ -487,6 +489,9 @@ func castSection(s Scene) string {
 // BuildPrompt 拼装单镜头提示词。resolvedSkills 由 ResolveAllSkills 解析；
 // 未出现在 map 中的技能退回按技能名引用，不写死任何本机路径。
 func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
+	if err := VerifySongInputs(s); err != nil {
+		return "", err
+	}
 	body := "创意方向：\n- 用图形、概念文字和必要的真实素材表达镜头语义。\n- 视觉复杂度服务于文案，不为炫技拉长渲染。\n"
 	promptFile, err := contained(s.Directory, "prompt.md", "prompt.md")
 	if err != nil {
@@ -532,6 +537,45 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 [[USER_MESSAGE]]开始联网搜索
 [[USER_MESSAGE]]代码已完成，开始渲染
 [[USER_MESSAGE]]视频已渲染完成：%s
-`, canvas.Label(), s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, castSection(s), skillPromptSections(resolvedSkills), s.Output)
+`, canvas.Label(), s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, castSection(s)+songSection(s, resolvedSkills), skillPromptSections(resolvedSkills), s.Output)
 	return prompt, nil
+}
+
+func songSection(s Scene, resolved map[string]string) string {
+	if s.Song == nil {
+		return ""
+	}
+	return fmt.Sprintf("\n歌曲镜头（强制）：读取 %s 的局部歌词与节拍。时长包含前奏、间奏或尾奏；不得填造字幕。节拍仅控制装饰，不能提前揭示歌词。不得生成或替换歌曲、改写全局时间轴。\n%s", s.Song.Data, songExplainerPrompt(resolved[SongExplainerSkillName]))
+}
+
+// VerifySongInputs is also checked before reusing existing output.
+func VerifySongInputs(s Scene) error {
+	if s.Song != nil {
+		if s.Cast != nil {
+			return &VerificationError{Output: s.Output, Problems: []string{"首版不支持 song + cast"}}
+		}
+		canvas, err := CanvasOf(s.Directory, s.StyleGuide)
+		if err != nil {
+			return &VerificationError{Output: s.Output, Problems: []string{err.Error()}}
+		}
+		if s.Song.FPS != canvas.FPS {
+			return &VerificationError{Output: s.Output, Problems: []string{"歌曲镜头帧率与画幅不符，请重新 cues"}}
+		}
+		if err := song.VerifyCue(s.Directory, *s.Song, s.DurationSeconds); err != nil {
+			return &VerificationError{Output: s.Output, Problems: []string{err.Error()}}
+		}
+		return nil
+	}
+	dir, _ := filepath.Abs(s.Directory)
+	for {
+		if song.Enabled(dir) {
+			return &VerificationError{Output: s.Output, Problems: []string{"歌曲镜头缺少 song 块，请运行 am song cues"}}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return nil
 }

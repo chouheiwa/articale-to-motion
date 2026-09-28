@@ -27,6 +27,7 @@ import (
 	"github.com/chouheiwa/articale-to-motion/internal/project"
 	"github.com/chouheiwa/articale-to-motion/internal/scene"
 	"github.com/chouheiwa/articale-to-motion/internal/schedule"
+	"github.com/chouheiwa/articale-to-motion/internal/song"
 	"github.com/chouheiwa/articale-to-motion/internal/srt"
 	"github.com/chouheiwa/articale-to-motion/internal/tools"
 	"github.com/chouheiwa/articale-to-motion/internal/validate"
@@ -198,6 +199,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 	var skipHyperframes bool
 	var canvasID string
 	var narration string
+	var delivery string
 	initCmd := &cobra.Command{
 		Use:   "init [DIR]",
 		Short: "初始化一个可复现的视频项目",
@@ -262,6 +264,12 @@ PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 pack
 				target = args[0]
 			}
 			target, _ = filepath.Abs(target)
+			if delivery != "speech" && delivery != "song" {
+				return fmt.Errorf("--delivery 必须为 speech 或 song")
+			}
+			if (delivery == "song" && (narration == narrationCast || cast.HasRoster(target))) || (narration == narrationCast && song.Enabled(target)) {
+				return fmt.Errorf("首版不支持 song + cast")
+			}
 			chosen, err := resolveCanvas(canvasID, os.Stdin, stdout)
 			if err != nil {
 				return err
@@ -274,7 +282,11 @@ PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 pack
 			if err != nil {
 				return err
 			}
-			result, err := project.Initialize(target, shared, presetFiles)
+			var extra map[string][]byte
+			if delivery == "song" {
+				extra = map[string][]byte{"song.yaml": []byte(song.DefaultConfig)}
+			}
+			result, err := project.InitializeWithFiles(target, extra, shared, presetFiles)
 			if err != nil {
 				return err
 			}
@@ -314,6 +326,7 @@ PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 pack
 	initCmd.Flags().StringVar(&canvasID, "canvas", "", "画幅预设："+strings.Join(preset.IDs(), " | ")+"；不传则在终端里交互选择")
 	initCmd.Flags().StringVar(&narration, "narration", narrationSolo,
 		"叙事模式："+narrationSolo+"（单口播，默认） | "+narrationCast+"（多角色对话，额外写出 cast.yaml 与 cast/）")
+	initCmd.Flags().StringVar(&delivery, "delivery", "speech", "讲解形式：speech（默认）或 song（单人整曲）")
 	root.AddCommand(initCmd)
 
 	configCmd := &cobra.Command{
@@ -420,7 +433,7 @@ text 不得含 [[USER_MESSAGE]] 或 <scene-text> 定界标记，含则失败。
 
 	var jobs, retries int
 	var force bool
-	var reportPath, srtPath string
+	var reportPath, srtPath, songTimelinePath string
 	var strictCoverage bool
 	var coverageTolerance float64
 	runAll := &cobra.Command{
@@ -462,6 +475,9 @@ AI CLI 调用。这类失败要先改提示词或时长声明再重跑。
   # 输入改过、镜头被判为 Stale 时，显式重渲染
   am scene run-all scenes/ --force`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if songTimelinePath != "" && srtPath != "" {
+				return fmt.Errorf("--song-timeline 与 --srt 互斥")
+			}
 			if err := validateTolerance(tolerance); err != nil {
 				return err
 			}
@@ -482,6 +498,25 @@ AI CLI 调用。这类失败要先改提示词或时长声明再重跑。
 			// 覆盖校验在渲染之前跑：漏掉一镜或某镜时长写错，等全部渲染完
 			// 拼接时才发现的话，每一镜都已经烧掉一次完整的 AI CLI 调用。
 			span := 0.0
+			if songTimelinePath != "" {
+				path, err := filepath.Abs(songTimelinePath)
+				if err != nil {
+					return err
+				}
+				songRoot := filepath.Dir(filepath.Dir(filepath.Dir(path)))
+				if path != filepath.Join(songRoot, song.Store, "timeline.json") {
+					return fmt.Errorf("--song-timeline 必须指向 production/song/timeline.json")
+				}
+				t, err := song.LoadTimeline(songRoot)
+				if err != nil {
+					return err
+				}
+				if err = songCoverage(songRoot, scenes, t, true); err != nil {
+					return err
+				}
+			} else if song.Enabled(".") {
+				return fmt.Errorf("歌曲项目必须提供 --song-timeline production/song/timeline.json")
+			}
 			if srtPath != "" {
 				parsed, err := srt.ReadSpan(srtPath)
 				if err != nil {
@@ -495,6 +530,14 @@ AI CLI 调用。这类失败要先改提示词或时长声明再重跑。
 					return errors.New(message)
 				}
 				fmt.Fprintf(stderr, "警告：%s\n用 --strict-coverage 让这类问题在渲染前直接失败。\n", message)
+			}
+			for _, s := range scenes {
+				if s.Song != nil && songTimelinePath == "" {
+					return fmt.Errorf("歌曲镜头必须提供 --song-timeline production/song/timeline.json")
+				}
+				if err := scene.VerifySongInputs(s); err != nil {
+					return err
+				}
 			}
 			initial := make(map[string]error)
 			if !force {
@@ -555,6 +598,7 @@ AI CLI 调用。这类失败要先改提示词或时长声明再重跑。
 	runAll.Flags().Float64Var(&tolerance, "duration-tolerance", 0.15, "产物时长与 duration_seconds 的允许偏差（秒），有限非负数")
 	runAll.Flags().BoolVar(&force, "force", false, "跳过「已有合格产物」与 Stale 判定，无条件重渲染每个镜头")
 	runAll.Flags().StringVar(&reportPath, "report-json", "", "把逐镜头结果写成 JSON 报告到该路径；镜头失败时应读它而不是解析 stdout")
+	runAll.Flags().StringVar(&songTimelinePath, "song-timeline", "", "歌曲覆盖基准，与 --srt 互斥；包含前奏至尾奏")
 	runAll.Flags().StringVar(&srtPath, "srt", "", "定稿字幕路径；给了就核对镜头总时长是否等于字幕跨度")
 	runAll.Flags().Float64Var(&coverageTolerance, "coverage-tolerance", 0.1, "镜头总时长与字幕跨度的允许偏差（秒）")
 	runAll.Flags().BoolVar(&strictCoverage, "strict-coverage", false, "覆盖校验不通过时直接失败，而不是只打印警告")
@@ -603,12 +647,25 @@ PROMPT 省略时读项目根的 PROMPT.md——该入口假定项目里已有定
 			}
 			workdir, _ = filepath.Abs(workdir)
 			promptPath := filepath.Join(rootDir, "PROMPT.md")
+			if song.Enabled(rootDir) {
+				if _, err := song.LoadConfig(rootDir); err != nil {
+					return err
+				}
+				promptPath = filepath.Join(rootDir, "PROMPT-SONG.md")
+			}
 			if len(args) == 1 {
 				promptPath, _ = filepath.Abs(args[0])
 			}
 			prompt, err := os.ReadFile(promptPath)
 			if err != nil {
 				return fmt.Errorf("找不到 prompt 文件：%s", promptPath)
+			}
+			if song.Enabled(rootDir) {
+				contract, err := assets.Files.ReadFile("assets/shared/PROMPT-SONG.md")
+				if err != nil {
+					return err
+				}
+				prompt = append(prompt, append([]byte("\n\n歌曲模式必要契约（优先于口播规程）：\n"), contract...)...)
 			}
 			rulesName, err := tools.ProjectRulesFilename(cfg.Orchestrator)
 			if err != nil {
@@ -772,8 +829,10 @@ SVG 转 PNG 这一步不能用 ImageMagick 代替：多数 ImageMagick 构建自
 	validateCmd.AddCommand(styleCmd)
 	validateCmd.AddCommand(newValidateVideoCommand(stdout, &projectRoot))
 	validateCmd.AddCommand(newValidateCastCommand(stdout))
+	validateCmd.AddCommand(newValidateSongCommand(stdout))
 	root.AddCommand(validateCmd)
 	root.AddCommand(newConcatCommand(stdout, &projectRoot))
+	root.AddCommand(newSongCmd(stdout))
 	root.AddCommand(newCastCmd(stdout))
 	root.AddCommand(newDialogueCmd(stdout))
 	return root

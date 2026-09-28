@@ -187,3 +187,112 @@ go build ./cmd/am
 项目采用 [Apache License 2.0](./LICENSE)。HyperFrames 是独立的 Apache-2.0 项目，ArticleToMotion 初始化时使用固定版本，不在本仓库复制本机技能目录。
 
 内置技能 `text-to-lottie` 的 `references/` 裁剪自 [diffusionstudio/lottie](https://github.com/diffusionstudio/lottie)（MIT），版权声明与改动记录见 `assets/shared/.agents/skills/text-to-lottie/` 下的 `LICENSE` 与 `ATTRIBUTION.md`。
+
+## 可选：单人歌曲讲解
+
+默认口播和多角色流程不变。歌曲模式先生成候选，用户试听选定后再对齐、分镜；
+首版不支持歌曲与 cast、口播混排。`am` 仍是单个 Go 二进制。
+
+```bash
+am init my-song --canvas vertical-3x4 --delivery song
+cd my-song
+# 查看平台开通要求、密钥申请入口与配置方法
+am song providers
+am song configure --provider fal       # 示例：托管 ACE-Step，无需部署
+# 按输出在本机设置 FAL_KEY，再编辑 lyrics.txt 与 song.yaml
+am song doctor
+am song generate                       # 默认两首，串行；完成后停止供用户试听
+am song select <candidate-id>           # 由用户确定
+am song prepare
+# 核对唱词、术语和句首时间；有异常先修正报告旁的 timeline-draft.json
+am song prepare --timeline production/song/timeline.json --reviewed
+# 按实际音频制作 scene.json，镜头时长均为整数帧
+am song cues scenes/
+am validate song
+am scene run-all scenes/ --song-timeline production/song/timeline.json
+am concat scenes/ --out production/silent-master.mp4
+am song mux production/silent-master.mp4 --out final.mp4
+```
+
+已有项目运行 `am song init`，只补歌曲配置、提示词和技能，不覆盖不同内容的文件。
+`am run` 检测 `song.yaml` 后使用歌曲入口；显式提供其他提示词仍追加歌曲契约。
+外部歌曲用 `am song import song.mp3 --lyrics lyrics.txt` 导入，再试听选定。
+
+### 网页生成，提供音频后继续
+
+没有 API 权限也能使用。选择网页模式后，`am run` 根据文章创作歌词和风格，
+展示两段可复制文本并暂停，等待你在网页生成歌曲，再上传 MP3/WAV 或给出本机路径。
+同一会话可以继续，也可以再次运行 `am run` 读取交接记录续做，无需一直保持进程运行。
+
+```bash
+am song configure --provider manual
+# 写好 lyrics.txt 和 song.yaml 中的 style 后：
+am song handoff
+# 在网页生成、下载，再接收文件：
+am song receive /path/to/downloaded-song.mp3
+# 用户试听确认后才 select；随后 doctor、prepare 和原有视频流程
+am song select <candidate-id>
+```
+
+`manual` 模式下 `am song generate` 也只输出交接材料，不请求 API。
+歌词与风格快照在 `production/song/handoffs/`，等待/接收状态在 `web-handoff.json`。
+接收使用交接时的歌词，不受之后编辑项目歌词影响；等待期间要改材料，需明确运行
+`am song handoff --refresh` 并在网页重新生成。网页若修改了歌词，请提供最终歌词并用
+`am song import AUDIO --lyrics FINAL_LYRICS` 导入。上传文件不等于确认选定，仍需试听确认。
+
+`am song providers [平台]` 无需项目即可查看申请入口、模型、权限限制与密钥状态；
+`am song configure` 只修改平台相关设置，保留歌词、曲风和 YAML 注释，不保存密钥、不产生调用费用。
+
+| 平台 | 配置命令 | 本机环境变量 / 接入条件 |
+|---|---|---|
+| 网页手动 | `am song configure --provider manual` | 无需 API Key；输出歌词和风格后等待用户提供音频 |
+| Mureka | `am song configure --provider mureka` | `MUREKA_API_KEY`；默认 `mureka-9.5`，API 额度与网页会员分开 |
+| Google Lyria | `am song configure --provider lyria` | `GEMINI_API_KEY`；默认 `lyria-3.5`，需对应 Gemini API 权限及计费 |
+| 百炼 | `am song configure --provider bailian --workspace YOUR_WORKSPACE_ID` | `DASHSCOPE_API_KEY`；北京地域普通按量 Key、Fun-Music 邀测；当前 Token Plan 不覆盖 |
+| ElevenLabs | `am song configure --provider elevenlabs` | `ELEVENLABS_API_KEY`；Music API 权限及付费额度 |
+| fal | `am song configure --provider fal` | `FAL_KEY`；托管 `fal-ai/ace-step`，无需部署 |
+| MiniMax | `am song configure --provider minimax` | `mmx` 登录；部分账户音乐 API 返回 410，不再向新用户开放 |
+| 自建 ACE-Step | `am song configure --provider acestep --endpoint https://YOUR_SERVER` | `ACESTEP_API_KEY`（按服务要求）；需已有服务 |
+
+密钥只在本机终端/密钥管理器设置，不写入 YAML 或项目 `.env`。`am run` 嵌套调用
+还需显式追加对应变量名，例如：
+
+```bash
+export AM_PASSTHROUGH_ENV="${AM_PASSTHROUGH_ENV:+${AM_PASSTHROUGH_ENV},}FAL_KEY"
+```
+
+`doctor` 对托管平台仅检查密钥存在性，不代表权限或额度验证成功。
+百炼固定歌词模式会忽略曲风提示，不发送时长/BPM 控制参数；ElevenLabs 使用固定歌词的
+composition plan；fal 使用独立队列协议，不能填入自建 ACE-Step 地址。
+Mureka 每次请求显式生成一首，避免服务默认两首造成额外费用；歌词最多 5000 字符，
+曲风加生成要求最多 1024 字符。Lyria 使用带原歌词的 Interactions 请求，接收完整内联
+MP3 音轨；同步请求中断不自动重发。两者的目标时长和 BPM 均为创作提示，
+模型返回的歌词或时间标注不会替换项目原歌词或已审核时间轴。
+
+相同配置、歌词和 `--batch` 复用候选。ACE-Step / fal / Mureka 已取得任务 ID 时重复原命令
+继续轮询和下载，不重新提交；无任务 ID 的不明请求停止，人工检查后才用新
+`--batch` 创建新请求。不自动换提供方。`--timeout` 默认 30 分钟。
+
+对齐工具在仓库外的 Python 3.11–3.13 环境安装：
+
+```bash
+python3 -m venv "$HOME/.venvs/am-song"
+"$HOME/.venvs/am-song/bin/pip" install \
+  'xingyu-lyrics-aligner[alignment] @ git+https://github.com/wangjiqing/xingyu-lyrics-aligner.git@e647b2f3480a9f46a027352713c8e2072d88450d' \
+  'librosa==0.11.0'
+# 按 Xingyu 官方说明单独准备中文模型；am init 不安装环境或下载权重。
+```
+
+将 `song.yaml` 的 `python` 设为该环境 Python 的绝对路径。固定 Xingyu v0.6.1；
+librosa 缺失或分析失败会明确降级为歌词驱动，不制造节拍。原始对齐输出、
+问题清单及行映射保存在 `production/song/alignment/`；估算字词不会用于逐字同步。
+对齐成功不代表唱词正确：人工核对核心知识和术语，抽查句首误差目标 ≤200 ms。
+通过 `--timeline FILE --reviewed` 导入修正版前仍会校验摘要、歌词顺序及所有时间。
+
+统一时间轴及其 SRT/短语数据位于 `production/song/`。重复副歌具有独立 ID，
+无歌词区段单独记录。镜头从零覆盖完整音频，总帧数向上取整；合成仅在末尾补
+不足一帧的静音，不变速、不额外叠 BGM。选歌、音频、歌词或时间轴变化会拒绝
+旧镜头依赖；重跑 `song cues` 后使用 `scene run-all --force` 重渲染。
+
+普通测试使用模拟服务，不产生付费调用。真实服务样片需独立验收，不能以
+自动化测试代替歌曲内容、对齐误差或视觉质量验收。
