@@ -277,3 +277,21 @@ func TestSelectTargets(t *testing.T) {
 		t.Fatal("未知 id 应报错")
 	}
 }
+
+// TestProductionPromptPinsYearReading：TTS 会把「2025 年」读成「两千零二十五年」，
+// 而且同一音色对不同年份的处理不一致，只能在生成前逐个钉住。两家 TTS 的
+// 做法与试听核对项都要在，删掉任何一处都会让年份读法回到碰运气。
+func TestProductionPromptPinsYearReading(t *testing.T) {
+	body := loadProduction()
+	for _, want := range []string{
+		"四位数年份一律逐位读",
+		"不得读成「一千九百七十二年」「两千零二十五年」",
+		`--pronunciation "2025年/二零二五年"`,
+		"直接写成逐位汉字",
+		"每个四位年份是否逐位读出",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("PROMPT-PRODUCTION 模板缺少年份读法约定：%q", want)
+		}
+	}
+}
