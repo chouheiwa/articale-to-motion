@@ -139,8 +139,10 @@ func NewRunner(env map[string]string, toolchain mediaprobe.Toolchain) (Runner, e
 
 // Normalize 生成一个只统一编码、像素格式与封装的副本，保留原始文件。
 //
-// 显式带上 -vsync passthrough 与不设 -r：任何隐式的帧率协商都可能悄悄增删帧，
-// 那正是这个函数不该做的事。
+// 显式带上 -fps_mode passthrough 与不设 -r：任何隐式的帧率协商都可能悄悄增删帧，
+// 那正是这个函数不该做的事。不用旧写法 -vsync：它在 ffmpeg 5.1 起被标为弃用、
+// 8.x 已删除，新版 ffmpeg 会直接报 Unrecognized option 'vsync'，拼接前的规范化
+// 整个失败。-fps_mode 自 5.1 起可用。
 func (r Runner) Normalize(ctx context.Context, source, dest string, target Target) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
@@ -151,7 +153,7 @@ func (r Runner) Normalize(ctx context.Context, source, dest string, target Targe
 	}
 	cmd := exec.CommandContext(ctx, r.ffmpeg, "-v", "error", "-y", "-i", source,
 		"-c:v", codec, "-pix_fmt", target.PixelFormat,
-		"-vsync", "passthrough", "-an",
+		"-fps_mode", "passthrough", "-an",
 		"-movflags", "+faststart", dest)
 	cmd.Env = r.env
 	if output, err := cmd.CombinedOutput(); err != nil {
