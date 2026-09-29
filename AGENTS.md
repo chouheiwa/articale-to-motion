@@ -137,13 +137,15 @@ SVG 转 PNG 必须走 `rsvg-convert`（`internal/styleimage`），**不能用 Im
 
 | 位置 | 作用 |
 |---|---|
-| `internal/tools/tools.go` `RendererInvocation` | 单镜头渲染的命令行与非交互权限模式 |
+| `internal/tools/tools.go` `RendererInvocation` | 单镜头渲染的命令行与非交互权限模式；该模式若拦截 Bash，要把 `RendererAccess` 译成该工具的放行配置（claude 用 `--settings`） |
 | `internal/tools/tools.go` `OrchestratorInvocation` | 编排调用的命令行与 prompt 传递方式（stdin 还是参数） |
 | `internal/config/config.go` `validTools` | `ORCHESTRATOR` / `RENDERER` 取值校验 |
 | `internal/scene/scene.go` `validRenderer` | `scene.json` 的 `renderer` 字段校验 |
 | `internal/scene/skills.go` `rendererSkillDirs` | 该工具的技能目录约定（家目录级与项目级） |
 
 同时更新 `assets/shared/article-to-motion.conf`、`assets/shared/.env.example`、`README.md`、`README.en.md` 里的可选值注释。
+
+安全模式的权限模式必须实测能跑通渲染命令。claude 的 `acceptEdits` 只自动批准文件编辑、拦下所有 Bash，而 `-p` 下没人批准，渲染器会执行不了 `npx hyperframes render`；`scene.RendererAccess` 列出要放行的最小命令集（带固定版本的 hyperframes、`ls`、`ffprobe`）与技能目录读取，`.env` 始终禁读。
 
 ## 子进程环境
 

@@ -1,6 +1,7 @@
 package scene
 
 import (
+	"github.com/chouheiwa/articale-to-motion/internal/hyperframes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -452,5 +453,22 @@ func TestUpstreamSkillPromptsDegradeGracefully(t *testing.T) {
 		if strings.Contains(fallback, "/") && strings.Contains(fallback, "skills/") {
 			t.Errorf("%s 的兜底片段里写死了路径：%s", desc.Name, fallback)
 		}
+	}
+}
+
+// 放行的 CLI 必须带固定版本前缀，与锁定文件要求一致；技能目录去重排序，
+// argv 才稳定可比。
+func TestRendererAccessPinsCLIAndOpensSkillDirs(t *testing.T) {
+	access := RendererAccess(map[string]string{
+		AnimationSkillName:       "/proj/.agents/skills",
+		HyperFramesCoreSkillName: "/proj/.agents/skills",
+		CharacterRigSkillName:    "/home/.claude/skills",
+	})
+	if access.Commands[0] != "npx --yes hyperframes@"+hyperframes.PinnedVersion {
+		t.Errorf("第一条放行命令应是带固定版本的 hyperframes，实际 %q", access.Commands[0])
+	}
+	want := []string{"/home/.claude/skills", "/proj/.agents/skills"}
+	if strings.Join(access.ReadDirs, ",") != strings.Join(want, ",") {
+		t.Errorf("ReadDirs = %v，期望 %v", access.ReadDirs, want)
 	}
 }

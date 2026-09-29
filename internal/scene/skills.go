@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+
+	"github.com/chouheiwa/articale-to-motion/internal/hyperframes"
+	"github.com/chouheiwa/articale-to-motion/internal/tools"
 )
 
 // 渲染工具各自把技能装在不同目录，提示词里不得写死任何一条路径。
@@ -459,4 +463,25 @@ func songExplainerPrompt(dir string) string {
 		return "读取 song-explainer 技能，仅执行单镜头歌词驱动动画规则。\n"
 	}
 	return fmt.Sprintf("读取 %s，仅执行单镜头歌词驱动动画规则。\n", filepath.Join(dir, SongExplainerSkillName, skillManifestFile))
+}
+
+// RendererAccess 列出渲染器在安全模式下必须被放行的最小权限。
+//
+// 命令与提示词、镜头锁定文件要求的完全一致：CLI 必须带固定版本前缀，
+// ls / ffprobe 用来查素材与产物。技能树在项目根的 .agents/skills，位于镜头
+// 目录之外，不开放读取的话渲染器读不到动效 rule 索引，只能凭空写动画。
+func RendererAccess(resolved map[string]string) tools.RendererAccess {
+	seen := map[string]bool{}
+	var dirs []string
+	for _, dir := range resolved {
+		if dir != "" && !seen[dir] {
+			seen[dir] = true
+			dirs = append(dirs, dir)
+		}
+	}
+	sort.Strings(dirs)
+	return tools.RendererAccess{
+		Commands: []string{"npx --yes hyperframes@" + hyperframes.PinnedVersion, "ls", "ffprobe"},
+		ReadDirs: dirs,
+	}
 }

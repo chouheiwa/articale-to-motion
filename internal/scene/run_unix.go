@@ -50,7 +50,7 @@ func Run(ctx context.Context, s Scene, cfg config.Config, unsafe bool, baseEnv m
 	if err != nil {
 		return err
 	}
-	argv, err := tools.RendererInvocation(renderer, prompt, unsafe)
+	argv, err := tools.RendererInvocation(renderer, prompt, unsafe, RendererAccess(resolvedSkills))
 	if err != nil {
 		return err
 	}

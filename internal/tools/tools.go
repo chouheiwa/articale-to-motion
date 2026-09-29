@@ -13,7 +13,43 @@ const UserMessageMarker = "[[USER_MESSAGE]]"
 // RendererInvocation、OrchestratorInvocation、ProjectRulesFilename 的 switch）。
 var ValidTools = map[string]bool{"codex": true, "claude": true, "qoder": true, "codebuddy": true, "opencode": true}
 
-func RendererInvocation(tool, prompt string, unsafe bool) ([]string, error) {
+// RendererAccess 是安全模式下渲染器需要、而默认权限模式不给的最小权限。
+//
+// 只有需要显式放行的工具才用得上：claude 的 acceptEdits 只自动批准文件编辑，
+// Bash 一律拦下，而 -p 模式下没有人来批准——实测渲染器因此跑不了
+// `npx hyperframes render` / `snapshot`，镜头直接渲染失败。
+type RendererAccess struct {
+	// Commands 是放行的命令前缀，例如 "npx --yes hyperframes@0.8.14"。
+	Commands []string
+	// ReadDirs 是镜头目录之外需要读取的目录（技能树），绝对路径。
+	ReadDirs []string
+}
+
+// claudeSettings 把 RendererAccess 译成 claude --settings 的 JSON。
+// .env 的读取禁令与执行契约一致：渲染器不得读取或打印凭据。
+func (a RendererAccess) claudeSettings() (string, error) {
+	allow := make([]string, 0, len(a.Commands)+len(a.ReadDirs))
+	for _, command := range a.Commands {
+		allow = append(allow, "Bash("+command+":*)")
+	}
+	for _, dir := range a.ReadDirs {
+		// claude 的路径规则里，绝对路径要写成 // 开头。
+		allow = append(allow, "Read(/"+dir+"/**)")
+	}
+	dirs := append([]string{}, a.ReadDirs...)
+	settings := map[string]any{"permissions": map[string]any{
+		"allow":                 allow,
+		"deny":                  []string{"Read(**/.env)", "Read(**/.env.*)"},
+		"additionalDirectories": dirs,
+	}}
+	body, err := json.Marshal(settings)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+func RendererInvocation(tool, prompt string, unsafe bool, access RendererAccess) ([]string, error) {
 	switch tool {
 	case "codex":
 		if unsafe {
@@ -21,9 +57,13 @@ func RendererInvocation(tool, prompt string, unsafe bool) ([]string, error) {
 		}
 		return []string{"codex", "--ask-for-approval", "never", "exec", "--skip-git-repo-check", "--sandbox", "workspace-write", "--json", prompt}, nil
 	case "claude":
-		mode := []string{"--permission-mode", "acceptEdits"}
-		if unsafe {
-			mode = []string{"--dangerously-skip-permissions"}
+		mode := []string{"--dangerously-skip-permissions"}
+		if !unsafe {
+			settings, err := access.claudeSettings()
+			if err != nil {
+				return nil, err
+			}
+			mode = []string{"--permission-mode", "acceptEdits", "--settings", settings}
 		}
 		return append([]string{"claude", "-p"}, append(mode, "--verbose", "--output-format", "stream-json", "--prompt-suggestions", "false", prompt)...), nil
 	case "qoder":
