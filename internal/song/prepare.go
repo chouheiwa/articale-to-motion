@@ -62,7 +62,7 @@ func ConvertAlignment(raw []byte, c Candidate, lyrics []string) (Timeline, []str
 		Warnings []string `json:"warnings"`
 	}
 	if json.Unmarshal(raw, &doc) != nil {
-		return t, nil, fmt.Errorf("Xingyu alignment.json 格式无效")
+		return t, nil, fmt.Errorf("对齐工具 Xingyu alignment.json 格式无效")
 	}
 	issues := []string{}
 	t.Warnings = append(t.Warnings, doc.Warnings...)

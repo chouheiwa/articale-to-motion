@@ -97,11 +97,11 @@ func validateHostedConfig(c Config) error {
 		switch c.Model {
 		case "mureka-7.6", "mureka-o2", "mureka-8", "mureka-9", "mureka-9.5":
 		default:
-			return fmt.Errorf("Mureka 请指定固定模型：mureka-7.6|mureka-o2|mureka-8|mureka-9|mureka-9.5")
+			return fmt.Errorf("歌曲平台 Mureka 请指定固定模型：mureka-7.6|mureka-o2|mureka-8|mureka-9|mureka-9.5")
 		}
 	case "lyria":
 		if c.Model != "lyria-3.5" {
-			return fmt.Errorf("Lyria 整曲模式当前支持 lyria-3.5")
+			return fmt.Errorf("歌曲平台 Lyria 整曲模式当前支持 lyria-3.5")
 		}
 	case "bailian":
 		if !workspacePattern.MatchString(c.Workspace) {

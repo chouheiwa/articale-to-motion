@@ -25,7 +25,7 @@ func decodeLyria(reader io.Reader, dest string) (string, error) {
 	const maxJSON = 96 << 20
 	b, e := io.ReadAll(io.LimitReader(reader, maxJSON+1))
 	if e != nil || len(b) > maxJSON {
-		return "", fmt.Errorf("Lyria 音频响应中断或超过 96 MiB")
+		return "", fmt.Errorf("歌曲平台 Lyria 音频响应中断或超过 96 MiB")
 	}
 	var result struct {
 		ID     string `json:"id"`
@@ -40,14 +40,14 @@ func decodeLyria(reader io.Reader, dest string) (string, error) {
 		} `json:"steps"`
 	}
 	if json.Unmarshal(b, &result) != nil {
-		return "", fmt.Errorf("Lyria 返回无效 JSON")
+		return "", fmt.Errorf("歌曲平台 Lyria 返回无效 JSON")
 	}
 	id := result.ID
 	if !idPattern.MatchString(id) {
 		id = ""
 	}
 	if result.Status != "" && result.Status != "completed" {
-		return id, fmt.Errorf("Lyria 未返回完成状态；未重新生成")
+		return id, fmt.Errorf("歌曲平台 Lyria 未返回完成状态；未重新生成")
 	}
 	var encoded string
 	count := 0
@@ -61,13 +61,13 @@ func decodeLyria(reader io.Reader, dest string) (string, error) {
 			}
 			count++
 			if block.MIME != "audio/mpeg" && block.MIME != "audio/mp3" {
-				return id, fmt.Errorf("Lyria 返回非 MP3 音频，拒绝保存为 MP3")
+				return id, fmt.Errorf("歌曲平台 Lyria 返回非 MP3 音频，拒绝保存为 MP3")
 			}
 			encoded = block.Data
 		}
 	}
 	if count != 1 || encoded == "" {
-		return id, fmt.Errorf("Lyria 应返回一个完整内联音轨，实际音频块缺失或有多个；未自动选择或拼接")
+		return id, fmt.Errorf("歌曲平台 Lyria 应返回一个完整内联音轨，实际音频块缺失或有多个；未自动选择或拼接")
 	}
 	return id, saveAudio(base64.NewDecoder(base64.StdEncoding, strings.NewReader(encoded)), dest)
 }

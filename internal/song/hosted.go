@@ -98,7 +98,7 @@ func (h hostedClient) json(ctx context.Context, method, path string, body, out a
 }
 func validateLyrics(c Config, lyrics string) error {
 	if c.Provider == "mureka" && (utf8.RuneCountInString(lyrics) > 5000 || utf8.RuneCountInString(murekaPrompt(c)) > 1024) {
-		return fmt.Errorf("Mureka 歌词最多 5000 字符，曲风及生成要求最多 1024 字符")
+		return fmt.Errorf("歌曲平台 Mureka 歌词最多 5000 字符，曲风及生成要求最多 1024 字符")
 	}
 	if c.Provider == "bailian" {
 		max := 2000
