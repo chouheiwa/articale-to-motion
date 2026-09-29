@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <pattern id="stripes" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(16)">
+      <rect width="8" height="24" fill="#26314A"/>
+    </pattern>
+  </defs>
+  <rect width="1080" height="1920" fill="#0B0F1A"/>
+
+  <!-- background layer -->
+  <path d="M40 1860 V1400 L500 1860 Z" fill="url(#stripes)" opacity="0.4"/>
+  <path d="M1040 240 V860 L720 240 Z" fill="#141B2D" opacity="0.7"/>
+  <g fill="none" stroke="#26314A" stroke-width="3">
+    <path d="M40 150 V96 H100"/>
+    <path d="M980 96 H1040 V150"/>
+    <path d="M980 1860 H1040 V1806"/>
+  </g>
+
+  <!-- header -->
+  <path d="M103 120 H262 L247 172 H88 Z" fill="#141B2D"/>
+  <path d="M103 120 H115 L100 172 H88 Z" fill="#2F8CFF"/>
+  <text x="126" y="157" fill="#F2F5FA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif" letter-spacing="2">积分榜</text>
+  <rect x="890" y="124" width="102" height="44" rx="22" fill="none" stroke="#3DDC84" stroke-width="2"/>
+  <text x="941" y="157" text-anchor="middle" fill="#3DDC84" font-size="30" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="2">FINAL</text>
+  <rect x="88" y="200" width="904" height="2" fill="#26314A"/>
+  <rect x="88" y="200" width="220" height="2" fill="#2F8CFF"/>
+
+  <text x="84" y="318" fill="#F2F5FA" font-size="76" font-weight="900" font-family="'Noto Sans SC', sans-serif">架构方案积分榜</text>
+  <text x="88" y="378" fill="#8C9BB5" font-size="30" font-family="'Noto Sans SC', sans-serif">场景：10 人团队，日活 5 万</text>
+
+  <g font-family="'Noto Sans SC', sans-serif">
+    <text x="104" y="456" fill="#8C9BB5" font-size="24">名次</text>
+    <text x="212" y="456" fill="#8C9BB5" font-size="24">方案</text>
+    <text x="876" y="456" text-anchor="end" fill="#8C9BB5" font-size="24">综合得分</text>
+    <rect x="88" y="474" width="812" height="2" fill="#26314A"/>
+
+    <!-- row 1 -->
+    <g transform="translate(0 494)">
+      <path d="M88 0 H900 V116 H88 Z" fill="#141B2D" stroke="#FFC23D" stroke-width="2"/>
+      <path d="M126 20 H192 L176 96 H110 Z" fill="#FFC23D"/>
+      <text x="151" y="84" text-anchor="middle" fill="#0B0F1A" font-size="66" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">1</text>
+      <text x="212" y="58" fill="#F2F5FA" font-size="38" font-weight="700">模块化单体</text>
+      <rect x="212" y="76" width="500" height="12" fill="#26314A"/>
+      <rect x="212" y="76" width="460" height="12" fill="#FFC23D"/>
+      <text x="876" y="92" text-anchor="end" fill="#F2F5FA" font-size="92" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">92</text>
+    </g>
+    <!-- row 2 -->
+    <g transform="translate(0 626)">
+      <path d="M88 0 H900 V104 H88 Z" fill="#141B2D" stroke="#2F8CFF" stroke-width="2"/>
+      <path d="M124 18 H186 L172 86 H110 Z" fill="none" stroke="#26314A" stroke-width="2"/>
+      <text x="148" y="76" text-anchor="middle" fill="#8C9BB5" font-size="58" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">2</text>
+      <text x="212" y="52" fill="#F2F5FA" font-size="34" font-weight="600">单体</text>
+      <rect x="212" y="70" width="500" height="12" fill="#26314A"/>
+      <rect x="212" y="70" width="425" height="12" fill="#2F8CFF"/>
+      <text x="876" y="82" text-anchor="end" fill="#F2F5FA" font-size="74" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">85</text>
+    </g>
+    <!-- row 3 -->
+    <g transform="translate(0 746)">
+      <path d="M88 0 H900 V104 H88 Z" fill="#141B2D" stroke="#FF3B4E" stroke-width="2"/>
+      <path d="M124 18 H186 L172 86 H110 Z" fill="none" stroke="#26314A" stroke-width="2"/>
+      <text x="148" y="76" text-anchor="middle" fill="#8C9BB5" font-size="58" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">3</text>
+      <text x="212" y="52" fill="#F2F5FA" font-size="34" font-weight="600">微服务</text>
+      <rect x="212" y="70" width="500" height="12" fill="#26314A"/>
+      <rect x="212" y="70" width="390" height="12" fill="#FF3B4E"/>
+      <text x="876" y="82" text-anchor="end" fill="#F2F5FA" font-size="74" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">78</text>
+    </g>
+    <!-- row 4 -->
+    <g transform="translate(0 866)">
+      <path d="M88 0 H900 V104 H88 Z" fill="#141B2D"/>
+      <path d="M124 18 H186 L172 86 H110 Z" fill="none" stroke="#26314A" stroke-width="2"/>
+      <text x="148" y="76" text-anchor="middle" fill="#8C9BB5" font-size="58" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">4</text>
+      <text x="212" y="52" fill="#F2F5FA" font-size="34" font-weight="600">Serverless</text>
+      <rect x="212" y="70" width="500" height="12" fill="#26314A"/>
+      <rect x="212" y="70" width="355" height="12" fill="#8C9BB5"/>
+      <text x="876" y="82" text-anchor="end" fill="#8C9BB5" font-size="74" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">71</text>
+    </g>
+    <!-- row 5 -->
+    <g transform="translate(0 986)">
+      <path d="M88 0 H900 V104 H88 Z" fill="#141B2D"/>
+      <path d="M124 18 H186 L172 86 H110 Z" fill="none" stroke="#26314A" stroke-width="2"/>
+      <text x="148" y="76" text-anchor="middle" fill="#8C9BB5" font-size="58" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">5</text>
+      <text x="212" y="52" fill="#F2F5FA" font-size="34" font-weight="600">服务网格</text>
+      <rect x="212" y="70" width="500" height="12" fill="#26314A"/>
+      <rect x="212" y="70" width="320" height="12" fill="#8C9BB5"/>
+      <text x="876" y="82" text-anchor="end" fill="#8C9BB5" font-size="74" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">64</text>
+    </g>
+    <!-- row 6 -->
+    <g transform="translate(0 1106)">
+      <path d="M88 0 H900 V104 H88 Z" fill="#141B2D"/>
+      <path d="M124 18 H186 L172 86 H110 Z" fill="none" stroke="#26314A" stroke-width="2"/>
+      <text x="148" y="76" text-anchor="middle" fill="#8C9BB5" font-size="58" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">6</text>
+      <text x="212" y="52" fill="#F2F5FA" font-size="34" font-weight="600">事件驱动</text>
+      <rect x="212" y="70" width="500" height="12" fill="#26314A"/>
+      <rect x="212" y="70" width="300" height="12" fill="#8C9BB5"/>
+      <text x="876" y="82" text-anchor="end" fill="#8C9BB5" font-size="74" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">60</text>
+    </g>
+
+    <text x="88" y="1270" fill="#8C9BB5" font-size="24">评分口径：上线速度 30%，运维成本 30%，扩展性 40%</text>
+
+    <!-- champion breakdown -->
+    <text x="88" y="1336" fill="#8C9BB5" font-size="24">冠军得分构成</text>
+    <rect x="88" y="1356" width="238" height="16" fill="#F2F5FA"/>
+    <rect x="330" y="1356" width="230" height="16" fill="#F2F5FA" opacity="0.55"/>
+    <rect x="564" y="1356" width="336" height="16" fill="#F2F5FA" opacity="0.3"/>
+    <text x="88" y="1414" fill="#F2F5FA" font-size="24">上线速度 28</text>
+    <text x="330" y="1414" fill="#F2F5FA" font-size="24">运维成本 27</text>
+    <text x="564" y="1414" fill="#F2F5FA" font-size="24">扩展性 37</text>
+  </g>
+
+  <!-- lower third -->
+  <path d="M88 1466 H900 L878 1548 H88 Z" fill="#141B2D"/>
+  <rect x="88" y="1466" width="10" height="82" fill="#2F8CFF"/>
+  <text x="122" y="1519" fill="#F2F5FA" font-size="34" font-weight="700" font-family="'Noto Sans SC', sans-serif">冠军：模块化单体，边界清晰再拆</text>
+  <text x="852" y="1518" text-anchor="end" fill="#2F8CFF" font-size="30" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="3">CHAMPION</text>
+</svg>

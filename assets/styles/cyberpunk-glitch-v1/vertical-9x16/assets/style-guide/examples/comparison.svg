@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="#F4EEFF" opacity="0.035"/></pattern>
+    <pattern id="grid" width="54" height="54" patternUnits="userSpaceOnUse"><path d="M54 0H0V54" fill="none" stroke="#4A3772" stroke-width="1"/></pattern>
+  </defs>
+
+  <!-- 背景层 -->
+  <rect width="1080" height="1920" fill="#120B1E"/>
+  <rect width="1080" height="1920" fill="url(#grid)" opacity="0.28"/>
+  <rect width="1080" height="1920" fill="url(#scan)"/>
+  <g stroke="#4A3772" stroke-width="3" fill="none">
+    <path d="M40 140 V96 H84"/><path d="M1040 140 V96 H996"/>
+    <path d="M40 1816 V1860 H84"/><path d="M1040 1816 V1860 H996"/>
+  </g>
+
+  <!-- kicker + 标题 -->
+  <rect x="88" y="138" width="18" height="18" fill="#29E6F0"/>
+  <text x="120" y="156" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="26" fill="#29E6F0">信号对撞</text>
+  <text x="992" y="156" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#B9ABDB" letter-spacing="2">SIGNAL // 02</text>
+  <path d="M88 190 H992" stroke="#4A3772" stroke-width="2"/>
+  <path d="M88 190 H360" stroke="#29E6F0" stroke-width="4"/>
+  <text font-family="'Smiley Sans', 'Noto Sans SC', sans-serif" font-size="76" fill="#F4EEFF">
+    <tspan x="88" y="300">复杂密码，</tspan>
+    <tspan x="88" y="390">救不了<tspan fill="#FF2E88">复用</tspan></tspan>
+  </text>
+
+  <!-- 面板 A：表象（品红） -->
+  <path d="M88 460 H900 L940 500 V790 H88 Z" fill="#1E1433" stroke="#FF2E88" stroke-width="2.5"/>
+  <path d="M88 460 H250 L228 504 H88 Z" fill="#FF2E88"/>
+  <text x="112" y="492" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="26" fill="#120B1E">你以为</text>
+  <text x="872" y="494" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="20" fill="#B9ABDB" letter-spacing="2">SURFACE</text>
+  <text x="120" y="598" font-family="'Smiley Sans', 'Noto Sans SC', sans-serif" font-size="60" fill="#F4EEFF">密码够复杂就安全</text>
+  <text x="120" y="656" font-family="'Noto Sans SC', sans-serif" font-size="30" fill="#B9ABDB">大小写 + 数字 + 符号，足足 16 位</text>
+  <text x="120" y="738" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#B9ABDB" letter-spacing="2">STRENGTH</text>
+  <g fill="#FF2E88">
+    <path d="M262 716 H346 L336 742 H252 Z"/><path d="M356 716 H440 L430 742 H346 Z"/><path d="M450 716 H534 L524 742 H440 Z"/><path d="M544 716 H628 L618 742 H534 Z"/><path d="M638 716 H722 L712 742 H628 Z"/>
+  </g>
+  <text x="740" y="740" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="24" fill="#FF2E88">STRONG</text>
+
+  <!-- 撕裂分隔 + VS -->
+  <path d="M88 864 L420 840 L452 856 L992 816" stroke="#4A3772" stroke-width="2" fill="none"/>
+  <rect x="88" y="876" width="240" height="5" fill="#FF2E88" opacity="0.8"/>
+  <rect x="760" y="800" width="232" height="5" fill="#29E6F0" opacity="0.8"/>
+  <path d="M482 808 H598 L576 876 H460 Z" fill="#120B1E" stroke="#F4EEFF" stroke-width="2.5"/>
+  <text x="529" y="856" text-anchor="middle" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="34" fill="#F4EEFF">VS</text>
+
+  <!-- 面板 B：真相（青） -->
+  <path d="M140 910 H992 V1270 L952 1310 H140 Z" fill="#2A1C47" stroke="#29E6F0" stroke-width="2.5"/>
+  <path d="M140 910 H278 L256 954 H140 Z" fill="#29E6F0"/>
+  <text x="164" y="942" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="26" fill="#120B1E">真相</text>
+  <text x="966" y="944" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="20" fill="#B9ABDB" letter-spacing="2">ROOT CAUSE</text>
+  <text x="172" y="1048" font-family="'Smiley Sans', 'Noto Sans SC', sans-serif" font-size="60" fill="#F4EEFF">同一密码用在 <tspan fill="#29E6F0">12</tspan> 个网站</text>
+  <text x="172" y="1106" font-family="'Noto Sans SC', sans-serif" font-size="30" fill="#B9ABDB">任何一站泄露，12 个账号一起失守</text>
+  <g>
+    <rect x="172" y="1150" width="54" height="54" fill="#FF5A4E"/>
+    <path d="M187 1165 L211 1189 M211 1165 L187 1189" stroke="#120B1E" stroke-width="5"/>
+    <g fill="none" stroke="#FF2E88" stroke-width="2.5">
+      <rect x="240" y="1150" width="54" height="54"/><rect x="308" y="1150" width="54" height="54"/><rect x="376" y="1150" width="54" height="54"/><rect x="444" y="1150" width="54" height="54"/><rect x="512" y="1150" width="54" height="54"/>
+      <rect x="172" y="1218" width="54" height="54"/><rect x="240" y="1218" width="54" height="54"/><rect x="308" y="1218" width="54" height="54"/><rect x="376" y="1218" width="54" height="54"/><rect x="444" y="1218" width="54" height="54"/><rect x="512" y="1218" width="54" height="54"/>
+    </g>
+    <path d="M226 1177 H240 M294 1177 H308 M362 1177 H376 M430 1177 H444 M498 1177 H512" stroke="#FF2E88" stroke-width="2"/>
+    <text x="604" y="1196" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#B9ABDB" letter-spacing="2">1 LEAK</text>
+    <text x="604" y="1256" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#FF5A4E" letter-spacing="2">12 DOWN</text>
+  </g>
+
+  <!-- 结论层：酸黄锁定框 -->
+  <g stroke="#D4FF3A" stroke-width="5" fill="none">
+    <path d="M88 1410 V1382 H116"/><path d="M900 1410 V1382 H872"/>
+    <path d="M88 1508 V1536 H116"/><path d="M900 1508 V1536 H872"/>
+  </g>
+  <text font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="36" fill="#F4EEFF">
+    <tspan x="124" y="1446">强度决定难不难破，</tspan>
+    <tspan x="124" y="1500" fill="#D4FF3A">唯一性决定会不会连坐</tspan>
+  </text>
+
+  <!-- 自测提示 -->
+  <rect x="88" y="1590" width="14" height="36" fill="#29E6F0"/>
+  <text x="122" y="1620" font-family="'Noto Sans SC', sans-serif" font-size="30" fill="#B9ABDB">自测：你有几个网站共用一个密码？</text>
+</svg>

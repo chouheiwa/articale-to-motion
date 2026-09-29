@@ -1,0 +1,159 @@
+schema_version: 1
+style_id: visual-novel-v1
+style_name: 视觉小说对话
+scope:
+  - story_driven_explainer
+  - dialogue_format_explainer
+  - emotion_and_relationships
+  - character_and_history_stories
+  - reflective_personal_growth
+# @@CANVAS_AND_SAFE_AREA@@
+colors:
+  canvas: "#2A2238"
+  dusk_violet: "#4A3B63"
+  horizon_rose: "#E8A0B4"
+  dialogue_box: "#1E1830"
+  choice_panel: "#3A2E50"
+  paper: "#F6F0FA"
+  mist_lavender: "#B9A8D6"
+  lantern_gold: "#F3C77A"
+  ink: "#221A30"
+  warning_coral: "#E88A8A"
+  memory_mint: "#7FD1C0"
+typography:
+  primary_stack: '"LXGW WenKai", "Noto Sans SC", sans-serif'
+  mono_stack: '"Noto Sans SC", sans-serif'
+  font_files:
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
+    - {family: "LXGW WenKai", weight: 400, file: "assets/fonts/lxgw-wenkai-400.woff2"}
+  sizes_px:
+    cover_min: 80
+    cover_max: 112
+    title_min: 48
+    title_max: 66
+    body_min: 30
+    body_max: 38
+    label_min: 22
+    label_max: 26
+  weights:
+    display: 400
+    heading: 400
+    body: 400
+    body_emphasis: 400
+    metadata: 700
+  line_heights:
+    display_min: 1.08
+    display_max: 1.18
+    body: 1.55
+    metadata: 1.2
+spacing:
+  content_left_px: 88
+  content_width_px: 904
+  group_min_px: 14
+  group_max_px: 22
+  card_stack_min_px: 18
+  card_main_padding_min_px: 32
+  card_main_padding_max_px: 40
+  card_secondary_padding_min_px: 22
+  card_secondary_padding_max_px: 28
+  section_min_px: 32
+  section_max_px: 60
+  element_edge_min_px: 22
+  skeleton_bottom_min_px: 22
+radius:
+  sm_px: 8
+  md_px: 14
+  lg_px: 20
+  xl_px: 28
+  pill_px: 999
+scene_archetypes:
+  - id: proposition
+    name: 章节标题卡
+    use_for: 封面、钩子、章节开场、强结论
+    example_png: assets/style-guide/examples/proposition.png
+  - id: comparison
+    name: 分支选择
+    use_for: 两种做法、两种观点、选择与后果、旧路与新路
+    example_png: assets/style-guide/examples/comparison.png
+  - id: process
+    name: 对话推进
+    use_for: 一问一答、步骤讲解、因果推进、状态变化
+    example_png: assets/style-guide/examples/process.png
+  - id: capability_deck
+    name: 存档卡册
+    use_for: 要点回顾、多条经验、阶段成果、全片总结
+    example_png: assets/style-guide/examples/capability_deck.png
+motion:
+  phases: {build: 0.30, breathe: 0.45, resolve: 0.25}
+  entrance_seconds: {min: 0.35, max: 0.70}
+  exit_seconds: {min: 0.25, max: 0.50}
+  transition_seconds: {min: 0.30, max: 0.60}
+  first_action_delay_seconds: {min: 0.10, max: 0.30}
+  entrance_ease: [power1.out, power2.out, sine.out]
+  exit_ease: [power1.in, power2.in, sine.in]
+  verbs: [FADE_IN, TYPE, SPEAK, CHOOSE, ADVANCE, TURN_PAGE, SAVE]
+  ambient_per_scene_max: 1
+  max_same_ease_tweens: 2
+audio:
+  sample_rate_hz: 48000
+  channels: 2
+  voice_integrated_lufs: {min: -18, max: -16}
+  bgm_integrated_lufs: {min: -30, max: -26}
+  bgm_ducking_db: {min: 6, max: 10}
+  ducking_attack_seconds: {min: 0.04, max: 0.12}
+  ducking_release_seconds: {min: 0.25, max: 0.60}
+  bgm_fade_seconds: {min: 0.80, max: 1.50}
+  sfx_gain_db: {min: -18, max: -12}
+  sfx_max_simultaneous: 2
+  final_integrated_lufs: -16
+  final_lufs_tolerance: 1
+  true_peak_max_dbtp: -1
+  lra_lu: {min: 2, max: 6}
+subtitles:
+  required: false
+  font_size_px: {min: 32, max: 38}
+  max_width_px: 812
+  max_lines: 2
+  max_fullwidth_chars_per_line: 16
+  line_height: {min: 1.30, max: 1.40}
+  background: "rgba(30, 24, 48, 0.88)"
+  text_color: "#F6F0FA"
+  padding_px: {vertical: 14, horizontal: 22}
+  radius_px: 14
+  break_rules:
+    - keep_proper_nouns_intact
+    - keep_english_phrases_intact
+    - keep_numbers_and_units_intact
+    - preserve_real_speech_gaps
+cover:
+  frame_zero_complete: true
+  default_lines: 2
+  max_lines: 3
+  max_fullwidth_chars_per_line: 10
+  font_size_px: {min: 80, max: 112}
+  line_height: {min: 1.08, max: 1.18}
+  max_width_px: 812
+  contrast_ratio_min: 7.0
+  stable_frames: 18
+forbidden:
+  - black_or_blank_frame_zero
+  - cover_fade_in_intermediate_state
+  - copying_commercial_game_ip_characters_or_logos
+  - copying_specific_commercial_game_ui
+  - character_sprites_or_faces_of_real_or_ip_characters
+  - dialogue_box_overlapping_subtitle_band
+  - dialogue_text_outside_critical_text_area
+  - typewriter_slower_than_narration
+  - per_character_sound_blips_over_voice
+  - fully_transparent_dialogue_box
+  - photographic_or_ai_generated_backgrounds
+  - arbitrary_new_brand_colors
+  - gradient_text
+  - elastic_or_bouncy_motion
+  - screen_shake_or_flash_cuts
+  - continuous_particle_storms
+  - labels_or_icons_touching_edges
+  - music_masking_voice

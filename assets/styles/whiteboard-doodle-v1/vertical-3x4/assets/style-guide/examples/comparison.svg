@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+<rect width="1080" height="1440" fill="#FBFBF8"/>
+<path d="M97.9 1220.7 C235.7 1217.4 373.5 1209.1 515.7 1210.0" fill="none" stroke="#ECEEEA" stroke-width="21" stroke-linecap="round" opacity="0.75"/>
+<path d="M80.5 1244.2 C222.0 1245.6 363.5 1242.0 509.4 1241.2" fill="none" stroke="#ECEEEA" stroke-width="24" stroke-linecap="round" opacity="0.75"/>
+<text x="88" y="170" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="32" fill="#596268">费曼学习法 · 对照</text>
+<text x="992" y="170" font-family="'Caveat', 'Xiaolai', sans-serif" font-size="36" fill="#1C5BB8" text-anchor="end">before / after</text>
+<path d="M83.1 197.1 C230.6 194.1 373.1 197.0 522.9 196.9" fill="none" stroke="#C9CED1" stroke-width="3" stroke-linecap="round"/>
+<text x="88" y="300" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="64" fill="#1D2327">记住了，不等于懂了</text>
+<path d="M84.6 368.7 C386.3 369.1 684.6 368.7 994.6 374.2" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<path d="M538.8 365.5 C539.5 568.6 538.4 767.3 542.9 974.7" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<path d="M108.3 412.0 C123.3 426.3 134.1 436.7 146.8 450.4" fill="none" stroke="#C1312A" stroke-width="7" stroke-linecap="round"/><path d="M147.7 411.2 C135.0 424.2 121.0 438.8 105.5 453.5" fill="none" stroke="#C1312A" stroke-width="7" stroke-linecap="round"/>
+<text x="164" y="450" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="44" fill="#C1312A">只是记住</text>
+<path d="M566.0 431.0 Q575.2 440.2 583.5 451.7 Q593.6 426.4 614.3 407.1" fill="none" stroke="#23794A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="630" y="450" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="44" fill="#23794A">真正理解</text>
+<text x="120" y="540" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#596268">·</text>
+<text x="148" y="540" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#596268">背得出定义</text>
+<text x="580" y="540" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">·</text>
+<text x="608" y="540" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">用自己的话讲</text>
+<text x="120" y="636" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#596268">·</text>
+<text x="148" y="636" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#596268">换个问法就卡住</text>
+<text x="580" y="636" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">·</text>
+<text x="608" y="636" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">能举出例子</text>
+<text x="120" y="732" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#596268">·</text>
+<text x="148" y="732" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#596268">靠术语撑场面</text>
+<text x="580" y="732" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">·</text>
+<text x="608" y="732" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">讲给外行也懂</text>
+<path d="M127.3 781.4 C238.9 783.4 347.8 780.1 463.8 782.2 M461.5 781.5 C461.5 831.5 458.6 881.0 459.5 932.8 M464.8 931.9 C351.1 931.2 242.2 933.6 125.5 932.6 M131.4 932.1 C130.7 882.5 130.8 833.0 129.8 781.3" fill="none" stroke="#596268" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="158" y="846" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="34" fill="#596268">定义 = ？？？</text>
+<text x="158" y="898" font-family="'Caveat', 'Xiaolai', sans-serif" font-size="32" fill="#596268">copy of the book</text>
+<path d="M629.1 863.5 Q616.5 861.3 612.1 858.3 Q607.7 855.3 604.0 852.1 Q600.4 848.9 596.0 846.0 Q591.5 843.0 589.2 839.2 Q586.9 835.4 587.8 831.4 Q588.7 827.3 589.3 823.4 Q589.9 819.6 590.4 815.4 Q590.9 811.3 594.6 807.9 Q598.4 804.6 603.7 802.2 Q609.0 799.9 613.7 797.1 Q618.3 794.4 623.8 792.0 Q629.3 789.6 636.0 789.5 Q642.6 789.4 649.0 789.9 Q655.4 790.5 662.0 790.4 Q668.6 790.4 674.9 791.7 Q681.2 793.1 685.6 796.2 Q690.1 799.4 694.3 802.4 Q698.5 805.4 703.2 808.4 Q707.9 811.4 709.7 815.4 Q711.6 819.4 710.8 823.5 Q710.0 827.7 710.1 831.7 Q710.1 835.7 709.4 839.9 Q708.7 844.2 704.5 847.5 Q700.4 850.8 695.2 853.4 Q690.1 856.0 685.6 859.0 Q681.1 862.1 675.3 864.3 Q669.5 866.5 662.6 866.5" fill="none" stroke="#1D2327" stroke-width="5" stroke-linecap="round"/>
+<path d="M613 857 L600 886 L636 863" fill="none" stroke="#1D2327" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="628" cy="830" r="5" fill="#1D2327"/><circle cx="649" cy="830" r="5" fill="#1D2327"/><circle cx="670" cy="830" r="5" fill="#1D2327"/>
+<text x="730" y="846" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">就像……</text>
+<text x="604" y="922" font-family="'Caveat', 'Xiaolai', sans-serif" font-size="32" fill="#1C5BB8">in plain words</text>
+<text x="92" y="998" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="32" fill="#596268">所以</text>
+<path d="M91.1 1026.7 L373.0 1025.8 L663.9 1024.6 L652.1 1093.1 L373.0 1098.7 L95.0 1093.4Z" fill="#FFE26A"/>
+<text x="96" y="1082" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="54" fill="#1D2327">能讲清楚，才是真的会</text>
+</svg>

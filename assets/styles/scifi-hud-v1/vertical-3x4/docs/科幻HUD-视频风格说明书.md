@@ -1,0 +1,466 @@
+---
+schema_version: 1
+style_id: scifi-hud-v1
+style_name: 科幻HUD
+scope:
+  - aerospace_and_space_explainer
+  - hardware_and_systems_architecture
+  - engineering_mission_walkthrough
+  - technology_explainer
+  - diagnostics_and_monitoring
+canvas:
+  width_px: 1080
+  height_px: 1440
+  fps: 30
+  orientation: vertical
+safe_area:
+  structural: {left_px: 40, right_px: 40, top_px: 96, bottom_px: 60}
+  main_content: {left_px: 88, right_px: 88, top_px: 120, bottom_px: 100}
+  critical_text: {left_px: 88, right_px: 180, top_px: 120, bottom_px: 260}
+  cover_title: {left_px: 88, right_px: 180, top_px: 260, bottom_px: 460}
+  subtitles: {left_px: 88, right_px: 180, top_px: 990, bottom_px: 260}
+colors:
+  canvas: "#0A1622"
+  panel: "#0F2233"
+  panel_raised: "#132C40"
+  ink: "#E6F6FA"
+  hud_cyan: "#3FE0F0"
+  cyan_tint: "#0F3A48"
+  readout_gray: "#8FB3C4"
+  grid_line: "#16304A"
+  line_dim: "#2E5A73"
+  lock_teal: "#37D6B5"
+  warning_amber: "#FFB547"
+typography:
+  primary_stack: '"Noto Sans SC", sans-serif'
+  mono_stack: '"Orbitron", "JetBrains Mono", "Noto Sans SC", monospace'
+  font_files:
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
+    - {family: "Orbitron", weight: 700, file: "assets/fonts/orbitron-variable.woff2"}
+  sizes_px:
+    cover_min: 78
+    cover_max: 108
+    title_min: 46
+    title_max: 64
+    body_min: 24
+    body_max: 34
+    label_min: 18
+    label_max: 23
+  weights:
+    display: 900
+    heading: 700
+    body: 400
+    body_emphasis: 600
+    metadata: 700
+  line_heights:
+    display_min: 1.00
+    display_max: 1.10
+    body: 1.38
+    metadata: 1.2
+spacing:
+  content_left_px: 88
+  content_width_px: 904
+  group_min_px: 12
+  group_max_px: 20
+  card_stack_min_px: 16
+  card_main_padding_min_px: 28
+  card_main_padding_max_px: 36
+  card_secondary_padding_min_px: 22
+  card_secondary_padding_max_px: 28
+  section_min_px: 32
+  section_max_px: 56
+  element_edge_min_px: 22
+  skeleton_bottom_min_px: 22
+radius:
+  sm_px: 2
+  md_px: 4
+  lg_px: 6
+  xl_px: 8
+  pill_px: 999
+scene_archetypes:
+  - id: proposition
+    name: 目标锁定
+    use_for: 封面、钩子、章节开场、强结论
+    example_png: assets/style-guide/examples/proposition.png
+  - id: comparison
+    name: 扫描对比
+    use_for: 两个对象的参数对照、旧方案与新方案、预期与实测
+    example_png: assets/style-guide/examples/comparison.png
+  - id: process
+    name: 启动序列
+    use_for: 步骤、发射或上线流程、因果链、状态切换
+    example_png: assets/style-guide/examples/process.png
+  - id: capability_deck
+    name: 系统诊断
+    use_for: 系统总览、子系统状态、能力清单、验证结果
+    example_png: assets/style-guide/examples/capability_deck.png
+motion:
+  phases: {build: 0.30, breathe: 0.45, resolve: 0.25}
+  entrance_seconds: {min: 0.25, max: 0.60}
+  exit_seconds: {min: 0.15, max: 0.40}
+  transition_seconds: {min: 0.15, max: 0.35}
+  first_action_delay_seconds: {min: 0.10, max: 0.30}
+  entrance_ease: [power2.out, power3.out, expo.out]
+  exit_ease: [power2.in, power3.in]
+  verbs: [BOOT, DRAW, SCAN, TRACK, LOCK_ON, TICK, CONFIRM]
+  ambient_per_scene_max: 1
+  max_same_ease_tweens: 2
+audio:
+  sample_rate_hz: 48000
+  channels: 2
+  voice_integrated_lufs: {min: -18, max: -16}
+  bgm_integrated_lufs: {min: -30, max: -26}
+  bgm_ducking_db: {min: 6, max: 10}
+  ducking_attack_seconds: {min: 0.04, max: 0.12}
+  ducking_release_seconds: {min: 0.25, max: 0.60}
+  bgm_fade_seconds: {min: 0.80, max: 1.50}
+  sfx_gain_db: {min: -18, max: -12}
+  sfx_max_simultaneous: 2
+  final_integrated_lufs: -16
+  final_lufs_tolerance: 1
+  true_peak_max_dbtp: -1
+  lra_lu: {min: 2, max: 6}
+subtitles:
+  required: false
+  font_size_px: {min: 32, max: 38}
+  max_width_px: 812
+  max_lines: 2
+  max_fullwidth_chars_per_line: 16
+  line_height: {min: 1.30, max: 1.40}
+  background: "rgba(10, 22, 34, 0.86)"
+  text_color: "#E6F6FA"
+  padding_px: {vertical: 14, horizontal: 22}
+  radius_px: 4
+  break_rules:
+    - keep_proper_nouns_intact
+    - keep_english_phrases_intact
+    - keep_numbers_and_units_intact
+    - preserve_real_speech_gaps
+cover:
+  frame_zero_complete: true
+  default_lines: 2
+  max_lines: 3
+  max_fullwidth_chars_per_line: 10
+  font_size_px: {min: 78, max: 108}
+  line_height: {min: 1.00, max: 1.10}
+  max_width_px: 812
+  contrast_ratio_min: 7.0
+  stable_frames: 18
+forbidden:
+  - black_or_blank_frame_zero
+  - cover_fade_in_intermediate_state
+  - copying_commercial_game_or_film_ui_logos_or_characters
+  - arbitrary_new_brand_colors
+  - warm_or_multi_hue_neon_palette
+  - magenta_yellow_glitch_aesthetic
+  - gradient_text
+  - glow_blur_on_body_text
+  - persistent_full_frame_flicker
+  - excessive_glitch
+  - elastic_or_bouncy_motion
+  - decorative_fake_data_without_meaning
+  - warning_amber_as_decoration
+  - hairline_key_linework_under_2px
+  - all_elements_same_direction_same_speed
+  - labels_or_icons_touching_edges
+  - skeleton_or_list_without_bottom_padding
+  - sfx_on_every_element
+  - music_masking_voice
+---# “科幻HUD”视频风格说明书
+
+- 版本：1.0
+- 适用：航天、硬件、系统架构、工程任务、监控与诊断类竖屏解说
+- 基准画幅：1080×1440，30fps
+
+## 1. 风格定位
+
+“科幻HUD”借用驾驶舱、雷达、任务控制台这类仪器界面的视觉语言（业内常称 FUI，Fictional User Interface），把讲解变成一次「任务执行」：系统开机、扫描目标、读取遥测、锁定结论。观众感觉自己坐在控制台前，信息是被仪器检测出来的，而不是被摆上来的。
+
+五个关键词：
+
+- **冷静**：深海军蓝底，冷色单色线条，情绪由结构而不是色彩制造。
+- **精确**：刻度、编号、读数都对齐网格，数字带单位。
+- **可控**：一次只锁定一个目标，读数围绕它排布。
+- **机械**：动作干脆、线性感强，不回弹、不漂浮。
+- **可信**：每一个读数都有语义，装饰性假数据只能做弱纹理。
+
+与相邻风格的边界：
+
+- 不是「赛博故障」：没有品红、黄色、RGB 错位和故障撕裂，HUD 是稳定运行的仪器。
+- 不是「暗夜数据霓虹」：不以图表和霓虹渐变为主体，主体是准星、仪表、锁定框和状态面板。
+
+## 2. 适用与不适用
+
+适合：
+
+- 航天器、卫星、火箭、无人机、汽车与机器人等硬件原理。
+- 系统架构、服务监控、故障排查、运维与安全防护讲解。
+- 「一步步完成一个任务」式的流程说明。
+
+不适合直接套用：
+
+- 温情故事、生活方式、童趣和美食类内容。
+- 需要大段文字阅读的观点长文。
+
+## 3. 叙事动作
+
+每个镜头先写一句体验描述，再写布局：
+
+> 仪器此刻在检测什么？先亮起什么，后读出什么？最后锁定的是哪一个结论？
+
+1. **开机（BOOT）**：边框、网格和角标就位，系统进入可读状态。
+2. **扫描（SCAN）**：扫描线扫过对象，发现名称、问题或入口。
+3. **读取（TRACK / TICK）**：遥测数字滚动到位，参数与层级展开。
+4. **锁定（LOCK ON）**：准星收拢到主对象，结论被框定。
+5. **确认（CONFIRM）**：状态灯转为 `lock_teal`，或在异常处亮起唯一的琥珀警告。
+
+## 4. 画布、安全区与网格
+
+### 4.1 五层安全区
+
+安全区的精确像素见根目录 `frame.md` 的 `safe_area`，按 1080×1440 画幅推导，不要在镜头里另写一套数值。
+
+| 区域 | 用途 |
+|---|---|
+| `structural` | 角标括号、边框刻度、背景网格 |
+| `main_content` | 普通图形、面板与仪表 |
+| `critical_text` | 标题、数字、结论、核心术语 |
+| `cover_title` | 第 0 帧封面标题 |
+| `subtitles` | 可选内嵌字幕 |
+
+右侧与底部的避让区是抖音互动栏与底部 UI。刻度、网格可以进入，标题、读数结论和字幕不得进入。
+
+### 4.2 主内容轴与网格
+
+- 左起 88px，标准宽度 904px。
+- 背景网格以 40px 或 60px 为单位，使用 `grid_line`，1px。
+- 标题、状态条和面板共用同一左轴；主焦点仪表可以居中，但读数面板贴齐网格。
+
+## 5. 色彩系统
+
+| Token | 色值 | 用途 |
+|---|---|---|
+| canvas | `#0A1622` | 深海军蓝画布 |
+| panel | `#0F2233` | 面板实底 |
+| panel_raised | `#132C40` | 高亮面板、选中行 |
+| ink | `#E6F6FA` | 标题与正文（对 canvas 16.4:1） |
+| hud_cyan | `#3FE0F0` | 主线条、准星、强调文字（对 canvas 11.4:1） |
+| cyan_tint | `#0F3A48` | 进度底轨、选中底色、弱填充 |
+| readout_gray | `#8FB3C4` | 辅助说明、次级读数（对 canvas 8.2:1） |
+| grid_line | `#16304A` | 背景网格 |
+| line_dim | `#2E5A73` | 次级结构线、未激活刻度（不承载文字） |
+| lock_teal | `#37D6B5` | 正常、通过、已锁定（对 canvas 9.9:1） |
+| warning_amber | `#FFB547` | 唯一暖色：警告、风险、异常（对 canvas 10.4:1） |
+
+规则：
+
+- `hud_cyan` 在每个信息镜头中至少出现一次，但只以线条、文字和小面积色块出现，不铺大面积背景。
+- `warning_amber` 每镜头最多出现在一个语义点上；没有异常就不出现。
+- `line_dim` 与 `grid_line` 对比度不足 4.5:1，只用于线条，不承载任何文字。
+- 所有文字配色对 `panel_raised` 仍不低于 6:1。
+
+## 6. 字体与信息层级
+
+### 6.1 字体角色
+
+- 中文与正文：`Noto Sans SC`（400 / 600 / 700 / 900）。
+- 拉丁读数、编号、短标签：`Orbitron` 700，字距 2–6px。只写大写短词与数字，不写中文、不写长句。
+- 代码与日志：`JetBrains Mono`。
+- 渲染机不装系统字体，所有字体都通过项目内 `assets/fonts/` 的 `@font-face` 显式加载。
+
+### 6.2 字号
+
+| 角色 | 字号 | 字重 |
+|---|---:|---:|
+| 封面标题 | 78–108px | 900 |
+| 镜头标题 | 46–64px | 700 |
+| 正文 / 结论 | 24–34px | 400–600 |
+| 标签 / 读数单位 | 18–23px | 700 |
+
+中文正文不得低于 24px。大号读数（如 `98.6%`）可以用 Orbitron 做到 48–96px，作为主焦点使用。
+
+## 7. 形状、空间与圆角
+
+### 7.1 形状语言
+
+- **角标括号**：面板与锁定框只画四角，不画完整描边，是本风格最核心的母题。
+- **切角面板**：矩形右上或左下切 12–20px 的 45° 角。
+- **圆环仪表**：外圈刻度 + 进度弧 + 中心读数。
+- **十字准星**：圆 + 四段断开的十字线，锁定时收拢。
+- **刻度尺**：边缘短刻度，每 5 格一长刻度。
+- **状态灯**：小方块或小圆点，`lock_teal` / `warning_amber` 两态。
+
+### 7.2 留白与圆角
+
+- 同组元素 12–20px；不同信息组 32–56px；主面板内边距 28–36px。
+- 标签、读数、角标距边缘至少 22px；列表与进度条底部至少 22px。
+- 圆角只有 2 / 4 / 6 / 8px 和 999px（状态胶囊）。不做大圆角卡片。
+- 关键线条 2–3px，背景网格与刻度 1px。
+
+## 8. 四类镜头骨架
+
+### 8.1 目标锁定（proposition）
+
+用于封面、钩子、章节开场和强结论。一个被准星锁定的核心对象加一个大判断；判断文字在 `critical_text` 区，准星只是框住它或它旁边的对象，不遮挡文字。
+
+![目标锁定示例](../assets/style-guide/examples/proposition.png)
+
+### 8.2 扫描对比（comparison）
+
+用于两个对象的参数对照、旧方案与新方案、预期与实测。两个并列的扫描窗口使用同一套刻度与读数，差异项用高亮行标出；结论单独占一条状态栏，不塞进任一窗口。
+
+![扫描对比示例](../assets/style-guide/examples/comparison.png)
+
+### 8.3 启动序列（process）
+
+用于步骤、发射或上线流程、因果链和状态切换。纵向时间轴 + 编号 + 状态灯；已完成步骤为 `lock_teal`，当前步骤为 `hud_cyan` 高亮行，未开始步骤为 `line_dim`。
+
+![启动序列示例](../assets/style-guide/examples/process.png)
+
+### 8.4 系统诊断（capability_deck）
+
+用于系统总览、子系统状态、能力清单和验证结果。一个主仪表（圆环或大读数）作为锚点，周围是子系统读数面板；异常子系统使用唯一的琥珀警告。
+
+![系统诊断示例](../assets/style-guide/examples/capability_deck.png)
+
+## 9. 动画语法
+
+### 9.1 三阶段
+
+- **Build 30%**：开机、描边、扫描，按信息优先级入场。
+- **Breathe 45%**：信息稳定可读。最多一种环境动作（缓慢雷达扫线、状态灯呼吸或刻度微移三选一），也可以完全静止。
+- **Resolve 25%**：锁定结论或快速退场。
+
+### 9.2 品牌动作词
+
+- `BOOT`：边框角标从中心向四角展开，或网格逐行点亮。
+- `DRAW`：线条、圆环、连线沿路径描绘（stroke-dashoffset）。
+- `SCAN`：一条亮线匀速扫过对象，扫过处内容出现。
+- `TRACK`：准星或高亮框从一个对象移动到另一个对象。
+- `LOCK_ON`：准星从放大态收拢到目标，四角括号咬合。
+- `TICK`：数字从 0 或旧值滚动到目标值，按整数步进。
+- `CONFIRM`：状态灯变色、状态文字替换为 `NOMINAL` / `LOCKED` 等。
+
+入场 0.25–0.60s，使用 ease-out；退场 0.15–0.40s，使用 ease-in；第一动作延迟 0.10–0.30s。扫描线本身可以是线性匀速，其余位移一律 ease-out。一个镜头中相同 ease 的独立 tween 不超过两个。
+
+### 9.3 转场
+
+- 同一系统内切换：`TRACK` 移动准星，或扫描线穿过画面换内容。
+- 新章节：硬切，或 0.15–0.35s 的横向擦除。
+- 重要读数稳定 1.0–1.8s 后再切镜头。
+
+禁止弹跳、橡皮筋、持续全屏闪烁、RGB 错位故障、持续漂浮，以及所有元素同方向同速度入场。闪烁只能是一次性的开机闪（不超过 3 帧），不能循环。
+
+## 10. 字幕、口播与声音
+
+### 字幕
+
+- 可选，最多两行，32–38px，最大宽度 812px，行距 1.30–1.40。
+- 每行建议不超过 16 个全角字符；专有名词、英文词组、数字与单位不可拆开。
+- 推荐 `rgba(10,22,34,0.86)` 底、`ink` 文字、14×22px 内边距、4px 圆角，左侧可加 3px `hud_cyan` 竖条。
+- 字幕不得遮挡准星、主读数和结论栏。
+
+### 声音
+
+- 人声保持原速；BGM 用低频持续音床，有人声时下压 6–10dB。
+- SFX 只给锁定、确认、警告和关键转场，同时最多两个；数字滚动不配连续滴答声。
+- 成片目标 -16 LUFS ±1，真峰值不高于 -1 dBTP。其余参数以 frontmatter `audio` 为准。
+
+## 11. 首帧封面
+
+- 第 0 帧必须是完整完成态：准星已锁定、角标已就位、标题完整。
+- 默认两行，最多三行；单行不超过 10 个全角字符；字号 78–108px；最大宽度 812px。
+- 标题对背景对比度不低于 7:1（`ink` 与 `hud_cyan` 都满足）。
+- 30fps 下至少稳定 18 帧后才允许转场；开机动画不得出现在封面上。
+
+## 12. 不可变项与可变项
+
+### 不可变
+
+- 画布、核心色、字体角色、安全区、空间比例和圆角。
+- 四类骨架的语义用途，琥珀色的唯一警告语义。
+- 动作词、三阶段节奏、人声优先的声音目标。
+
+### 可变
+
+- 仪表类型、准星形态、读数数量、局部构图。
+- 内容图片、产品线框图、第三方 Logo（仅作内容素材）。
+
+## 13. Do / Don’t
+
+### Do
+
+- 用角标括号、准星和刻度框出「此刻正在看的东西」。
+- 让读数带单位、带编号，与文案一一对应。
+- 让最重要的信息先被扫描、先被锁定。
+- 读完的信息允许静止停留，不为了「有动感」而加动作。
+
+### Don’t
+
+- 不复制任何商业游戏、电影、剧集的界面布局、Logo、角色或标志性 HUD 元素。
+- 不引入品红、紫色、黄绿等额外霓虹色，不做 RGB 故障撕裂。
+- 不给正文加发光模糊，不使用渐变文字。
+- 不用满屏无意义滚动数字、乱码和六边形纹理填空。
+- 不把琥珀色当装饰色。
+- 不让标签、读数、角标贴边。
+
+## 14. 制作与验收清单
+
+### 制作前
+
+- [ ] 明确本镜头属于哪种骨架。
+- [ ] 写出「仪器在检测什么」的体验描述。
+- [ ] 标出主焦点的登场顺序（整镜最多两个）和三个景深层次：网格背景、面板中景、准星与读数前景。
+- [ ] 核对关键文字安全区。
+
+### 画面
+
+- [ ] 色值全部来自 token；琥珀色最多一处且有语义。
+- [ ] 中文正文不低于 24px；Orbitron 只用于拉丁短标签和数字。
+- [ ] `typography.font_files` 用到的每个字重都有 `@font-face`，`src` 指向镜头目录内真实存在的文件，且都是 `font-display: block`。渲染机不装系统字体，漏一条会静默回退成通用字体，本地看不出来。
+- [ ] 关键线条不细于 2px；标签和角标距边缘至少 22px；列表底部至少 22px。
+- [ ] 无裁切、重叠、错误连接。
+
+### 动画
+
+- [ ] Build / Breathe / Resolve 完整。
+- [ ] 入场顺序符合信息优先级；无回弹。
+- [ ] 每镜头最多一种环境动作。
+- [ ] 数字滚动、闪烁全部由时间线驱动，任意帧可重建。
+
+### 交付
+
+- [ ] 第 0 帧完成并稳定至少 18 帧。
+- [ ] 1080×1440、30fps、H.264/yuv420p/BT.709。
+
+## 15. 可复制镜头提示词模板
+
+```text
+使用“科幻HUD”风格制作本镜头。
+
+品牌层必须读取并遵守项目根目录 frame.md：
+- 不改核心色、字体角色、安全区、间距、圆角、动作语法和声音目标。
+- 根据当前文案从 proposition / comparison / process / capability_deck 中选择最合适的骨架。
+- 镜头内部图形隐喻、仪表类型、读数数量、局部构图和动画由你根据语义设计。
+- 同一时刻只有一个主焦点；整镜最多两个焦点，按节拍依次登场；背景/中景/前景三个层次。
+- 使用 BOOT / DRAW / SCAN / TRACK / LOCK ON / TICK / CONFIRM 等干脆、机械的动作，不回弹。
+- 琥珀色只用于唯一的警告或异常；不复制任何商业游戏或影视界面。
+- 输出 1080×1440、30fps、静音、无音轨 MP4。
+
+镜头文案：
+{{SCENE_TEXT}}
+
+镜头时长：
+{{SCENE_DURATION_SECONDS}}
+```
+
+## 16. 通用验证资产
+
+四类通用骨架联系表：
+
+![四类风格示例](../assets/style-guide/examples/contact-sheet.png)
+
+机器使用时，以根目录 [`frame.md`](../frame.md) 的 YAML frontmatter 为规范性来源。

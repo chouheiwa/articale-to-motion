@@ -1,0 +1,159 @@
+schema_version: 1
+style_id: whiteboard-doodle-v1
+style_name: 白板手绘
+scope:
+  - tutorial_and_how_to
+  - concept_breakdown
+  - classroom_style_explainer
+  - learning_methods_and_habits
+  - science_and_business_basics
+# @@CANVAS_AND_SAFE_AREA@@
+colors:
+  canvas: "#FBFBF8"
+  board_ghost: "#ECEEEA"
+  ink: "#1D2327"
+  marker_blue: "#1C5BB8"
+  marker_red: "#C1312A"
+  marker_green: "#23794A"
+  highlighter: "#FFE26A"
+  sticky_note: "#FFF1A6"
+  blue_wash: "#E3ECF8"
+  support_gray: "#596268"
+  pencil_line: "#C9CED1"
+typography:
+  primary_stack: '"Xiaolai", "Noto Sans SC", sans-serif'
+  mono_stack: '"Caveat", "Noto Sans SC", cursive'
+  font_files:
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
+    - {family: "Xiaolai", weight: 400, file: "assets/fonts/xiaolai-400.woff2"}
+    - {family: "Caveat", weight: 600, file: "assets/fonts/caveat-600.woff2"}
+  sizes_px:
+    cover_min: 84
+    cover_max: 116
+    title_min: 50
+    title_max: 68
+    body_min: 26
+    body_max: 36
+    label_min: 24
+    label_max: 30
+  weights:
+    display: 400
+    heading: 400
+    body: 400
+    body_emphasis: 600
+    metadata: 600
+  line_heights:
+    display_min: 1.05
+    display_max: 1.18
+    body: 1.40
+    metadata: 1.20
+spacing:
+  content_left_px: 88
+  content_width_px: 904
+  group_min_px: 14
+  group_max_px: 24
+  card_stack_min_px: 20
+  card_main_padding_min_px: 30
+  card_main_padding_max_px: 40
+  card_secondary_padding_min_px: 22
+  card_secondary_padding_max_px: 30
+  section_min_px: 36
+  section_max_px: 64
+  element_edge_min_px: 22
+  skeleton_bottom_min_px: 22
+radius:
+  sm_px: 6
+  md_px: 14
+  lg_px: 24
+  xl_px: 36
+  pill_px: 999
+scene_archetypes:
+  - id: proposition
+    name: 大观点
+    use_for: 封面、钩子、章节开场、一句话结论
+    example_png: assets/style-guide/examples/proposition.png
+  - id: comparison
+    name: T 形对照
+    use_for: 误区与正解、之前与之后、两种做法的取舍
+    example_png: assets/style-guide/examples/comparison.png
+  - id: process
+    name: 箭头流程
+    use_for: 步骤、因果链、循环、状态变化
+    example_png: assets/style-guide/examples/process.png
+  - id: capability_deck
+    name: 思维导图
+    use_for: 概念总览、知识结构、要素拆解、一镜收束全篇
+    example_png: assets/style-guide/examples/capability_deck.png
+motion:
+  phases: {build: 0.40, breathe: 0.40, resolve: 0.20}
+  entrance_seconds: {min: 0.40, max: 0.90}
+  exit_seconds: {min: 0.20, max: 0.45}
+  transition_seconds: {min: 0.25, max: 0.50}
+  first_action_delay_seconds: {min: 0.10, max: 0.30}
+  entrance_ease: [power1.inOut, power2.out, sine.inOut]
+  exit_ease: [power2.in, sine.in]
+  verbs: [DRAW_ON, WRITE_ON, UNDERLINE, CIRCLE, HIGHLIGHT, POINT, STICK, ERASE]
+  ambient_per_scene_max: 1
+  max_same_ease_tweens: 3
+audio:
+  sample_rate_hz: 48000
+  channels: 2
+  voice_integrated_lufs: {min: -18, max: -16}
+  bgm_integrated_lufs: {min: -30, max: -26}
+  bgm_ducking_db: {min: 6, max: 10}
+  ducking_attack_seconds: {min: 0.04, max: 0.12}
+  ducking_release_seconds: {min: 0.25, max: 0.60}
+  bgm_fade_seconds: {min: 0.80, max: 1.50}
+  sfx_gain_db: {min: -18, max: -12}
+  sfx_max_simultaneous: 2
+  final_integrated_lufs: -16
+  final_lufs_tolerance: 1
+  true_peak_max_dbtp: -1
+  lra_lu: {min: 2, max: 6}
+subtitles:
+  required: false
+  font_size_px: {min: 32, max: 38}
+  max_width_px: 812
+  max_lines: 2
+  max_fullwidth_chars_per_line: 16
+  line_height: {min: 1.30, max: 1.40}
+  background: "rgba(251, 251, 248, 0.92)"
+  text_color: "#1D2327"
+  padding_px: {vertical: 14, horizontal: 22}
+  radius_px: 14
+  break_rules:
+    - keep_proper_nouns_intact
+    - keep_english_phrases_intact
+    - keep_numbers_and_units_intact
+    - preserve_real_speech_gaps
+cover:
+  frame_zero_complete: true
+  default_lines: 2
+  max_lines: 3
+  max_fullwidth_chars_per_line: 9
+  font_size_px: {min: 84, max: 116}
+  line_height: {min: 1.05, max: 1.18}
+  max_width_px: 812
+  contrast_ratio_min: 7.0
+  stable_frames: 18
+forbidden:
+  - black_or_blank_frame_zero
+  - cover_fade_in_intermediate_state
+  - runtime_random_stroke_jitter
+  - boiling_line_on_every_element
+  - drawing_hand_or_cursor_prop
+  - clip_art_or_stock_icons
+  - copied_branded_whiteboard_templates
+  - stick_figure_characters
+  - more_than_three_marker_colors_per_scene
+  - colored_text_on_highlighter
+  - gradient_or_glossy_fill
+  - drop_shadow_on_strokes
+  - elastic_or_bouncy_motion
+  - all_elements_same_direction_same_speed
+  - labels_or_icons_touching_edges
+  - sfx_on_every_element
+  - music_masking_voice

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <rect width="1080" height="1440" fill="#0B0F1A"/>
+
+  <!-- background split -->
+  <path d="M40 320 H608 L470 1380 H40 Z" fill="#1558C0" opacity="0.10"/>
+  <path d="M608 320 H1040 V1380 H470 Z" fill="#B8182E" opacity="0.10"/>
+  <path d="M608 320 L470 1380" stroke="#26314A" stroke-width="3"/>
+  <g fill="none" stroke="#26314A" stroke-width="3">
+    <path d="M40 150 V96 H100"/>
+    <path d="M980 96 H1040 V150"/>
+    <path d="M40 1326 V1380 H100"/>
+  </g>
+
+  <!-- header -->
+  <path d="M103 120 H290 L275 172 H88 Z" fill="#141B2D"/>
+  <path d="M103 120 H115 L100 172 H88 Z" fill="#2F8CFF"/>
+  <text x="126" y="157" fill="#F2F5FA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif" letter-spacing="2">双方对位</text>
+  <text x="992" y="156" text-anchor="end" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">R02 / 07:30</text>
+  <rect x="88" y="200" width="904" height="2" fill="#26314A"/>
+  <rect x="88" y="200" width="220" height="2" fill="#2F8CFF"/>
+
+  <text x="86" y="292" fill="#F2F5FA" font-size="56" font-weight="900" font-family="'Noto Sans SC', sans-serif">单体 vs 微服务，谁更适合你？</text>
+
+  <!-- scorebug -->
+  <path d="M88 340 H412 L382 456 H88 Z" fill="#1558C0"/>
+  <text x="120" y="404" fill="#F2F5FA" font-size="44" font-weight="900" font-family="'Noto Sans SC', sans-serif">单体</text>
+  <text x="120" y="440" fill="#F2F5FA" fill-opacity="0.8" font-size="28" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="3">TEAM MONO</text>
+  <path d="M412 340 H606 L576 456 H382 Z" fill="#141B2D"/>
+  <text x="494" y="432" text-anchor="middle" fill="#F2F5FA" font-size="96" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="4">3 : 2</text>
+  <path d="M606 340 H900 V456 H576 Z" fill="#B8182E"/>
+  <text x="868" y="404" text-anchor="end" fill="#F2F5FA" font-size="44" font-weight="900" font-family="'Noto Sans SC', sans-serif">微服务</text>
+  <text x="868" y="440" text-anchor="end" fill="#F2F5FA" fill-opacity="0.8" font-size="28" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="3">TEAM MICRO</text>
+
+  <!-- stat rows -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <g transform="translate(0 500)">
+      <rect x="88" width="812" height="72" fill="#141B2D"/>
+      <text x="494" y="30" text-anchor="middle" fill="#F2F5FA" font-size="26" font-weight="600">上线速度</text>
+      <rect x="250" y="44" width="234" height="10" fill="#2F8CFF"/>
+      <rect x="504" y="44" width="130" height="10" fill="#FF3B4E" opacity="0.35"/>
+      <text x="112" y="58" fill="#2F8CFF" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">9</text>
+      <text x="876" y="58" text-anchor="end" fill="#8C9BB5" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">5</text>
+    </g>
+    <g transform="translate(0 584)">
+      <rect x="88" width="812" height="72" fill="#141B2D"/>
+      <text x="494" y="30" text-anchor="middle" fill="#F2F5FA" font-size="26" font-weight="600">故障隔离</text>
+      <rect x="380" y="44" width="104" height="10" fill="#2F8CFF" opacity="0.35"/>
+      <rect x="504" y="44" width="208" height="10" fill="#FF3B4E"/>
+      <text x="112" y="58" fill="#8C9BB5" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">4</text>
+      <text x="876" y="58" text-anchor="end" fill="#FF3B4E" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">8</text>
+    </g>
+    <g transform="translate(0 668)">
+      <rect x="88" width="812" height="72" fill="#141B2D"/>
+      <text x="494" y="30" text-anchor="middle" fill="#F2F5FA" font-size="26" font-weight="600">运维成本</text>
+      <rect x="276" y="44" width="208" height="10" fill="#2F8CFF"/>
+      <rect x="504" y="44" width="104" height="10" fill="#FF3B4E" opacity="0.35"/>
+      <text x="112" y="58" fill="#2F8CFF" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">8</text>
+      <text x="876" y="58" text-anchor="end" fill="#8C9BB5" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">4</text>
+    </g>
+    <g transform="translate(0 752)">
+      <rect x="88" width="812" height="72" fill="#141B2D"/>
+      <text x="494" y="30" text-anchor="middle" fill="#F2F5FA" font-size="26" font-weight="600">独立扩容</text>
+      <rect x="354" y="44" width="130" height="10" fill="#2F8CFF" opacity="0.35"/>
+      <rect x="504" y="44" width="234" height="10" fill="#FF3B4E"/>
+      <text x="112" y="58" fill="#8C9BB5" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">5</text>
+      <text x="876" y="58" text-anchor="end" fill="#FF3B4E" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">9</text>
+    </g>
+    <g transform="translate(0 836)">
+      <rect x="88" width="812" height="72" fill="#141B2D"/>
+      <text x="494" y="30" text-anchor="middle" fill="#F2F5FA" font-size="26" font-weight="600">新人上手</text>
+      <rect x="250" y="44" width="234" height="10" fill="#2F8CFF"/>
+      <rect x="504" y="44" width="156" height="10" fill="#FF3B4E" opacity="0.35"/>
+      <text x="112" y="58" fill="#2F8CFF" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">9</text>
+      <text x="876" y="58" text-anchor="end" fill="#8C9BB5" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">6</text>
+    </g>
+  </g>
+
+  <!-- verdict -->
+  <path d="M88 950 H900 V1130 L860 1170 H88 Z" fill="#141B2D" stroke="#26314A" stroke-width="2"/>
+  <rect x="88" y="950" width="10" height="220" fill="#2F8CFF"/>
+  <path d="M134 982 H270 L260 1020 H124 Z" fill="#FFC23D"/>
+  <text x="197" y="1012" text-anchor="middle" fill="#0B0F1A" font-size="32" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="3">VERDICT</text>
+  <text x="124" y="1090" fill="#F2F5FA" font-size="48" font-weight="900" font-family="'Noto Sans SC', sans-serif">10 人以内，选单体</text>
+  <text x="124" y="1138" fill="#8C9BB5" font-size="26" font-family="'Noto Sans SC', sans-serif">业务边界没稳定前，拆服务只会多一倍运维。</text>
+</svg>

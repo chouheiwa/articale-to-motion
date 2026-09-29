@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <defs>
+    <pattern id="stripes" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(16)">
+      <rect width="8" height="24" fill="#26314A"/>
+    </pattern>
+  </defs>
+  <rect width="1080" height="1440" fill="#0B0F1A"/>
+
+  <!-- background layer -->
+  <path d="M780 380 H1040 V700 Z" fill="url(#stripes)" opacity="0.45"/>
+  <text x="1036" y="1376" text-anchor="end" fill="#141B2D" font-size="280" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">M20</text>
+  <g fill="none" stroke="#26314A" stroke-width="3">
+    <path d="M40 150 V96 H100"/>
+    <path d="M980 96 H1040 V150"/>
+    <path d="M40 1326 V1380 H100"/>
+  </g>
+
+  <!-- header -->
+  <path d="M103 120 H318 L303 172 H88 Z" fill="#141B2D"/>
+  <path d="M103 120 H115 L100 172 H88 Z" fill="#2F8CFF"/>
+  <text x="126" y="157" fill="#F2F5FA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif" letter-spacing="2">比赛时间线</text>
+  <text x="992" y="156" text-anchor="end" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">R03 / 12:00</text>
+  <rect x="88" y="200" width="904" height="2" fill="#26314A"/>
+  <rect x="88" y="200" width="220" height="2" fill="#2F8CFF"/>
+
+  <text x="86" y="292" fill="#F2F5FA" font-size="54" font-weight="900" font-family="'Noto Sans SC', sans-serif">从单体到微服务的 20 个月</text>
+  <text x="88" y="342" fill="#8C9BB5" font-size="26" font-family="'Noto Sans SC', sans-serif">一次拆分，决定了后面一年的节奏。</text>
+
+  <!-- track -->
+  <rect x="158" y="400" width="4" height="760" fill="#26314A"/>
+  <rect x="158" y="400" width="4" height="380" fill="#2F8CFF"/>
+
+  <g font-family="'Noto Sans SC', sans-serif">
+    <!-- node 0 -->
+    <path d="M160 418 L172 430 L160 442 L148 430 Z" fill="#2F8CFF"/>
+    <text x="200" y="416" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 00</text>
+    <text x="200" y="458" fill="#F2F5FA" font-size="34" font-weight="700">单体上线，一周三次发布</text>
+    <text x="200" y="496" fill="#8C9BB5" font-size="24">一个仓库，一条流水线</text>
+
+    <!-- node 1 -->
+    <path d="M160 563 L172 575 L160 587 L148 575 Z" fill="#2F8CFF"/>
+    <text x="200" y="561" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 03</text>
+    <text x="200" y="603" fill="#F2F5FA" font-size="34" font-weight="700">用户破万，单库开始吃紧</text>
+    <text x="200" y="641" fill="#8C9BB5" font-size="24">慢查询从每天 2 次涨到 40 次</text>
+
+    <!-- turning point -->
+    <path d="M160 760 L180 780 L160 800 L140 780 Z" fill="#FF3B4E"/>
+    <path d="M200 690 H900 V870 H200 Z" fill="#141B2D" stroke="#26314A" stroke-width="2"/>
+    <rect x="200" y="690" width="8" height="180" fill="#FF3B4E"/>
+    <path d="M242 712 H372 L362 752 H232 Z" fill="#B8182E"/>
+    <text x="302" y="742" text-anchor="middle" fill="#F2F5FA" font-size="26" font-weight="700">转折点</text>
+    <text x="876" y="742" text-anchor="end" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 08</text>
+    <text x="232" y="808" fill="#F2F5FA" font-size="40" font-weight="900">订单模块先拆出去</text>
+    <text x="232" y="848" fill="#8C9BB5" font-size="26">只拆最痛的一块，其余保持单体</text>
+
+    <!-- node 3 -->
+    <path d="M160 948 L172 960 L160 972 L148 960 Z" fill="#8C9BB5"/>
+    <text x="200" y="946" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 14</text>
+    <text x="200" y="988" fill="#F2F5FA" font-size="34" font-weight="700">拆出 6 个服务，发布互不阻塞</text>
+    <text x="200" y="1026" fill="#8C9BB5" font-size="24">每个服务独立部署、独立回滚</text>
+
+    <!-- node 4 -->
+    <path d="M160 1086 L174 1100 L160 1114 L146 1100 Z" fill="#3DDC84"/>
+    <text x="200" y="1086" fill="#3DDC84" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 20 / NOW</text>
+    <text x="200" y="1128" fill="#F2F5FA" font-size="34" font-weight="700">局面稳定，故障只影响单个服务</text>
+    <text x="200" y="1166" fill="#8C9BB5" font-size="24">平均恢复时间 18 分钟</text>
+  </g>
+</svg>

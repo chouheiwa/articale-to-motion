@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <pattern id="stripes" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(16)">
+      <rect width="8" height="24" fill="#26314A"/>
+    </pattern>
+  </defs>
+  <rect width="1080" height="1920" fill="#0B0F1A"/>
+
+  <!-- background layer -->
+  <path d="M720 230 H1040 V720 Z" fill="url(#stripes)" opacity="0.45"/>
+  <path d="M1040 900 V1420 L600 1860 H420 Z" fill="#141B2D" opacity="0.55"/>
+  <text x="1036" y="1856" text-anchor="end" fill="#141B2D" font-size="340" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="6">MVP</text>
+  <g fill="none" stroke="#26314A" stroke-width="3">
+    <path d="M40 150 V96 H100"/>
+    <path d="M980 96 H1040 V150"/>
+    <path d="M40 1806 V1860 H100"/>
+  </g>
+
+  <!-- header -->
+  <path d="M103 120 H292 L277 172 H88 Z" fill="#141B2D"/>
+  <path d="M103 120 H115 L100 172 H88 Z" fill="#2F8CFF"/>
+  <text x="126" y="157" fill="#F2F5FA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif" letter-spacing="2">MVP 卡</text>
+  <circle cx="742" cy="147" r="7" fill="#3DDC84"/>
+  <text x="758" y="157" fill="#3DDC84" font-size="28" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="2">LIVE</text>
+  <text x="992" y="156" text-anchor="end" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">R01 / 04:12</text>
+  <rect x="88" y="200" width="904" height="2" fill="#26314A"/>
+  <rect x="88" y="200" width="220" height="2" fill="#2F8CFF"/>
+
+  <!-- headline -->
+  <g font-family="'Noto Sans SC', sans-serif" font-weight="900">
+    <text x="84" y="382" fill="#F2F5FA" font-size="104" letter-spacing="-1">小团队的赛点</text>
+    <text x="84" y="502" fill="#2F8CFF" font-size="104" letter-spacing="-1">先打单体</text>
+  </g>
+  <text x="88" y="574" fill="#8C9BB5" font-size="34" font-family="'Noto Sans SC', sans-serif">10 人以内，上线速度决定胜负。</text>
+
+  <!-- MVP card -->
+  <path d="M88 650 H860 L900 690 V1340 H128 L88 1300 Z" fill="#141B2D" stroke="#26314A" stroke-width="2"/>
+  <path d="M88 650 H560 L554 658 H88 Z" fill="#FFC23D"/>
+  <path d="M143 690 H276 L258 754 H125 Z" fill="#FFC23D"/>
+  <text x="200" y="740" text-anchor="middle" fill="#0B0F1A" font-size="52" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="2">MVP</text>
+  <text x="302" y="736" fill="#F2F5FA" font-size="38" font-weight="700" font-family="'Noto Sans SC', sans-serif">单体架构</text>
+  <text x="862" y="734" text-anchor="end" fill="#2F8CFF" font-size="32" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="3">TEAM MONO</text>
+  <rect x="124" y="786" width="740" height="2" fill="#26314A"/>
+
+  <text x="116" y="1040" fill="#F2F5FA" font-size="290" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">3.2X</text>
+  <text x="600" y="960" fill="#F2F5FA" font-size="38" font-weight="700" font-family="'Noto Sans SC', sans-serif">上线速度</text>
+  <text x="600" y="1010" fill="#8C9BB5" font-size="28" font-family="'Noto Sans SC', sans-serif">对比同规模</text>
+  <text x="600" y="1048" fill="#8C9BB5" font-size="28" font-family="'Noto Sans SC', sans-serif">微服务团队</text>
+  <rect x="124" y="1094" width="740" height="2" fill="#26314A"/>
+
+  <g font-family="'Noto Sans SC', sans-serif">
+    <text x="124" y="1216" fill="#F2F5FA" font-size="92" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">12</text>
+    <text x="124" y="1266" fill="#8C9BB5" font-size="26">次部署 / 周</text>
+    <rect x="352" y="1128" width="2" height="148" fill="#26314A"/>
+    <text x="378" y="1216" fill="#F2F5FA" font-size="92" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">18</text>
+    <text x="378" y="1266" fill="#8C9BB5" font-size="26">分钟定位故障</text>
+    <rect x="606" y="1128" width="2" height="148" fill="#26314A"/>
+    <text x="632" y="1216" fill="#F2F5FA" font-size="92" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">2</text>
+    <text x="632" y="1266" fill="#8C9BB5" font-size="26">天新人上手</text>
+  </g>
+
+  <!-- lower third -->
+  <path d="M88 1384 H900 L878 1464 H88 Z" fill="#141B2D"/>
+  <rect x="88" y="1384" width="10" height="80" fill="#2F8CFF"/>
+  <text x="122" y="1435" fill="#F2F5FA" font-size="34" font-weight="700" font-family="'Noto Sans SC', sans-serif">结论：先跑通业务，再谈拆分</text>
+  <text x="852" y="1434" text-anchor="end" fill="#2F8CFF" font-size="30" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif" letter-spacing="3">VERDICT</text>
+  <text x="88" y="1526" fill="#8C9BB5" font-size="24" font-family="'Noto Sans SC', sans-serif">样本：8 支 10 人以内团队，统计周期 6 个月</text>
+</svg>

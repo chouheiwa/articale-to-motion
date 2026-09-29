@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1440" viewBox="0 0 1080 1440">
+<defs>
+<g id="star-on"><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" transform="translate(0,7)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" fill="#FFC83D" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><ellipse cx="-10" cy="-14" rx="9" ry="5" fill="#FFFFFF" opacity="0.6" transform="rotate(-30 -10 -14)"/></g>
+<g id="star-off"><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" transform="translate(0,7)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" fill="#FFE3EE" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/></g>
+<g id="coin"><circle cx="0" cy="6" r="30" fill="#3B1E54"/><circle r="30" fill="#FFC83D" stroke="#3B1E54" stroke-width="5"/><circle r="18" fill="none" stroke="#3B1E54" stroke-width="3" opacity="0.35"/><path d="M-10,-16 A18,18 0 0 1 12,-14" stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.7"/></g>
+<g id="drop"><path d="M0,-62 C18,-36 46,-8 46,20 A46,46 0 0 1 -46,20 C-46,-8 -18,-36 0,-62Z" transform="translate(0,9)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-62 C18,-36 46,-8 46,20 A46,46 0 0 1 -46,20 C-46,-8 -18,-36 0,-62Z" fill="#45B8F5" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><path d="M-22,0 C-24,16 -14,32 2,38" stroke="#FFFFFF" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.55"/><circle cx="-12" cy="-22" r="6" fill="#FFFFFF" opacity="0.6"/></g>
+<g id="sparkle"><path d="M0,-18 Q3,-3 18,0 Q3,3 0,18 Q-3,3 -18,0 Q-3,-3 0,-18Z" fill="#FFFFFF" stroke="#3B1E54" stroke-width="3" stroke-linejoin="round"/></g>
+<g id="check"><circle r="30" fill="#FFFFFF" stroke="#3B1E54" stroke-width="5"/><path d="M-13,1 L-3,11 L15,-9" fill="none" stroke="#25C08A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="lock"><rect x="-22" y="-4" width="44" height="34" rx="10" fill="#FFFFFF" stroke="#6E4E86" stroke-width="5"/><path d="M-12,-4 V-14 A12,12 0 0 1 12,-14 V-4" fill="none" stroke="#6E4E86" stroke-width="5"/><circle cy="12" r="5" fill="#6E4E86"/></g>
+</defs>
+<rect width="1080" height="1440" fill="#FFF4E8"/>
+<rect x="0" y="96" width="1080" height="200" fill="#FFFFFF" opacity="0.5"/>
+<path d="M-200,296 L0,96 L32.0,96 L-168.0,296Z M-136,296 L64,96 L96.0,96 L-104.0,296Z M-72,296 L128,96 L160.0,96 L-40.0,296Z M-8,296 L192,96 L224.0,96 L24.0,296Z M56,296 L256,96 L288.0,96 L88.0,296Z M120,296 L320,96 L352.0,96 L152.0,296Z M184,296 L384,96 L416.0,96 L216.0,296Z M248,296 L448,96 L480.0,96 L280.0,296Z M312,296 L512,96 L544.0,96 L344.0,296Z M376,296 L576,96 L608.0,96 L408.0,296Z M440,296 L640,96 L672.0,96 L472.0,296Z M504,296 L704,96 L736.0,96 L536.0,296Z M568,296 L768,96 L800.0,96 L600.0,296Z M632,296 L832,96 L864.0,96 L664.0,296Z M696,296 L896,96 L928.0,96 L728.0,296Z M760,296 L960,96 L992.0,96 L792.0,296Z M824,296 L1024,96 L1056.0,96 L856.0,296Z M888,296 L1088,96 L1120.0,96 L920.0,296Z M952,296 L1152,96 L1184.0,96 L984.0,296Z M1016,296 L1216,96 L1248.0,96 L1048.0,296Z M1080,296 L1280,96 L1312.0,96 L1112.0,296Z M1144,296 L1344,96 L1376.0,96 L1176.0,296Z M1208,296 L1408,96 L1440.0,96 L1240.0,296Z M1272,296 L1472,96 L1504.0,96 L1304.0,296Z" fill="#FFE3EE"/>
+<circle cx="60" cy="900" r="16" fill="#FFE3EE" opacity="1.0"/>
+<circle cx="1030" cy="1100" r="14" fill="#FFE3EE" opacity="1.0"/>
+<circle cx="70" cy="1240" r="22" fill="#FFE3EE" opacity="1.0"/>
+<circle cx="990" cy="1280" r="18" fill="#FFE3EE" opacity="1.0"/>
+<use xlink:href="#sparkle" transform="translate(50,920) scale(0.9)"/>
+<use xlink:href="#sparkle" transform="translate(1020,300) scale(0.8)"/>
+<use xlink:href="#sparkle" transform="translate(1030,1020)"/>
+<use xlink:href="#sparkle" transform="translate(60,1140) scale(0.7)"/>
+<rect x="88" y="124" width="156" height="54" rx="27.0" fill="#7A4BD1" stroke="#3B1E54" stroke-width="4"/>
+<text x="166.0" y="160.36" font-family="'Noto Sans SC', sans-serif" font-size="26" font-weight="700" fill="#FFFFFF" text-anchor="middle">喝水商店</text>
+<rect x="712" y="124" width="188" height="56" rx="28" fill="#FFFFFF" stroke="#3B1E54" stroke-width="4"/>
+<use xlink:href="#coin" transform="translate(742,152) scale(0.78)"/>
+<text x="872" y="166" font-family="'Fredoka', 'Noto Sans SC', sans-serif" font-size="38" font-weight="700" fill="#3B1E54" text-anchor="end">128</text>
+<rect x="88" y="208" width="160" height="50" rx="25.0" fill="#FFFFFF" stroke="#3B1E54" stroke-width="4"/>
+<text x="168.0" y="242.36" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="26" fill="#3B1E54" text-anchor="middle">今日货架</text>
+<text x="88" y="336" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="64" fill="#3B1E54" text-anchor="start">喝水小道具</text>
+<text x="420" y="336" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="44" fill="#B8285A" text-anchor="start">按需领取</text>
+<rect x="88" y="394" width="812" height="800" rx="48" fill="#3B1E54"/>
+<rect x="88" y="380" width="812" height="800" rx="48" fill="#7A4BD1" stroke="#3B1E54" stroke-width="6"/>
+<rect x="128" y="428" width="354" height="318" rx="36" fill="#3B1E54"/>
+<rect x="128" y="416" width="354" height="318" rx="36" fill="#FFFFFF" stroke="#3B1E54" stroke-width="7"/>
+<rect x="140" y="428" width="330" height="294" rx="26" fill="none" stroke="#FFC83D" stroke-width="8"/>
+<circle cx="305.0" cy="508" r="62" fill="#FFE3EE"/>
+<path d="M271.0,464 L339.0,464 L331.0,556 L279.0,556Z" transform="translate(0,7)" fill="#3B1E54" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><path d="M271.0,464 L339.0,464 L331.0,556 L279.0,556Z" fill="#FFFFFF" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><path d="M275.0,502 L335.0,502 L331.0,552 L279.0,552Z" fill="#45B8F5"/><path d="M317.0,478 h14 M317.0,496 h14 M317.0,514 h14" stroke="#3B1E54" stroke-width="4" stroke-linecap="round"/>
+<text x="305.0" y="614" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="36" fill="#3B1E54" text-anchor="middle">刻度水杯</text>
+<text x="305.0" y="654" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6E4E86" text-anchor="middle">喝了多少一眼看见</text>
+<rect x="210.0" y="668" width="190" height="48" rx="24" fill="#3B1E54"/>
+<rect x="210.0" y="662" width="190" height="48" rx="24.0" fill="#FFC83D" stroke="#3B1E54" stroke-width="4"/>
+<text x="305.0" y="694.64" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="700" fill="#3B1E54" text-anchor="middle">1 分钟上手</text>
+<rect x="148" y="392" width="104" height="50" rx="25.0" fill="#FF5C8A" stroke="#3B1E54" stroke-width="4"/>
+<text x="200.0" y="427.08" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="28" fill="#3B1E54" text-anchor="middle">推荐</text>
+<rect x="506" y="428" width="354" height="318" rx="36" fill="#3B1E54"/>
+<rect x="506" y="416" width="354" height="318" rx="36" fill="#FFFFFF" stroke="#3B1E54" stroke-width="6"/>
+<circle cx="683.0" cy="508" r="62" fill="#FFE3EE"/>
+<rect x="649.0" y="464" width="68" height="100" rx="16" fill="#3B1E54"/><rect x="649.0" y="458" width="68" height="100" rx="16" fill="#7A4BD1" stroke="#3B1E54" stroke-width="6"/><rect x="661.0" y="472" width="44" height="64" rx="6" fill="#FFFFFF"/><circle cx="713.0" cy="462" r="18" fill="#FF5C8A" stroke="#3B1E54" stroke-width="5"/><text x="683.0" y="516" font-family="'Fredoka', 'Noto Sans SC', sans-serif" font-size="26" font-weight="700" fill="#3B1E54" text-anchor="middle">2h</text>
+<text x="683.0" y="614" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="36" fill="#3B1E54" text-anchor="middle">定时提醒</text>
+<text x="683.0" y="654" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6E4E86" text-anchor="middle">每两小时响一次</text>
+<rect x="588.0" y="668" width="190" height="48" rx="24" fill="#3B1E54"/>
+<rect x="588.0" y="662" width="190" height="48" rx="24.0" fill="#FFC83D" stroke="#3B1E54" stroke-width="4"/>
+<text x="683.0" y="694.64" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="700" fill="#3B1E54" text-anchor="middle">30 秒设置</text>
+<rect x="108" y="760" width="772" height="26" rx="13" fill="#3B1E54"/><rect x="108" y="752" width="772" height="26" rx="13" fill="#FF5C8A" stroke="#3B1E54" stroke-width="5"/>
+<rect x="128" y="808" width="354" height="318" rx="36" fill="#3B1E54"/>
+<rect x="128" y="796" width="354" height="318" rx="36" fill="#FFFFFF" stroke="#3B1E54" stroke-width="6"/>
+<circle cx="305.0" cy="888" r="62" fill="#FFE3EE"/>
+<circle cx="305.0" cy="895" r="46" fill="#3B1E54"/><circle cx="305.0" cy="888" r="46" fill="#FFC83D" stroke="#3B1E54" stroke-width="6"/><circle cx="305.0" cy="888" r="32" fill="#FFFFFF" opacity="0.7"/><path d="M305.0,888 L335,888" stroke="#FFC83D" stroke-width="6"/><path d="M305.0,888 L320,914" stroke="#FFC83D" stroke-width="6"/><path d="M305.0,888 L290,914" stroke="#FFC83D" stroke-width="6"/><path d="M305.0,888 L275,888" stroke="#FFC83D" stroke-width="6"/><path d="M305.0,888 L290,862" stroke="#FFC83D" stroke-width="6"/><path d="M305.0,888 L320,862" stroke="#FFC83D" stroke-width="6"/>
+<text x="305.0" y="994" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="36" fill="#3B1E54" text-anchor="middle">柠檬片</text>
+<text x="305.0" y="1034" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6E4E86" text-anchor="middle">白水没味时加一片</text>
+<rect x="210.0" y="1048" width="190" height="48" rx="24" fill="#3B1E54"/>
+<rect x="210.0" y="1042" width="190" height="48" rx="24.0" fill="#FFC83D" stroke="#3B1E54" stroke-width="4"/>
+<text x="305.0" y="1074.64" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="700" fill="#3B1E54" text-anchor="middle">随手可得</text>
+<rect x="506" y="808" width="354" height="318" rx="36" fill="#3B1E54"/>
+<rect x="506" y="796" width="354" height="318" rx="36" fill="#FFFFFF" stroke="#3B1E54" stroke-width="6"/>
+<circle cx="683.0" cy="888" r="62" fill="#FFE3EE"/>
+<path d="M689.0,848 L707.0,818 L723.0,824" fill="none" stroke="#3B1E54" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><path d="M689.0,848 L707.0,818 L723.0,824" fill="none" stroke="#FF5C8A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><rect x="647.0" y="854" width="72" height="92" rx="22" fill="#3B1E54"/><rect x="647.0" y="846" width="72" height="92" rx="22" fill="#25C08A" stroke="#3B1E54" stroke-width="6"/><rect x="641.0" y="838" width="84" height="22" rx="11" fill="#FF5C8A" stroke="#3B1E54" stroke-width="5"/><rect x="661.0" y="874" width="10" height="44" rx="5" fill="#FFFFFF" opacity="0.55"/>
+<text x="683.0" y="994" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="36" fill="#3B1E54" text-anchor="middle">吸管杯</text>
+<text x="683.0" y="1034" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6E4E86" text-anchor="middle">工作时单手也能喝</text>
+<rect x="588.0" y="1048" width="190" height="48" rx="24" fill="#3B1E54"/>
+<rect x="588.0" y="1042" width="190" height="48" rx="24.0" fill="#FFC83D" stroke="#3B1E54" stroke-width="4"/>
+<text x="683.0" y="1074.64" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="700" fill="#3B1E54" text-anchor="middle">放在手边</text>
+<rect x="108" y="1140" width="772" height="26" rx="13" fill="#3B1E54"/><rect x="108" y="1132" width="772" height="26" rx="13" fill="#FF5C8A" stroke="#3B1E54" stroke-width="5"/>
+</svg>

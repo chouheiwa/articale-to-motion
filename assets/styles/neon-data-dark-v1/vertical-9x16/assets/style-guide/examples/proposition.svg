@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <pattern id="grid" width="72" height="72" patternUnits="userSpaceOnUse">
+      <path d="M 72 0 L 0 0 0 72" fill="none" stroke="#1C2538" stroke-width="1.5"/>
+    </pattern>
+    <radialGradient id="haloV" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#A493FF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#A493FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="haloL" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#C8F560" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#C8F560" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C8F560" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#C8F560" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="b"/>
+      <feComponentTransfer in="b" result="s"><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowDot" x="-400%" y="-400%" width="900%" height="900%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="b"/>
+      <feComponentTransfer in="b" result="s"><feFuncA type="linear" slope="0.7"/></feComponentTransfer>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1080" height="1920" fill="#070A12"/>
+  <rect width="1080" height="1920" fill="url(#grid)" opacity="0.55"/>
+  <circle cx="960" cy="140" r="520" fill="url(#haloV)"/>
+  <circle cx="300" cy="780" r="420" fill="url(#haloL)"/>
+  <g fill="none" stroke="#5F6B85" stroke-width="2" opacity="0.7">
+    <path d="M40 140v-44h44 M996 96h44v44 M40 1820v40h44 M996 1860h44v-40"/>
+  </g>
+  <circle cx="96" cy="138" r="8" fill="#C8F560" filter="url(#glowDot)"/>
+  <text x="118" y="148" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="700" letter-spacing="3">巨型指标</text>
+  <text x="992" y="146" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500" letter-spacing="4">PROPOSITION</text>
+  <rect x="88" y="180" width="904" height="2" fill="#1C2538"/>
+  <rect x="88" y="180" width="200" height="2" fill="#C8F560"/>
+  <rect x="88" y="330" width="290" height="46" rx="23" fill="#0E1422" stroke="#5F6B85" stroke-width="1.5"/>
+  <text x="233.0" y="361" text-anchor="middle" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="600">示意数据 · 2023—2025</text>
+  <text x="88" y="458" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="64" font-weight="700">同样一百万 token</text>
+  <text x="88" y="540" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="64" font-weight="700">推理价格便宜了</text>
+  <text x="80" y="928" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#C8F560" font-size="320" font-weight="700" letter-spacing="-8" filter="url(#glow)">40</text>
+  <text x="483" y="928" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#C8F560" font-size="122" font-weight="700">×</text>
+  <text x="592" y="781" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="600">单位推理成本</text>
+  <text x="592" y="825" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26">两年间下降倍数</text>
+  <rect x="88" y="1008" width="812" height="470" rx="24" fill="#0E1422" stroke="#1C2538" stroke-width="1.5"/>
+  <text x="124" y="1058" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24">每百万 token 价格（美元，示意）</text>
+  <line x1="124" y1="1098" x2="864" y2="1098" stroke="#1C2538" stroke-width="1.5" stroke-dasharray="6 8"/>
+  <line x1="124" y1="1253" x2="864" y2="1253" stroke="#1C2538" stroke-width="1.5" stroke-dasharray="6 8"/>
+  <polygon points="140,1408 140,1098.0 282,1253.0 424,1346.0 566,1377.0 708,1392.5 850,1400.2 850,1408" fill="url(#area)"/>
+  <polyline points="140,1098.0 282,1253.0 424,1346.0 566,1377.0 708,1392.5 850,1400.2" fill="none" stroke="#C8F560" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <line x1="124" y1="1408" x2="864" y2="1408" stroke="#5F6B85" stroke-width="2"/>
+  <circle cx="140" cy="1098.0" r="7" fill="#070A12" stroke="#C8F560" stroke-width="3"/>
+  <text x="162" y="1107" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="28" font-weight="700">$60</text>
+  <circle cx="850" cy="1400.2" r="9" fill="#C8F560" filter="url(#glowDot)"/>
+  <text x="850" y="1374" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#C8F560" font-size="28" font-weight="700">$1.5</text>
+  <text x="140" y="1450" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">2023</text>
+  <text x="561" y="1450" text-anchor="middle" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">2024</text>
+  <text x="850" y="1450" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">2025</text>
+  <rect x="88" y="1518" width="812" height="150" rx="16" fill="#151D2F" stroke="#1C2538" stroke-width="1.5"/>
+  <rect x="88" y="1536" width="5" height="114" rx="2.5" fill="#C8F560"/>
+  <text x="124" y="1581" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="32" font-weight="600">同样的预算，今天能跑</text>
+  <text x="124" y="1628" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="32" font-weight="600">40 倍的调用量</text>
+</svg>

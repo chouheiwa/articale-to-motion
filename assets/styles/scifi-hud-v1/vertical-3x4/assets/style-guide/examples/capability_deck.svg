@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#16304A" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="vignette" cx="0.3" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#0F2233" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#0A1622"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1440" fill="#0A1622"/>
+  <rect width="1080" height="1440" fill="url(#vignette)"/>
+  <rect width="1080" height="1440" fill="url(#grid)" opacity="0.8"/>
+  <g fill="none" stroke="#2E5A73" stroke-width="2">
+    <path d="M40 150V96h54 M1040 150V96h-54 M40 1326v54h54 M1040 1326v54h-54"/>
+  </g>
+
+  <!-- header -->
+  <g>
+    <rect x="88" y="130" width="14" height="14" fill="#37D6B5"/>
+    <text x="116" y="146" fill="#3FE0F0" font-size="28" font-weight="700" letter-spacing="4" font-family="'Noto Sans SC', sans-serif">系统诊断</text>
+    <text x="900" y="145" text-anchor="end" fill="#8FB3C4" font-size="20" font-weight="700" letter-spacing="4" font-family="'Orbitron', 'Noto Sans SC', sans-serif">DIAG · SAT-07</text>
+    <rect x="88" y="176" width="812" height="2" fill="#2E5A73"/>
+    <rect x="88" y="176" width="240" height="2" fill="#3FE0F0"/>
+  </g>
+  <text x="88" y="264" fill="#E6F6FA" font-size="56" font-weight="700" font-family="'Noto Sans SC', sans-serif">一颗卫星的健康体检</text>
+  <text x="88" y="312" fill="#8FB3C4" font-size="28" font-weight="400" font-family="'Noto Sans SC', sans-serif">四个子系统，只有一个需要关注</text>
+
+  <!-- main gauge (focus 1) -->
+  <g transform="translate(284 560)">
+    <circle r="178" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+    <circle r="166" fill="none" stroke="#2E5A73" stroke-width="10" stroke-dasharray="2 15.4"/>
+    <circle r="138" fill="none" stroke="#0F3A48" stroke-width="16"/>
+    <circle r="138" fill="none" stroke="#3FE0F0" stroke-width="16" stroke-dasharray="797.7 1000" transform="rotate(-90)" filter="url(#glow)"/>
+    <path d="M0 -196v22M0 174v22M-196 0h22M174 0h22" stroke="#3FE0F0" stroke-width="3"/>
+    <text x="-6" y="24" text-anchor="middle" fill="#E6F6FA" font-size="92" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">92</text>
+    <text x="72" y="-10" fill="#3FE0F0" font-size="28" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">%</text>
+    <text x="0" y="72" text-anchor="middle" fill="#8FB3C4" font-size="24" font-family="'Noto Sans SC', sans-serif">整体健康度</text>
+  </g>
+
+  <!-- subsystem panels -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <g transform="translate(508 384)">
+      <rect width="392" height="76" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+      <rect x="22" y="31" width="14" height="14" fill="#37D6B5"/>
+      <text x="52" y="48" fill="#E6F6FA" font-size="26" font-weight="600">电源系统</text>
+      <text x="370" y="49" text-anchor="end" fill="#E6F6FA" font-size="26" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">98%</text>
+    </g>
+    <g transform="translate(508 472)">
+      <rect width="392" height="76" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+      <rect x="22" y="31" width="14" height="14" fill="#37D6B5"/>
+      <text x="52" y="48" fill="#E6F6FA" font-size="26" font-weight="600">姿态控制</text>
+      <text x="370" y="49" text-anchor="end" fill="#E6F6FA" font-size="26" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">0.01°</text>
+    </g>
+    <g transform="translate(508 560)">
+      <rect width="392" height="76" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+      <rect x="22" y="31" width="14" height="14" fill="#37D6B5"/>
+      <text x="52" y="48" fill="#E6F6FA" font-size="26" font-weight="600">通信链路</text>
+      <text x="370" y="49" text-anchor="end" fill="#E6F6FA" font-size="26" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">12 MB/S</text>
+    </g>
+    <g transform="translate(508 648)">
+      <rect width="392" height="76" fill="#132C40" stroke="#FFB547" stroke-width="3"/>
+      <rect x="22" y="31" width="14" height="14" fill="#FFB547"/>
+      <text x="52" y="48" fill="#E6F6FA" font-size="26" font-weight="700">热控系统</text>
+      <text x="370" y="49" text-anchor="end" fill="#FFB547" font-size="26" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">+48°C</text>
+    </g>
+  </g>
+
+  <!-- connector from warning to detail -->
+  <path d="M704 724v58" stroke="#FFB547" stroke-width="2" stroke-dasharray="6 5"/>
+
+  <!-- detail panel (focus 2) -->
+  <g>
+    <path d="M88 782h812v190H108l-20-20z" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+    <path d="M88 814v-32h32 M900 814v-32h-32" fill="none" stroke="#FFB547" stroke-width="3"/>
+    <text x="120" y="828" fill="#FFB547" font-size="20" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">WARN · THERMAL</text>
+    <text x="120" y="880" fill="#E6F6FA" font-size="32" font-weight="700" font-family="'Noto Sans SC', sans-serif">电池舱温度偏高 8°C</text>
+    <text x="120" y="930" fill="#8FB3C4" font-size="26" font-family="'Noto Sans SC', sans-serif">处理：调整姿态，让电池舱背向太阳</text>
+    <g stroke="#2E5A73" stroke-width="2" fill="none">
+      <path d="M700 940l30-40 30 20 30-50 30 30 40-60"/>
+    </g>
+    <path d="M700 870H870" stroke="#FFB547" stroke-width="1.5" stroke-dasharray="4 4"/>
+  </g>
+
+  <!-- lower background: satellite wireframe -->
+  <g fill="none" stroke="#2E5A73" stroke-width="1.5">
+    <rect x="500" y="1040" width="80" height="64"/>
+    <path d="M500 1072h-40M580 1072h40"/>
+    <rect x="240" y="1050" width="220" height="44"/>
+    <rect x="620" y="1050" width="220" height="44"/>
+    <path d="M295 1050v44M350 1050v44M405 1050v44M675 1050v44M730 1050v44M785 1050v44M240 1072h220M620 1072h220"/>
+    <path d="M540 1040v-24M528 1016h24"/>
+    <path d="M580 1104l26 20" stroke="#FFB547" stroke-opacity="0.7"/>
+  </g>
+  <!-- lower background: telemetry ticks -->
+  <g stroke="#2E5A73" stroke-width="1">
+    <path d="M88 1200H992"/>
+    <path d="M88 1200v-40M148 1200v-24M208 1200v-40M268 1200v-18M328 1200v-40M388 1200v-30M448 1200v-40M508 1200v-20M568 1200v-36M628 1200v-40M688 1200v-26M748 1200v-40M808 1200v-16M868 1200v-40M928 1200v-28M988 1200v-38"/>
+  </g>
+  <g font-family="'Orbitron', 'Noto Sans SC', sans-serif" font-weight="700" font-size="18" letter-spacing="3">
+    <rect x="88" y="1298" width="10" height="10" fill="#FFB547"/>
+    <text x="110" y="1308" fill="#8FB3C4">1 ADVISORY</text>
+    <text x="992" y="1308" text-anchor="end" fill="#8FB3C4">3 / 4 NOMINAL</text>
+  </g>
+</svg>

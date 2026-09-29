@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="#F4EEFF" opacity="0.035"/></pattern>
+    <pattern id="grid" width="54" height="54" patternUnits="userSpaceOnUse"><path d="M54 0H0V54" fill="none" stroke="#4A3772" stroke-width="1"/></pattern>
+    <pattern id="hatch" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="11" height="22" fill="#FF2E88"/></pattern>
+    <clipPath id="tear"><rect x="0" y="660" width="1080" height="16"/></clipPath>
+  </defs>
+
+  <!-- 背景层 -->
+  <rect width="1080" height="1920" fill="#120B1E"/>
+  <rect width="1080" height="1920" fill="url(#grid)" opacity="0.22"/>
+  <rect width="1080" height="1920" fill="url(#scan)"/>
+  <g stroke="#4A3772" stroke-width="3" fill="none">
+    <path d="M40 140 V96 H84"/><path d="M1040 140 V96 H996"/>
+    <path d="M40 1816 V1860 H84"/><path d="M1040 1816 V1860 H996"/>
+  </g>
+  <rect x="40" y="1770" width="320" height="22" fill="url(#hatch)" opacity="0.5"/>
+
+  <!-- kicker + 标题 -->
+  <rect x="88" y="138" width="18" height="18" fill="#FF2E88"/>
+  <text x="120" y="156" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="26" fill="#FF2E88">义体配置</text>
+  <text x="992" y="156" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#B9ABDB" letter-spacing="2">LOADOUT // 04</text>
+  <path d="M88 190 H992" stroke="#4A3772" stroke-width="2"/>
+  <path d="M88 190 H360" stroke="#FF2E88" stroke-width="4"/>
+  <text font-family="'Smiley Sans', 'Noto Sans SC', sans-serif" font-size="76" fill="#F4EEFF">
+    <tspan x="88" y="300">给账号装上</tspan>
+    <tspan x="88" y="390">五件防具</tspan>
+  </text>
+
+  <!-- 装配读数 -->
+  <text x="992" y="262" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#B9ABDB" letter-spacing="2">ARMOR LOADED</text>
+  <text x="992" y="366" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="96" fill="#29E6F0">4<tspan fill="#B9ABDB">/5</tspan></text>
+  <rect x="780" y="384" width="212" height="6" fill="#29E6F0"/>
+  <rect x="820" y="396" width="90" height="4" fill="#FF2E88"/>
+
+  <!-- 核心模块（主焦点） -->
+  <g id="core">
+    <path d="M88 450 H948 L992 494 V690 H132 L88 646 Z" fill="#2A1C47" stroke="#FF2E88" stroke-width="3"/>
+    <path d="M88 450 H222 L202 486 H88 Z" fill="#FF2E88"/>
+    <text x="108" y="477" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#120B1E" letter-spacing="2">CORE</text>
+    <text x="124" y="580" font-family="'Smiley Sans', 'Noto Sans SC', sans-serif" font-size="68" fill="#F4EEFF">密码管理器</text>
+    <text x="124" y="636" font-family="'Noto Sans SC', sans-serif" font-size="30" fill="#B9ABDB">每个网站一条随机长密码</text>
+    <g transform="translate(846 574)" fill="none" stroke="#FF2E88" stroke-width="4">
+      <rect x="-56" y="-56" width="112" height="112"/>
+      <rect x="-28" y="-28" width="56" height="56" fill="#FF2E88"/>
+      <path d="M-32 -56 V-76 M0 -56 V-76 M32 -56 V-76 M-32 56 V76 M0 56 V76 M32 56 V76 M-56 -32 H-76 M-56 0 H-76 M-56 32 H-76 M56 -32 H76 M56 0 H76 M56 32 H76"/>
+    </g>
+  </g>
+  <rect x="86" y="660" width="910" height="16" fill="#120B1E"/>
+  <g clip-path="url(#tear)"><use href="#core" transform="translate(28 0)"/></g>
+  <rect x="760" y="556" width="172" height="6" fill="#29E6F0" opacity="0.8"/>
+  <rect x="640" y="676" width="130" height="4" fill="#29E6F0"/>
+
+  <!-- 总线 -->
+  <path d="M308 690 V740 M772 690 V740" stroke="#29E6F0" stroke-width="3"/>
+  <path d="M540 690 V740" stroke="#29E6F0" stroke-width="3" stroke-dasharray="8 6"/>
+
+  <!-- 槽位 -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <path d="M88 740 H506 L528 762 H528 V950 H88 Z" fill="#1E1433" stroke="#29E6F0" stroke-width="2"/>
+    <text x="114" y="786" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#29E6F0" letter-spacing="2">SLOT_A</text>
+    <text x="114" y="850" font-weight="700" font-size="36" fill="#F4EEFF">两步验证</text>
+    <text x="114" y="902" font-size="26" fill="#B9ABDB">密码泄露了也登不进</text>
+
+    <path d="M552 740 H970 L992 762 V950 H552 Z" fill="#1E1433" stroke="#29E6F0" stroke-width="2"/>
+    <text x="578" y="786" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#29E6F0" letter-spacing="2">SLOT_B</text>
+    <text x="578" y="850" font-weight="700" font-size="36" fill="#F4EEFF">泄露监测</text>
+    <text x="578" y="902" font-size="26" fill="#B9ABDB">库被拖时第一时间提醒</text>
+
+    <path d="M88 978 H506 L528 1000 V1188 H88 Z" fill="#1E1433" stroke="#29E6F0" stroke-width="2"/>
+    <text x="114" y="1024" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#29E6F0" letter-spacing="2">SLOT_C</text>
+    <text x="114" y="1088" font-weight="700" font-size="36" fill="#F4EEFF">独立找回邮箱</text>
+    <text x="114" y="1140" font-size="26" fill="#B9ABDB">不在任何网站公开使用</text>
+
+    <path d="M552 978 H970 L992 1000 V1188 H552 Z" fill="#1E1433" stroke="#4A3772" stroke-width="2" stroke-dasharray="10 6"/>
+    <text x="578" y="1024" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#B9ABDB" letter-spacing="2">SLOT_D // EMPTY</text>
+    <text x="578" y="1088" font-weight="700" font-size="36" fill="#B9ABDB">异地登录提醒</text>
+    <text x="578" y="1140" font-size="26" fill="#B9ABDB">陌生设备登录立即推送</text>
+  </g>
+  <g fill="#29E6F0">
+    <rect x="458" y="774" width="12" height="12"/><rect x="476" y="774" width="12" height="12"/><rect x="494" y="774" width="12" height="12"/>
+    <rect x="922" y="774" width="12" height="12"/><rect x="940" y="774" width="12" height="12"/><rect x="958" y="774" width="12" height="12"/>
+    <rect x="458" y="1012" width="12" height="12"/><rect x="476" y="1012" width="12" height="12"/><rect x="494" y="1012" width="12" height="12"/>
+  </g>
+  <g fill="none" stroke="#4A3772" stroke-width="2">
+    <rect x="923" y="1013" width="10" height="10"/><rect x="941" y="1013" width="10" height="10"/><rect x="959" y="1013" width="10" height="10"/>
+  </g>
+
+  <!-- 完整度条 -->
+  <text x="88" y="1268" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#B9ABDB" letter-spacing="2">INTEGRITY</text>
+  <text x="900" y="1268" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="30" fill="#29E6F0">75%</text>
+  <g>
+    <path d="M88 1290 H280 L268 1322 H88 Z" fill="#29E6F0"/>
+    <path d="M292 1290 H484 L472 1322 H280 Z" fill="#29E6F0"/>
+    <path d="M496 1290 H688 L676 1322 H484 Z" fill="#29E6F0"/>
+    <path d="M700 1290 H900 V1322 H688 Z" fill="none" stroke="#4A3772" stroke-width="2" stroke-dasharray="8 6"/>
+  </g>
+
+  <!-- 结论：酸黄锁定 -->
+  <g stroke="#D4FF3A" stroke-width="5" fill="none">
+    <path d="M88 1422 V1394 H116"/><path d="M900 1422 V1394 H872"/>
+    <path d="M88 1520 V1548 H116"/><path d="M900 1520 V1548 H872"/>
+  </g>
+  <text x="124" y="1452" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="24" fill="#D4FF3A" letter-spacing="2">LOCK_ON</text>
+  <text x="124" y="1506" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="36" fill="#F4EEFF">先装核心，再补齐四个槽位</text>
+</svg>

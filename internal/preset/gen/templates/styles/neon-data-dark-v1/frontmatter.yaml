@@ -1,0 +1,167 @@
+schema_version: 1
+style_id: neon-data-dark-v1
+style_name: 暗夜数据霓虹
+scope:
+  - ai_and_frontier_technology
+  - data_storytelling
+  - metrics_and_benchmarks
+  - technology_explainer
+  - business_and_industry_trends
+# @@CANVAS_AND_SAFE_AREA@@
+colors:
+  canvas: "#070A12"
+  surface: "#0E1422"
+  surface_raised: "#151D2F"
+  ink: "#EEF2FA"
+  muted_ink: "#9AA6BF"
+  grid_line: "#1C2538"
+  axis_line: "#5F6B85"
+  signal_lime: "#C8F560"
+  lime_tint: "#1B2A10"
+  pulse_violet: "#A493FF"
+  alert_coral: "#FF7A6B"
+typography:
+  primary_stack: '"Noto Sans SC", sans-serif'
+  mono_stack: '"Space Grotesk", "JetBrains Mono", "Noto Sans SC", monospace'
+  font_files:
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
+    - {family: "Space Grotesk", weight: 500, file: "assets/fonts/space-grotesk-500.woff2"}
+    - {family: "Space Grotesk", weight: 700, file: "assets/fonts/space-grotesk-700.woff2"}
+  sizes_px:
+    cover_min: 80
+    cover_max: 112
+    hero_number_min: 160
+    hero_number_max: 280
+    title_min: 46
+    title_max: 64
+    body_min: 24
+    body_max: 34
+    label_min: 18
+    label_max: 23
+  weights:
+    display: 900
+    heading: 700
+    number: 700
+    body: 400
+    body_emphasis: 600
+    metadata: 500
+  line_heights:
+    display_min: 1.00
+    display_max: 1.10
+    number: 0.92
+    body: 1.40
+    metadata: 1.20
+spacing:
+  content_left_px: 88
+  content_width_px: 904
+  group_min_px: 12
+  group_max_px: 20
+  card_stack_min_px: 16
+  card_main_padding_min_px: 32
+  card_main_padding_max_px: 40
+  card_secondary_padding_min_px: 22
+  card_secondary_padding_max_px: 28
+  section_min_px: 40
+  section_max_px: 64
+  element_edge_min_px: 22
+  skeleton_bottom_min_px: 22
+radius:
+  sm_px: 6
+  md_px: 12
+  lg_px: 16
+  xl_px: 24
+  pill_px: 999
+scene_archetypes:
+  - id: proposition
+    name: 巨型指标
+    use_for: 封面、钩子、一个决定性数字、强结论
+    example_png: assets/style-guide/examples/proposition.png
+  - id: comparison
+    name: 双线对比
+    use_for: 两条趋势、前后对照、两种方案的指标差距
+    example_png: assets/style-guide/examples/comparison.png
+  - id: process
+    name: 漏斗流程
+    use_for: 转化漏斗、逐级筛选、管线各阶段的损耗与留存
+    example_png: assets/style-guide/examples/process.png
+  - id: capability_deck
+    name: 指标看板
+    use_for: 多指标总览、系统健康度、评测成绩单、阶段性结果
+    example_png: assets/style-guide/examples/capability_deck.png
+motion:
+  phases: {build: 0.35, breathe: 0.40, resolve: 0.25}
+  entrance_seconds: {min: 0.40, max: 0.90}
+  exit_seconds: {min: 0.20, max: 0.45}
+  transition_seconds: {min: 0.25, max: 0.45}
+  first_action_delay_seconds: {min: 0.10, max: 0.30}
+  entrance_ease: [expo.out, power3.out, power2.out]
+  exit_ease: [power2.in, power3.in]
+  verbs: [COUNT_UP, DRAW_LINE, GROW, REVEAL, NARROW, HIGHLIGHT, SETTLE]
+  ambient_per_scene_max: 1
+  max_same_ease_tweens: 2
+audio:
+  sample_rate_hz: 48000
+  channels: 2
+  voice_integrated_lufs: {min: -18, max: -16}
+  bgm_integrated_lufs: {min: -30, max: -26}
+  bgm_ducking_db: {min: 6, max: 10}
+  ducking_attack_seconds: {min: 0.04, max: 0.12}
+  ducking_release_seconds: {min: 0.25, max: 0.60}
+  bgm_fade_seconds: {min: 0.80, max: 1.50}
+  sfx_gain_db: {min: -18, max: -12}
+  sfx_max_simultaneous: 2
+  final_integrated_lufs: -16
+  final_lufs_tolerance: 1
+  true_peak_max_dbtp: -1
+  lra_lu: {min: 2, max: 6}
+subtitles:
+  required: false
+  font_size_px: {min: 32, max: 38}
+  max_width_px: 812
+  max_lines: 2
+  max_fullwidth_chars_per_line: 16
+  line_height: {min: 1.30, max: 1.40}
+  background: "rgba(14, 20, 34, 0.88)"
+  text_color: "#EEF2FA"
+  padding_px: {vertical: 14, horizontal: 22}
+  radius_px: 12
+  break_rules:
+    - keep_proper_nouns_intact
+    - keep_english_phrases_intact
+    - keep_numbers_and_units_intact
+    - preserve_real_speech_gaps
+cover:
+  frame_zero_complete: true
+  default_lines: 2
+  max_lines: 3
+  max_fullwidth_chars_per_line: 10
+  font_size_px: {min: 80, max: 112}
+  line_height: {min: 1.00, max: 1.10}
+  max_width_px: 812
+  contrast_ratio_min: 7.0
+  stable_frames: 18
+forbidden:
+  - black_or_blank_frame_zero
+  - cover_fade_in_intermediate_state
+  - count_up_unfinished_on_frame_zero
+  - pure_black_canvas
+  - more_than_two_accent_hues
+  - gradient_text
+  - rainbow_multi_series_palette
+  - glow_on_body_text
+  - stacked_heavy_glow_or_bloom
+  - chartjunk_3d_charts_or_pie_explosion
+  - truncated_axis_without_marker
+  - fake_precision_decimals
+  - unlabelled_illustrative_numbers
+  - copying_brand_dashboards
+  - glitch_or_scanline_effects
+  - elastic_or_bouncy_motion
+  - endless_number_ticking
+  - all_elements_same_direction_same_speed
+  - labels_or_icons_touching_edges
+  - sfx_on_every_element
+  - music_masking_voice

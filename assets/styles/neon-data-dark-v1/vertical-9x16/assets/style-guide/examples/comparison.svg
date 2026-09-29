@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <pattern id="grid" width="72" height="72" patternUnits="userSpaceOnUse">
+      <path d="M 72 0 L 0 0 0 72" fill="none" stroke="#1C2538" stroke-width="1.5"/>
+    </pattern>
+    <radialGradient id="haloV" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#A493FF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#A493FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="haloL" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#C8F560" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#C8F560" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C8F560" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#C8F560" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="b"/>
+      <feComponentTransfer in="b" result="s"><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowDot" x="-400%" y="-400%" width="900%" height="900%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="b"/>
+      <feComponentTransfer in="b" result="s"><feFuncA type="linear" slope="0.7"/></feComponentTransfer>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1080" height="1920" fill="#070A12"/>
+  <rect width="1080" height="1920" fill="url(#grid)" opacity="0.55"/>
+  <circle cx="960" cy="140" r="520" fill="url(#haloV)"/>
+  <circle cx="700" cy="1000" r="420" fill="url(#haloL)"/>
+  <g fill="none" stroke="#5F6B85" stroke-width="2" opacity="0.7">
+    <path d="M40 140v-44h44 M996 96h44v44 M40 1820v40h44 M996 1860h44v-40"/>
+  </g>
+  <circle cx="96" cy="138" r="8" fill="#C8F560" filter="url(#glowDot)"/>
+  <text x="118" y="148" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="700" letter-spacing="3">双线对比</text>
+  <text x="992" y="146" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500" letter-spacing="4">COMPARISON</text>
+  <rect x="88" y="180" width="904" height="2" fill="#1C2538"/>
+  <rect x="88" y="180" width="200" height="2" fill="#C8F560"/>
+  <text x="88" y="310" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="62" font-weight="700">开源与闭源模型</text>
+  <text x="88" y="388" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="62" font-weight="700">评测差距正在<tspan fill="#C8F560">收窄</tspan></text>
+  <circle cx="100" cy="485" r="10" fill="#C8F560"/>
+  <text x="120" y="494" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="26" font-weight="600">开源最佳</text>
+  <circle cx="264" cy="485" r="10" fill="#A493FF"/>
+  <text x="284" y="494" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="26" font-weight="600">闭源最佳</text>
+  <rect x="684" y="461" width="216" height="46" rx="23" fill="#0E1422" stroke="#5F6B85" stroke-width="1.5"/>
+  <text x="792.0" y="492" text-anchor="middle" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="600">示意 · 综合得分</text>
+  <rect x="88" y="530" width="812" height="760" rx="24" fill="#0E1422" stroke="#1C2538" stroke-width="1.5"/>
+  <line x1="196" y1="1214" x2="852" y2="1214" stroke="#5F6B85" stroke-width="2"/>
+  <text x="178" y="1222" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">0</text>
+  <line x1="196" y1="1058" x2="852" y2="1058" stroke="#1C2538" stroke-width="1.5" stroke-dasharray="6 8"/>
+  <text x="178" y="1066" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">25</text>
+  <line x1="196" y1="902" x2="852" y2="902" stroke="#1C2538" stroke-width="1.5" stroke-dasharray="6 8"/>
+  <text x="178" y="910" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">50</text>
+  <line x1="196" y1="746" x2="852" y2="746" stroke="#1C2538" stroke-width="1.5" stroke-dasharray="6 8"/>
+  <text x="178" y="754" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">75</text>
+  <line x1="196" y1="590" x2="852" y2="590" stroke="#1C2538" stroke-width="1.5" stroke-dasharray="6 8"/>
+  <text x="178" y="598" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">100</text>
+  <polygon points="196,1214 196,889.5 327,852.1 458,802.2 590,746.0 721,702.3 852,683.6 852,1214" fill="url(#area)" opacity="0.5"/>
+  <polyline points="196,777.2 327,739.8 458,714.8 590,689.8 721,671.1 852,658.6" fill="none" stroke="#A493FF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="196,889.5 327,852.1 458,802.2 590,746.0 721,702.3 852,683.6" fill="none" stroke="#C8F560" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="196" cy="777.2" r="5" fill="#070A12" stroke="#A493FF" stroke-width="2.5"/>
+  <circle cx="327" cy="739.8" r="5" fill="#070A12" stroke="#A493FF" stroke-width="2.5"/>
+  <circle cx="458" cy="714.8" r="5" fill="#070A12" stroke="#A493FF" stroke-width="2.5"/>
+  <circle cx="590" cy="689.8" r="5" fill="#070A12" stroke="#A493FF" stroke-width="2.5"/>
+  <circle cx="721" cy="671.1" r="5" fill="#070A12" stroke="#A493FF" stroke-width="2.5"/>
+  <circle cx="196" cy="889.5" r="5" fill="#070A12" stroke="#C8F560" stroke-width="2.5"/>
+  <circle cx="327" cy="852.1" r="5" fill="#070A12" stroke="#C8F560" stroke-width="2.5"/>
+  <circle cx="458" cy="802.2" r="5" fill="#070A12" stroke="#C8F560" stroke-width="2.5"/>
+  <circle cx="590" cy="746.0" r="5" fill="#070A12" stroke="#C8F560" stroke-width="2.5"/>
+  <circle cx="721" cy="702.3" r="5" fill="#070A12" stroke="#C8F560" stroke-width="2.5"/>
+  <circle cx="852" cy="658.6" r="8" fill="#A493FF"/>
+  <circle cx="852" cy="683.6" r="9" fill="#C8F560" filter="url(#glowDot)"/>
+  <path d="M218 777h10v112h-10" fill="none" stroke="#9AA6BF" stroke-width="2"/>
+  <text x="242" y="843" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="28" font-weight="700">18 分</text>
+  <path d="M874 659h8v25h-8" fill="none" stroke="#C8F560" stroke-width="2"/>
+  <text x="856" y="631" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#C8F560" font-size="32" font-weight="700">差距 4 分</text>
+  <text x="196" y="1258" text-anchor="start" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">2022</text>
+  <text x="458" y="1258" text-anchor="middle" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">2023</text>
+  <text x="721" y="1258" text-anchor="middle" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">2024</text>
+  <text x="852" y="1258" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">2025</text>
+  <rect x="88" y="1318" width="398" height="170" rx="16" fill="#0E1422" stroke="#1C2538" stroke-width="1.5"/>
+  <text x="120" y="1370" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="500">2022 年差距</text>
+  <text x="120" y="1458" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#A493FF" font-size="84" font-weight="700">18<tspan font-size="32" dx="10" fill="#9AA6BF" font-family="'Noto Sans SC', sans-serif">分</tspan></text>
+  <rect x="502" y="1318" width="398" height="170" rx="16" fill="#0E1422" stroke="#1C2538" stroke-width="1.5"/>
+  <text x="534" y="1370" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="500">2025 年差距</text>
+  <text x="534" y="1458" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#C8F560" font-size="84" font-weight="700">4<tspan font-size="32" dx="10" fill="#9AA6BF" font-family="'Noto Sans SC', sans-serif">分</tspan></text>
+  <rect x="88" y="1516" width="812" height="100" rx="16" fill="#151D2F" stroke="#1C2538" stroke-width="1.5"/>
+  <rect x="88" y="1534" width="5" height="64" rx="2.5" fill="#C8F560"/>
+  <text x="124" y="1577" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="600">差距从 18 分缩到 4 分，但还没有归零</text>
+</svg>

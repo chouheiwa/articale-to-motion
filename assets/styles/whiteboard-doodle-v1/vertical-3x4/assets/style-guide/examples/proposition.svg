@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+<rect width="1080" height="1440" fill="#FBFBF8"/>
+<path d="M642.4 266.8 C772.6 264.1 902.8 269.8 1037.0 266.7" fill="none" stroke="#ECEEEA" stroke-width="24" stroke-linecap="round" opacity="0.75"/>
+<path d="M659.3 295.3 C784.5 291.0 909.6 297.3 1038.6 298.6" fill="none" stroke="#ECEEEA" stroke-width="17" stroke-linecap="round" opacity="0.75"/>
+<path d="M65.6 1206.8 C202.4 1203.6 339.1 1203.2 480.0 1210.5" fill="none" stroke="#ECEEEA" stroke-width="15" stroke-linecap="round" opacity="0.75"/>
+<path d="M73.9 1234.6 C206.4 1232.5 338.9 1245.2 475.5 1247.7" fill="none" stroke="#ECEEEA" stroke-width="18" stroke-linecap="round" opacity="0.75"/>
+<text x="88" y="170" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="32" fill="#596268">费曼学习法 · 第 1 课</text>
+<text x="992" y="170" font-family="'Caveat', 'Xiaolai', sans-serif" font-size="36" fill="#1C5BB8" text-anchor="end">Lesson 01</text>
+<path d="M86.3 197.7 C230.6 192.6 373.1 196.6 521.6 194.9" fill="none" stroke="#C9CED1" stroke-width="3" stroke-linecap="round"/>
+<path d="M315.5 506.1 L439.0 508.1 L569.8 511.6 L559.0 577.3 L439.0 577.4 L322.9 573.0Z" fill="#FFE26A"/>
+<text x="88" y="430" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="116" fill="#1D2327">讲得出来</text>
+<text x="88" y="572" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="116" fill="#1D2327">才算真懂</text>
+<path d="M193.5 853.4 Q182.9 846.6 180.3 840.6 Q177.6 834.6 175.6 828.7 Q173.6 822.8 170.5 817.1 Q167.4 811.4 166.6 804.9 Q165.7 798.4 168.0 792.2 Q170.3 786.0 172.0 780.0 Q173.6 774.0 175.1 767.5 Q176.6 761.0 181.0 756.2 Q185.3 751.5 190.9 748.6 Q196.4 745.8 201.3 741.9 Q206.1 738.1 211.7 734.8 Q217.2 731.6 223.5 732.2 Q229.8 732.7 235.7 734.2 Q241.6 735.8 247.8 736.1 Q254.0 736.4 259.9 738.8 Q265.7 741.3 269.6 746.7 Q273.5 752.1 277.3 757.0 Q281.2 762.0 285.7 766.8 Q290.2 771.7 291.9 778.1 Q293.7 784.6 293.0 791.3 Q292.3 798.0 292.6 804.5 Q293.0 811.0 292.7 817.8 Q292.5 824.7 288.9 830.3 Q285.3 835.9 280.7 840.5 Q276.2 845.0 272.5 850.5 Q268.8 855.9 263.8 860.2 Q258.8 864.5 252.3 865.3" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<path d="M195.3 847.8 C195.1 866.6 198.3 880.9 201.9 900.8" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<path d="M265.5 851.2 C264.5 866.6 260.8 881.2 258.8 898.2" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<path d="M198.2 900.3 C219.8 900.6 239.6 898.8 263.1 898.9" fill="none" stroke="#1D2327" stroke-width="5" stroke-linecap="round"/>
+<path d="M196.9 916.4 C219.8 915.9 239.6 914.0 263.6 916.6" fill="none" stroke="#1D2327" stroke-width="5" stroke-linecap="round"/>
+<path d="M199.5 932.7 C219.8 932.0 239.6 933.9 262.6 931.8" fill="none" stroke="#1D2327" stroke-width="5" stroke-linecap="round"/>
+<path d="M212 850 L220 796 L230 818 L240 796 L248 850" fill="none" stroke="#1D2327" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M142.8 782.1 C127.9 777.8 118.4 779.5 107.4 776.7" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/>
+<path d="M163.9 714.6 C155.2 704.2 149.3 694.2 141.5 682.3" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/>
+<path d="M231.3 688.7 C229.4 672.6 227.9 660.2 231.3 644.9" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/>
+<path d="M295.6 712.2 C302.9 702.0 312.0 694.4 317.0 683.7" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/>
+<path d="M321.3 780.5 C332.2 781.5 341.4 777.6 356.7 773.4" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/>
+<path d="M359.0 840.3 Q409.8 885.0 461.1 859.2 " fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/><path d="M447.7 876.6 L461.1 859.2 L439.2 860.2" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="rotate(-3 690 815)">
+<path d="M480 690 L900 692 L898 906 L864 940 L481 939Z" fill="#FFF1A6"/>
+<path d="M898 906 L870 910 L864 940" fill="none" stroke="#C9CED1" stroke-width="3" stroke-linejoin="round"/>
+<path d="M627.0 680 L753.0 682 L748.8 706 L631.2 704Z" fill="#E3ECF8" opacity="0.9"/>
+<text x="510" y="760" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">不是背下来，</text>
+<text x="510" y="812.2" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">而是能用大白话</text>
+<text x="510" y="864.4000000000001" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="36" fill="#1D2327">讲给外行听。</text>
+</g>
+<text x="88" y="1100" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="34" fill="#596268">下一步：拆成四个动作 →</text>
+</svg>

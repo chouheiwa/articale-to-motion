@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <rect width="1080" height="1920" fill="#F4EFE6"/>
+  <!-- 背景层：期号大字 -->
+  <text x="1004" y="850" text-anchor="end" fill="#EAE3D5" font-family="'Noto Serif SC', serif" font-size="460" font-weight="700" letter-spacing="-14">07</text>
+
+  <!-- 版头 -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <text x="88" y="150" fill="#1A1714" font-size="24" font-weight="700" letter-spacing="4">长文 · 阅读与注意力</text>
+    <text x="992" y="150" text-anchor="end" fill="#6B6155" font-size="24" font-weight="600" letter-spacing="3">第 07 期</text>
+  </g>
+  <rect x="88" y="172" width="904" height="4" fill="#1A1714"/>
+  <rect x="88" y="184" width="904" height="1.5" fill="#1A1714"/>
+
+  <!-- 眉题 -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <rect x="88" y="318" width="48" height="4" fill="#A82E1C"/>
+    <text x="152" y="330" fill="#A82E1C" font-size="26" font-weight="700" letter-spacing="6">封面故事</text>
+  </g>
+
+  <!-- 封面标题 -->
+  <g font-family="'Noto Serif SC', serif" font-weight="700" fill="#1A1714">
+    <text x="82" y="520" font-size="120" letter-spacing="2">我们为何</text>
+    <text x="82" y="660" font-size="120" letter-spacing="2">读不完</text>
+    <text x="82" y="800" font-size="120" letter-spacing="2">一本书？</text>
+  </g>
+
+  <!-- 导语 + 边注 -->
+  <rect x="88" y="880" width="603" height="1.5" fill="#CBC1AF"/>
+  <g font-family="'Noto Serif SC', serif" fill="#4A433B" font-size="32">
+    <text x="88" y="952">注意力没有消失，它只是被切成了碎片。</text>
+    <text x="88" y="1006">这一期，我们想回答一个朴素的问题：</text>
+    <text x="88" y="1060" fill="#1A1714" font-weight="700">深度阅读的能力，还能找回来吗？</text>
+  </g>
+  <g font-family="'Noto Sans SC', sans-serif">
+    <rect x="715" y="880" width="185" height="1.5" fill="#1A1714"/>
+    <text x="715" y="930" fill="#6B6155" font-size="24" font-weight="600" letter-spacing="2">本期关键词</text>
+    <text x="715" y="980" fill="#1A1714" font-size="26" font-weight="700">专注 · 耐心</text>
+    <text x="715" y="1024" fill="#1A1714" font-size="26" font-weight="700">纸与屏幕</text>
+  </g>
+
+  <!-- 引文 -->
+  <rect x="88" y="1130" width="812" height="4" fill="#1A1714"/>
+  <text x="80" y="1270" fill="#A82E1C" font-family="'Noto Serif SC', serif" font-size="110" font-weight="700">“</text>
+  <g font-family="'Noto Serif SC', serif" font-weight="700" font-size="44" fill="#1A1714">
+    <text x="188" y="1218">我们失去的不是时间，</text>
+    <text x="188" y="1280">而是连续的时间。</text>
+  </g>
+  <text x="188" y="1336" fill="#6B6155" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" letter-spacing="2">—— 摘自本期第 02 节</text>
+
+  <!-- 署名行 -->
+  <rect x="88" y="1390" width="812" height="1.5" fill="#CBC1AF"/>
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24">
+    <text x="88" y="1438" fill="#1A1714" font-weight="700" letter-spacing="2">文 / 本刊编辑部</text>
+    <text x="900" y="1438" text-anchor="end" fill="#6B6155" font-weight="600" letter-spacing="2">阅读约 12 分钟</text>
+  </g>
+
+  <!-- 页脚：本期目录预告（非关键） -->
+  <rect x="88" y="1650" width="904" height="146" fill="#EAE3D5"/>
+  <g font-family="'Noto Serif SC', serif" font-size="26">
+    <text x="120" y="1706" fill="#A82E1C" font-weight="700">02</text>
+    <text x="170" y="1706" fill="#1A1714">碎片时间是怎样被切出来的</text>
+    <text x="120" y="1758" fill="#A82E1C" font-weight="700">03</text>
+    <text x="170" y="1758" fill="#1A1714">纸与屏幕，读法不同</text>
+  </g>
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6B6155" text-anchor="end">
+    <text x="960" y="1706">第 24 页</text>
+    <text x="960" y="1758">第 38 页</text>
+  </g>
+  <rect x="88" y="1818" width="904" height="1.5" fill="#1A1714"/>
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6B6155">
+    <text x="88" y="1852" letter-spacing="2">封面故事</text>
+    <text x="992" y="1852" text-anchor="end" font-family="'Noto Serif SC', serif" font-weight="700" fill="#1A1714">07</text>
+  </g>
+</svg>

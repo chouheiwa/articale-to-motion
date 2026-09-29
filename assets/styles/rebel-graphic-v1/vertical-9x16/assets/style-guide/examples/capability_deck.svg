@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(-15)">
+      <circle cx="9" cy="9" r="3.6" fill="#2A2A2A"/>
+    </pattern>
+    <pattern id="dotsRed" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(-15)">
+      <circle cx="8" cy="8" r="3.2" fill="#9E0F22"/>
+    </pattern>
+    <linearGradient id="fadeDown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="fadeUp" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="fadeRad" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fadeMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="0.65" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="#111111"/>
+  <mask id="m1"><rect x="0" y="500" width="1080" height="800" fill="url(#fadeMid)"/></mask>
+  <rect x="0" y="500" width="1080" height="800" fill="url(#dots)" mask="url(#m1)"/>
+  <polygon points="0,1220 1080,680 1080,702 0,1242" fill="#D8152F"/>
+  <g>
+    <polygon points="88,118 212,118 196,172 72,172" fill="#FFE14A"/>
+    <text x="140" y="158" text-anchor="middle" fill="#111111" font-size="30" font-family="'Bungee', 'Noto Sans SC', sans-serif">04</text>
+    <text x="232" y="162" fill="#F4F1EA" font-size="44" font-family="'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif">属性雷达</text>
+    <text x="992" y="158" text-anchor="end" fill="#B9B4AA" font-size="24" letter-spacing="2" font-family="'Bungee', 'Noto Sans SC', sans-serif">CAPABILITY</text>
+    <polygon points="88,196 992,188 992,192 88,200" fill="#B9B4AA" opacity="0.5"/>
+    <polygon points="88,196 380,192 380,196 88,200" fill="#FFE14A"/>
+  </g>
+  <text x="88" y="340" fill="#F4F1EA" font-size="64" font-family="'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif">费曼学习法 · 属性</text>
+  <polygon points="470.0,620.0 736.3,813.5 634.6,1126.5 305.4,1126.5 203.7,813.5" fill="#111111" stroke="#B9B4AA" stroke-opacity="0.6" stroke-width="3"/>
+  <polygon points="470.0,634.0 688.4,829.0 539.1,995.1 374.5,1031.4 241.0,825.6" fill="#FFE14A" stroke="#F4F1EA" stroke-width="4" stroke-linejoin="miter"/>
+  <polygon points="470.0,690.0 669.7,835.1 593.4,1069.9 346.6,1069.9 270.3,835.1" fill="none" stroke="#B9B4AA" stroke-opacity="0.35" stroke-width="2"/>
+  <polygon points="470.0,760.0 603.1,856.7 552.3,1013.3 387.7,1013.3 336.9,856.7" fill="none" stroke="#B9B4AA" stroke-opacity="0.35" stroke-width="2"/>
+  <polygon points="470.0,830.0 536.6,878.4 511.1,956.6 428.9,956.6 403.4,878.4" fill="none" stroke="#B9B4AA" stroke-opacity="0.35" stroke-width="2"/>
+  <line x1="470" y1="900" x2="470.0" y2="620.0" stroke="#B9B4AA" stroke-opacity="0.35" stroke-width="2"/>
+  <line x1="470" y1="900" x2="736.3" y2="813.5" stroke="#B9B4AA" stroke-opacity="0.35" stroke-width="2"/>
+  <line x1="470" y1="900" x2="634.6" y2="1126.5" stroke="#B9B4AA" stroke-opacity="0.35" stroke-width="2"/>
+  <line x1="470" y1="900" x2="305.4" y2="1126.5" stroke="#B9B4AA" stroke-opacity="0.35" stroke-width="2"/>
+  <line x1="470" y1="900" x2="203.7" y2="813.5" stroke="#B9B4AA" stroke-opacity="0.35" stroke-width="2"/>
+  <rect x="461.0" y="625.0" width="18" height="18" fill="#111111" stroke="#F4F1EA" stroke-width="3" transform="rotate(45 470.0 634.0)"/>
+  <rect x="679.4" y="820.0" width="18" height="18" fill="#111111" stroke="#F4F1EA" stroke-width="3" transform="rotate(45 688.4 829.0)"/>
+  <rect x="530.1" y="986.1" width="18" height="18" fill="#111111" stroke="#F4F1EA" stroke-width="3" transform="rotate(45 539.1 995.1)"/>
+  <rect x="365.5" y="1022.4" width="18" height="18" fill="#111111" stroke="#F4F1EA" stroke-width="3" transform="rotate(45 374.5 1031.4)"/>
+  <rect x="232.0" y="816.6" width="18" height="18" fill="#111111" stroke="#F4F1EA" stroke-width="3" transform="rotate(45 241.0 825.6)"/>
+  <rect x="400" y="544" width="140" height="46" fill="#2A2A2A"/>
+  <text x="470" y="577" text-anchor="middle" fill="#F4F1EA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif">理解深度</text>
+  <rect x="760" y="728" width="140" height="46" fill="#2A2A2A"/>
+  <text x="830" y="761" text-anchor="middle" fill="#F4F1EA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif">迁移能力</text>
+  <rect x="659" y="1141" width="140" height="46" fill="#2A2A2A"/>
+  <text x="729" y="1174" text-anchor="middle" fill="#F4F1EA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif">时间投入</text>
+  <rect x="141" y="1141" width="140" height="46" fill="#2A2A2A"/>
+  <text x="211" y="1174" text-anchor="middle" fill="#F4F1EA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif">上手难度</text>
+  <rect x="88" y="728" width="140" height="46" fill="#2A2A2A"/>
+  <text x="158" y="761" text-anchor="middle" fill="#F4F1EA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif">记忆保持</text>
+  <polygon points="800.0,452.0 821.0,483.3 856.4,470.3 855.0,508.0 891.3,518.3 868.0,548.0 891.3,577.7 855.0,588.0 856.4,625.7 821.0,612.7 800.0,644.0 779.0,612.7 743.6,625.7 745.0,588.0 708.7,577.7 732.0,548.0 708.7,518.3 745.0,508.0 743.6,470.3 779.0,483.3" fill="#FFE14A"/>
+  <text x="800" y="586" text-anchor="middle" fill="#111111" font-size="96" font-family="'Bungee', 'Noto Sans SC', sans-serif">A</text>
+  <rect x="744" y="632" width="112" height="38" fill="#111111"/>
+  <text x="800" y="660" text-anchor="middle" fill="#FFE14A" font-size="22" font-family="'Bungee', 'Noto Sans SC', sans-serif">TOTAL</text>
+  <polygon points="88,1310 900,1310 900,1418 868,1450 88,1450" fill="#F4F1EA"/>
+  <rect x="88" y="1310" width="10" height="140" fill="#FFE14A"/>
+  <text x="124" y="1370" fill="#111111" font-size="34" font-weight="700" font-family="'Noto Sans SC', sans-serif">总评 A：慢一点，但真正变成你的。</text>
+  <text x="124" y="1418" fill="#6E6A63" font-size="28" font-family="'Noto Sans SC', sans-serif">短板是时间投入，适合核心概念。</text>
+  <g fill="#B9B4AA" opacity="0.55">
+    <polygon points="40,1860 40,1812 48,1812 48,1852 88,1852 88,1860"/>
+    <polygon points="1040,1860 1040,1812 1032,1812 1032,1852 992,1852 992,1860"/>
+  </g>
+</svg>

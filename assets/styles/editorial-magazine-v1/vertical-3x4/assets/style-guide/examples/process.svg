@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <rect width="1080" height="1440" fill="#F4EFE6"/>
+
+  <!-- 版头 -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <text x="88" y="150" fill="#1A1714" font-size="24" font-weight="700" letter-spacing="4">长文 · 阅读与注意力</text>
+    <text x="992" y="150" text-anchor="end" fill="#6B6155" font-size="24" font-weight="600" letter-spacing="3">第 07 期</text>
+  </g>
+  <rect x="88" y="172" width="904" height="4" fill="#1A1714"/>
+
+  <!-- 标题 -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <rect x="88" y="258" width="48" height="4" fill="#A82E1C"/>
+    <text x="152" y="270" fill="#A82E1C" font-size="26" font-weight="700" letter-spacing="6">编号长文</text>
+  </g>
+  <text x="86" y="360" fill="#1A1714" font-family="'Noto Serif SC', serif" font-size="60" font-weight="700" letter-spacing="1">找回专注的三个练习</text>
+
+  <!-- 首字下沉导语 -->
+  <text x="84" y="540" fill="#A82E1C" font-family="'Noto Serif SC', serif" font-size="136" font-weight="700">书</text>
+  <g font-family="'Noto Serif SC', serif" font-size="28" fill="#4A433B">
+    <text x="236" y="444">不是一口气读完的。与其责怪自己分心，</text>
+    <text x="236" y="490">不如把阅读拆成可以练习的小动作。</text>
+    <text x="236" y="536">下面三步，每一步只需要十分钟。</text>
+  </g>
+  <rect x="88" y="580" width="812" height="1.5" fill="#1A1714"/>
+
+  <!-- 01 -->
+  <g font-family="'Noto Serif SC', serif">
+    <text x="88" y="690" fill="#1A1714" font-size="76" font-weight="700">01</text>
+    <text x="297" y="650" fill="#1A1714" font-size="36" font-weight="700">只在纸上读开头</text>
+    <text x="297" y="696" fill="#4A433B" font-size="26">前十页交给纸，屏幕留到之后。</text>
+  </g>
+  <rect x="297" y="738" width="603" height="1.5" fill="#CBC1AF"/>
+  <!-- 02 -->
+  <g font-family="'Noto Serif SC', serif">
+    <text x="88" y="840" fill="#1A1714" font-size="76" font-weight="700">02</text>
+    <text x="297" y="800" fill="#1A1714" font-size="36" font-weight="700">把手机放进另一个房间</text>
+    <text x="297" y="846" fill="#4A433B" font-size="26">看不见，比开静音更有效。</text>
+  </g>
+  <rect x="297" y="888" width="603" height="1.5" fill="#CBC1AF"/>
+  <!-- 03 -->
+  <g font-family="'Noto Serif SC', serif">
+    <text x="88" y="990" fill="#1A1714" font-size="76" font-weight="700">03</text>
+    <text x="297" y="950" fill="#1A1714" font-size="36" font-weight="700">读完一节，写下一句</text>
+    <text x="297" y="996" fill="#4A433B" font-size="26">用自己的话复述，才算真正读过。</text>
+  </g>
+
+  <!-- 引文 -->
+  <rect x="88" y="1036" width="812" height="1.5" fill="#1A1714"/>
+  <text x="80" y="1140" fill="#A82E1C" font-family="'Noto Serif SC', serif" font-size="96" font-weight="700">“</text>
+  <g font-family="'Noto Serif SC', serif" font-weight="700" font-size="38" fill="#1A1714">
+    <text x="184" y="1098">专注不是天赋，</text>
+    <text x="184" y="1150">是一种可以练习的习惯。</text>
+  </g>
+
+  <!-- 页脚（非关键） -->
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6B6155">
+    <text x="184" y="1224" letter-spacing="2">—— 本期结语</text>
+  </g>
+  <rect x="88" y="1340" width="904" height="1.5" fill="#1A1714"/>
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6B6155">
+    <text x="88" y="1374" letter-spacing="2">三个练习</text>
+    <text x="992" y="1374" text-anchor="end" font-family="'Noto Serif SC', serif" font-weight="700" fill="#1A1714">52</text>
+  </g>
+</svg>

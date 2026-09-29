@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <pattern id="grid" width="72" height="72" patternUnits="userSpaceOnUse">
+      <path d="M 72 0 L 0 0 0 72" fill="none" stroke="#1C2538" stroke-width="1.5"/>
+    </pattern>
+    <radialGradient id="haloV" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#A493FF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#A493FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="haloL" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#C8F560" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#C8F560" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C8F560" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#C8F560" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="b"/>
+      <feComponentTransfer in="b" result="s"><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowDot" x="-400%" y="-400%" width="900%" height="900%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="b"/>
+      <feComponentTransfer in="b" result="s"><feFuncA type="linear" slope="0.7"/></feComponentTransfer>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1080" height="1920" fill="#070A12"/>
+  <rect width="1080" height="1920" fill="url(#grid)" opacity="0.55"/>
+  <circle cx="960" cy="140" r="520" fill="url(#haloV)"/>
+  <circle cx="300" cy="1100" r="420" fill="url(#haloL)"/>
+  <g fill="none" stroke="#5F6B85" stroke-width="2" opacity="0.7">
+    <path d="M40 140v-44h44 M996 96h44v44 M40 1820v40h44 M996 1860h44v-40"/>
+  </g>
+  <circle cx="96" cy="138" r="8" fill="#C8F560" filter="url(#glowDot)"/>
+  <text x="118" y="148" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="700" letter-spacing="3">漏斗流程</text>
+  <text x="992" y="146" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500" letter-spacing="4">PROCESS</text>
+  <rect x="88" y="180" width="904" height="2" fill="#1C2538"/>
+  <rect x="88" y="180" width="200" height="2" fill="#C8F560"/>
+  <text x="88" y="310" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="62" font-weight="700">一款 AI 写作工具</text>
+  <text x="88" y="388" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="62" font-weight="700">从访问到付费</text>
+  <rect x="88" y="478" width="244" height="46" rx="23" fill="#0E1422" stroke="#5F6B85" stroke-width="1.5"/>
+  <text x="210.0" y="509" text-anchor="middle" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="600">示意 · 单月用户数</text>
+  <text x="88" y="608" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="700">访问</text>
+  <text x="88" y="646" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="500">10,000 人</text>
+  <rect x="300" y="572" width="600" height="84" rx="12" fill="#151D2F" stroke="#5F6B85" stroke-width="1.5"/>
+  <text x="876" y="624" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="32" font-weight="700">100%</text>
+  <path d="M314 711v22m-7 -8l7 8 7-8" fill="none" stroke="#FF7A6B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="338" y="735" font-family="'Noto Sans SC', sans-serif" fill="#FF7A6B" font-size="24" font-weight="700">留存 38%</text>
+  <text x="468" y="735" font-family="'Noto Sans SC', sans-serif" fill="#FF7A6B" font-size="24" font-weight="700">· 最大漏口</text>
+  <text x="88" y="838" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="700">开始试用</text>
+  <text x="88" y="876" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="500">3,800 人</text>
+  <rect x="300" y="802" width="228" height="84" rx="12" fill="#151D2F" stroke="#5F6B85" stroke-width="1.5"/>
+  <text x="550" y="854" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="32" font-weight="700">38%</text>
+  <path d="M314 941v22m-7 -8l7 8 7-8" fill="none" stroke="#9AA6BF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="338" y="965" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">留存 68%</text>
+  <text x="88" y="1068" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="700">周活跃</text>
+  <text x="88" y="1106" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="500">2,600 人</text>
+  <rect x="300" y="1032" width="156" height="84" rx="12" fill="#151D2F" stroke="#5F6B85" stroke-width="1.5"/>
+  <text x="478" y="1084" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="32" font-weight="700">26%</text>
+  <path d="M314 1171v22m-7 -8l7 8 7-8" fill="none" stroke="#9AA6BF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="338" y="1195" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">留存 50%</text>
+  <text x="88" y="1298" font-family="'Noto Sans SC', sans-serif" fill="#C8F560" font-size="30" font-weight="700">付费</text>
+  <text x="88" y="1336" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="500">1,300 人</text>
+  <rect x="300" y="1262" width="78" height="84" rx="12" fill="#C8F560" stroke="#C8F560" stroke-width="1.5" filter="url(#glow)"/>
+  <text x="400" y="1314" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#C8F560" font-size="32" font-weight="700">13%</text>
+  <rect x="88" y="1396" width="812" height="200" rx="16" fill="#151D2F" stroke="#1C2538" stroke-width="1.5"/>
+  <rect x="88" y="1414" width="5" height="164" rx="2.5" fill="#C8F560"/>
+  <text x="124" y="1463" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="600">六成访客没有开始试用。</text>
+  <text x="124" y="1507" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="600">首步留存每多 10 个点，</text>
+  <text x="124" y="1550" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="600">付费约多 340 人</text>
+</svg>

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1440" viewBox="0 0 1080 1440">
+<defs>
+<g id="star-on"><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" transform="translate(0,7)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" fill="#FFC83D" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><ellipse cx="-10" cy="-14" rx="9" ry="5" fill="#FFFFFF" opacity="0.6" transform="rotate(-30 -10 -14)"/></g>
+<g id="star-off"><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" transform="translate(0,7)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" fill="#FFE3EE" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/></g>
+<g id="coin"><circle cx="0" cy="6" r="30" fill="#3B1E54"/><circle r="30" fill="#FFC83D" stroke="#3B1E54" stroke-width="5"/><circle r="18" fill="none" stroke="#3B1E54" stroke-width="3" opacity="0.35"/><path d="M-10,-16 A18,18 0 0 1 12,-14" stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.7"/></g>
+<g id="drop"><path d="M0,-62 C18,-36 46,-8 46,20 A46,46 0 0 1 -46,20 C-46,-8 -18,-36 0,-62Z" transform="translate(0,9)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-62 C18,-36 46,-8 46,20 A46,46 0 0 1 -46,20 C-46,-8 -18,-36 0,-62Z" fill="#45B8F5" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><path d="M-22,0 C-24,16 -14,32 2,38" stroke="#FFFFFF" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.55"/><circle cx="-12" cy="-22" r="6" fill="#FFFFFF" opacity="0.6"/></g>
+<g id="sparkle"><path d="M0,-18 Q3,-3 18,0 Q3,3 0,18 Q-3,3 -18,0 Q-3,-3 0,-18Z" fill="#FFFFFF" stroke="#3B1E54" stroke-width="3" stroke-linejoin="round"/></g>
+<g id="check"><circle r="30" fill="#FFFFFF" stroke="#3B1E54" stroke-width="5"/><path d="M-13,1 L-3,11 L15,-9" fill="none" stroke="#25C08A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="lock"><rect x="-22" y="-4" width="44" height="34" rx="10" fill="#FFFFFF" stroke="#6E4E86" stroke-width="5"/><path d="M-12,-4 V-14 A12,12 0 0 1 12,-14 V-4" fill="none" stroke="#6E4E86" stroke-width="5"/><circle cy="12" r="5" fill="#6E4E86"/></g>
+</defs>
+<rect width="1080" height="1440" fill="#FFF4E8"/>
+<path d="M494,640 L1594,640 L1577,831Z M494,640 L1528,1016 L1447,1190Z M494,640 L1337,1347 L1201,1483Z M494,640 L1044,1593 L870,1674Z M494,640 L685,1723 L494,1740Z M494,640 L303,1723 L118,1674Z M494,640 L-56,1593 L-213,1483Z M494,640 L-349,1347 L-459,1190Z M494,640 L-540,1016 L-589,831Z M494,640 L-606,640 L-589,449Z M494,640 L-540,264 L-459,90Z M494,640 L-349,-67 L-213,-203Z M494,640 L-56,-313 L118,-394Z M494,640 L303,-443 L494,-460Z M494,640 L685,-443 L870,-394Z M494,640 L1044,-313 L1201,-203Z M494,640 L1337,-67 L1447,90Z M494,640 L1528,264 L1577,449Z" fill="#FFE3EE" opacity="1.0"/>
+<circle cx="150" cy="1290" r="26" fill="#FFFFFF" opacity="1.0"/>
+<circle cx="960" cy="1230" r="18" fill="#FFFFFF" opacity="1.0"/>
+<circle cx="1010" cy="470" r="14" fill="#FFFFFF" opacity="1.0"/>
+<circle cx="60" cy="700" r="12" fill="#FFFFFF" opacity="1.0"/>
+<path d="M0,1240 C270.0,1160 486.0,1170 648.0,1210 C810.0,1250 972.0,1190 1080,1200 L1080,1440 L0,1440Z" fill="#FFFFFF"/>
+<use xlink:href="#sparkle" transform="translate(50,920) scale(0.9)"/>
+<use xlink:href="#sparkle" transform="translate(1020,300) scale(0.8)"/>
+<use xlink:href="#sparkle" transform="translate(1030,1020)"/>
+<use xlink:href="#sparkle" transform="translate(60,1140) scale(0.7)"/>
+<rect x="88" y="124" width="304" height="54" rx="27.0" fill="#7A4BD1" stroke="#3B1E54" stroke-width="4"/>
+<text x="240.0" y="160.36" font-family="'Noto Sans SC', sans-serif" font-size="26" font-weight="700" fill="#FFFFFF" text-anchor="middle">第 3 关 · 喝水常识</text>
+<rect x="712" y="124" width="188" height="56" rx="28" fill="#FFFFFF" stroke="#3B1E54" stroke-width="4"/>
+<use xlink:href="#coin" transform="translate(742,152) scale(0.78)"/>
+<text x="872" y="166" font-family="'Fredoka', 'Noto Sans SC', sans-serif" font-size="38" font-weight="700" fill="#3B1E54" text-anchor="end">128</text>
+<rect x="88" y="314" width="812" height="800" rx="48" fill="#3B1E54"/>
+<rect x="88" y="300" width="812" height="800" rx="48" fill="#FFFFFF" stroke="#3B1E54" stroke-width="6"/>
+<rect x="110" y="322" width="768" height="756" rx="32" fill="#FFE3EE" opacity="0.55"/>
+<polygon points="224.0,278 148.0,278 126.0,324.0 148.0,370 224.0,370" fill="#B8285A" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/>
+<polygon points="764.0,278 840.0,278 862.0,324.0 840.0,370 764.0,370" fill="#B8285A" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/>
+<rect x="194.0" y="266" width="600" height="92" rx="18" fill="#3B1E54"/>
+<rect x="194.0" y="256" width="600" height="92" rx="18" fill="#FF5C8A" stroke="#3B1E54" stroke-width="6"/>
+<rect x="218.0" y="266" width="552" height="12" rx="6" fill="#FFFFFF" opacity="0.45"/>
+<text x="494" y="320.0" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="50" fill="#3B1E54" text-anchor="middle">新知识解锁！</text>
+<use xlink:href="#star-on" transform="translate(330,477) rotate(-12)"/>
+<use xlink:href="#star-on" transform="translate(494,447) scale(1.38)"/>
+<use xlink:href="#star-on" transform="translate(658,477) rotate(12)"/>
+<text x="494" y="665" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="104" fill="#3B1E54" text-anchor="middle">喝水不用</text>
+<text x="494" y="775" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="104" fill="#B8285A" text-anchor="middle">等口渴</text>
+<text x="494" y="858" font-family="'Noto Sans SC', sans-serif" font-size="30" font-weight="600" fill="#6E4E86" text-anchor="middle">口渴往往说明身体已经在提醒你补水</text>
+<rect x="274.0" y="959.0" width="440" height="92" rx="46.0" fill="#3B1E54"/>
+<rect x="274.0" y="949.0" width="440" height="92" rx="46.0" fill="#25C08A" stroke="#3B1E54" stroke-width="6"/>
+<rect x="306.2" y="958.0" width="375.6" height="12" rx="6.0" fill="#FFFFFF" opacity="0.45"/>
+<text x="494" y="1013.4" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="46" fill="#3B1E54" text-anchor="middle">领取小技巧</text>
+<use xlink:href="#coin" transform="translate(190,1220) scale(1.1)"/>
+<use xlink:href="#coin" transform="translate(250,1250) scale(0.9)"/>
+<use xlink:href="#coin" transform="translate(150,1270) scale(0.8)"/>
+<use xlink:href="#drop" transform="translate(860,1200) scale(0.9)"/>
+<use xlink:href="#sparkle" transform="translate(800,1150) scale(0.7)"/>
+</svg>

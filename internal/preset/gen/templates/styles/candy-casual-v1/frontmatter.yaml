@@ -1,0 +1,162 @@
+schema_version: 1
+style_id: candy-casual-v1
+style_name: 糖果休闲
+scope:
+  - light_science_explainer
+  - life_tips_and_how_to
+  - habit_and_growth_motivation
+  - beginner_friendly_product_intro
+  - family_and_youth_education
+# @@CANVAS_AND_SAFE_AREA@@
+colors:
+  canvas: "#FFF4E8"
+  ink: "#3B1E54"
+  white: "#FFFFFF"
+  candy_pink: "#FF5C8A"
+  berry: "#B8285A"
+  grape: "#7A4BD1"
+  lemon: "#FFC83D"
+  mint: "#25C08A"
+  sky: "#45B8F5"
+  bubble_tint: "#FFE3EE"
+  support_text: "#6E4E86"
+typography:
+  primary_stack: '"Noto Sans SC", sans-serif'
+  mono_stack: '"Fredoka", "Noto Sans SC", sans-serif'
+  display_stack: '"ZCOOL KuaiLe", "Noto Sans SC", sans-serif'
+  font_files:
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
+    - {family: "ZCOOL KuaiLe", weight: 400, file: "assets/fonts/zcool-kuaile-400.woff2"}
+    - {family: "Fredoka", weight: 600, file: "assets/fonts/fredoka-600.woff2"}
+    - {family: "Fredoka", weight: 700, file: "assets/fonts/fredoka-700.woff2"}
+  sizes_px:
+    cover_min: 84
+    cover_max: 120
+    title_min: 50
+    title_max: 68
+    body_min: 26
+    body_max: 36
+    label_min: 24
+    label_max: 30
+  weights:
+    display: 400
+    heading: 400
+    body: 600
+    body_emphasis: 700
+    metadata: 700
+  line_heights:
+    display_min: 1.02
+    display_max: 1.12
+    body: 1.38
+    metadata: 1.15
+spacing:
+  content_left_px: 88
+  content_width_px: 904
+  group_min_px: 14
+  group_max_px: 24
+  card_stack_min_px: 20
+  card_main_padding_min_px: 32
+  card_main_padding_max_px: 44
+  card_secondary_padding_min_px: 22
+  card_secondary_padding_max_px: 30
+  section_min_px: 36
+  section_max_px: 60
+  element_edge_min_px: 24
+  skeleton_bottom_min_px: 24
+radius:
+  sm_px: 16
+  md_px: 24
+  lg_px: 36
+  xl_px: 48
+  pill_px: 999
+scene_archetypes:
+  - id: proposition
+    name: 奖励弹窗
+    use_for: 封面、钩子、章节开场、强结论
+    example_png: assets/style-guide/examples/proposition.png
+  - id: comparison
+    name: 关卡评星
+    use_for: 做法对比、前后对照、一星与三星的差距
+    example_png: assets/style-guide/examples/comparison.png
+  - id: process
+    name: 签到日历
+    use_for: 步骤、每日习惯、进度累积、阶段解锁
+    example_png: assets/style-guide/examples/process.png
+  - id: capability_deck
+    name: 商店货架
+    use_for: 清单、工具箱、选项总览、收获盘点
+    example_png: assets/style-guide/examples/capability_deck.png
+motion:
+  phases: {build: 0.30, breathe: 0.45, resolve: 0.25}
+  entrance_seconds: {min: 0.28, max: 0.55}
+  exit_seconds: {min: 0.16, max: 0.35}
+  transition_seconds: {min: 0.20, max: 0.40}
+  first_action_delay_seconds: {min: 0.10, max: 0.30}
+  entrance_ease: [back.out(1.6), back.out(2.2), power3.out, elastic.out(1, 0.6)]
+  exit_ease: [back.in(1.4), power2.in]
+  verbs: [POP, DROP_IN, STAR_BURST, COUNT_UP, SQUASH, UNLOCK, STAMP]
+  ambient_per_scene_max: 1
+  max_same_ease_tweens: 2
+audio:
+  sample_rate_hz: 48000
+  channels: 2
+  voice_integrated_lufs: {min: -18, max: -16}
+  bgm_integrated_lufs: {min: -30, max: -26}
+  bgm_ducking_db: {min: 6, max: 10}
+  ducking_attack_seconds: {min: 0.04, max: 0.12}
+  ducking_release_seconds: {min: 0.25, max: 0.60}
+  bgm_fade_seconds: {min: 0.80, max: 1.50}
+  sfx_gain_db: {min: -18, max: -12}
+  sfx_max_simultaneous: 2
+  final_integrated_lufs: -16
+  final_lufs_tolerance: 1
+  true_peak_max_dbtp: -1
+  lra_lu: {min: 2, max: 6}
+subtitles:
+  required: false
+  font_size_px: {min: 34, max: 40}
+  max_width_px: 812
+  max_lines: 2
+  max_fullwidth_chars_per_line: 15
+  line_height: {min: 1.30, max: 1.40}
+  background: "rgba(59, 30, 84, 0.88)"
+  text_color: "#FFFFFF"
+  padding_px: {vertical: 14, horizontal: 24}
+  radius_px: 24
+  break_rules:
+    - keep_proper_nouns_intact
+    - keep_english_phrases_intact
+    - keep_numbers_and_units_intact
+    - preserve_real_speech_gaps
+cover:
+  frame_zero_complete: true
+  default_lines: 2
+  max_lines: 3
+  max_fullwidth_chars_per_line: 9
+  font_size_px: {min: 84, max: 120}
+  line_height: {min: 1.02, max: 1.12}
+  max_width_px: 812
+  contrast_ratio_min: 7.0
+  stable_frames: 18
+forbidden:
+  - black_or_blank_frame_zero
+  - cover_fade_in_intermediate_state
+  - copying_commercial_game_logos_characters_or_ui
+  - named_real_candy_or_mascot_characters
+  - arbitrary_new_brand_colors
+  - thin_hairline_outlines
+  - white_text_on_pink_mint_sky_or_lemon_without_ink_plate
+  - gradient_text
+  - glassmorphism_or_neon_glow
+  - text_still_bouncing_after_settle
+  - continuous_wobble_or_idle_bounce_on_text
+  - confetti_or_particle_rain_covering_text
+  - loot_box_gambling_or_real_money_prices
+  - more_than_one_popup_panel_at_once
+  - labels_or_icons_touching_edges
+  - skeleton_or_list_without_bottom_padding
+  - sfx_on_every_element
+  - music_masking_voice

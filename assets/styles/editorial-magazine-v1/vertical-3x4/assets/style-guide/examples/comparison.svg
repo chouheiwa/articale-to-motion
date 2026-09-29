@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <rect width="1080" height="1440" fill="#F4EFE6"/>
+
+  <!-- 版头 -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <text x="88" y="150" fill="#1A1714" font-size="24" font-weight="700" letter-spacing="4">长文 · 阅读与注意力</text>
+    <text x="992" y="150" text-anchor="end" fill="#6B6155" font-size="24" font-weight="600" letter-spacing="3">第 07 期</text>
+  </g>
+  <rect x="88" y="172" width="904" height="4" fill="#1A1714"/>
+
+  <!-- 标题区 -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <rect x="88" y="258" width="48" height="4" fill="#A82E1C"/>
+    <text x="152" y="270" fill="#A82E1C" font-size="26" font-weight="700" letter-spacing="6">双栏对照</text>
+  </g>
+  <text x="86" y="366" fill="#1A1714" font-family="'Noto Serif SC', serif" font-size="64" font-weight="700" letter-spacing="1">纸上读，与屏上读</text>
+  <text x="88" y="426" fill="#4A433B" font-family="'Noto Serif SC', serif" font-size="30">同一篇文章，换一种载体，读法就变了。</text>
+  <rect x="88" y="466" width="812" height="1.5" fill="#CBC1AF"/>
+
+  <!-- 中缝 -->
+  <rect x="493" y="496" width="1.5" height="468" fill="#CBC1AF"/>
+
+  <!-- 左栏：纸页 -->
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="700" letter-spacing="3" fill="#6B6155">
+    <text x="88" y="522">甲 · 纸页</text>
+    <text x="506" y="522">乙 · 屏幕</text>
+  </g>
+  <g font-family="'Noto Serif SC', serif" font-weight="700" font-size="50" fill="#1A1714">
+    <text x="88" y="590">一页一页</text>
+    <text x="506" y="590">一屏一屏</text>
+  </g>
+  <rect x="88" y="618" width="394" height="3" fill="#1A1714"/>
+  <rect x="506" y="618" width="394" height="3" fill="#1A1714"/>
+
+  <g font-family="'Noto Serif SC', serif" fill="#1A1714">
+    <text x="88" y="680" font-size="32" font-weight="700">线性推进</text>
+    <text x="88" y="722" font-size="26" fill="#4A433B">一行接一行，从头读到尾</text>
+    <rect x="88" y="754" width="394" height="1.5" fill="#CBC1AF"/>
+    <text x="88" y="806" font-size="32" font-weight="700">翻页停顿</text>
+    <text x="88" y="848" font-size="26" fill="#4A433B">每一页都是一次小结</text>
+    <rect x="88" y="880" width="394" height="1.5" fill="#CBC1AF"/>
+    <text x="88" y="932" font-size="32" font-weight="700">空间记忆</text>
+    <text x="88" y="974" font-size="26" fill="#4A433B">记得那句话在左页下方</text>
+
+    <text x="506" y="680" font-size="32" font-weight="700">跳跃扫视</text>
+    <text x="506" y="722" font-size="26" fill="#4A433B">先看标题，再挑段落</text>
+    <rect x="506" y="754" width="394" height="1.5" fill="#CBC1AF"/>
+    <text x="506" y="806" font-size="32" font-weight="700">无尽滚动</text>
+    <text x="506" y="848" font-size="26" fill="#4A433B">没有页码，也没有终点</text>
+    <rect x="506" y="880" width="394" height="1.5" fill="#CBC1AF"/>
+    <text x="506" y="932" font-size="32" font-weight="700">位置模糊</text>
+    <text x="506" y="974" font-size="26" fill="#4A433B">只记得“好像在中间”</text>
+  </g>
+
+  <!-- 结论：横跨四栏 -->
+  <rect x="88" y="1024" width="812" height="4" fill="#1A1714"/>
+  <rect x="482" y="1124" width="136" height="20" fill="#F2D9CF"/>
+  <g font-family="'Noto Serif SC', serif" font-weight="700" font-size="44" fill="#1A1714">
+    <text x="88" y="1086">差别不在载体，</text>
+    <text x="88" y="1146">在于读者是否被允许<tspan fill="#A82E1C">停下来</tspan>。</text>
+  </g>
+
+  <!-- 图注与页脚（非关键） -->
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6B6155">
+    <text x="88" y="1236" letter-spacing="1">注：对照依据常见的阅读行为观察，仅作讨论。</text>
+  </g>
+  <rect x="88" y="1340" width="904" height="1.5" fill="#1A1714"/>
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6B6155">
+    <text x="88" y="1374" letter-spacing="2">纸与屏幕</text>
+    <text x="992" y="1374" text-anchor="end" font-family="'Noto Serif SC', serif" font-weight="700" fill="#1A1714">38</text>
+  </g>
+</svg>

@@ -1,0 +1,161 @@
+schema_version: 1
+style_id: rebel-graphic-v1
+style_name: 二次元锐利拼贴
+scope:
+  - strong_opinion
+  - ranking_and_tier_list
+  - character_style_explainer
+  - game_and_anime_culture
+  - contrarian_takes
+# @@CANVAS_AND_SAFE_AREA@@
+colors:
+  canvas: "#111111"
+  plate_charcoal: "#2A2A2A"
+  paper: "#F4F1EA"
+  white: "#FFFFFF"
+  strike_yellow: "#FFE14A"
+  slash_red: "#D8152F"
+  deep_red: "#9E0F22"
+  halftone_gray: "#B9B4AA"
+  muted_ink: "#6E6A63"
+  ink: "#111111"
+typography:
+  primary_stack: '"Noto Sans SC", sans-serif'
+  mono_stack: '"Bungee", "Noto Sans SC", sans-serif'
+  display_stack: '"ZCOOL QingKe HuangYou", "Noto Sans SC", sans-serif'
+  font_files:
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
+    - {family: "ZCOOL QingKe HuangYou", weight: 400, file: "assets/fonts/zcool-qingke-huangyou-400.woff2"}
+    - {family: "Bungee", weight: 400, file: "assets/fonts/bungee-400.woff2"}
+  sizes_px:
+    cover_min: 88
+    cover_max: 128
+    title_min: 52
+    title_max: 76
+    body_min: 26
+    body_max: 36
+    label_min: 22
+    label_max: 28
+  weights:
+    display: 400
+    heading: 400
+    body: 400
+    body_emphasis: 700
+    metadata: 400
+  line_heights:
+    display_min: 0.96
+    display_max: 1.06
+    body: 1.38
+    metadata: 1.1
+spacing:
+  content_left_px: 88
+  content_width_px: 904
+  group_min_px: 12
+  group_max_px: 20
+  card_stack_min_px: 14
+  card_main_padding_min_px: 28
+  card_main_padding_max_px: 40
+  card_secondary_padding_min_px: 22
+  card_secondary_padding_max_px: 28
+  section_min_px: 32
+  section_max_px: 60
+  element_edge_min_px: 22
+  skeleton_bottom_min_px: 22
+radius:
+  sm_px: 0
+  md_px: 0
+  lg_px: 0
+  xl_px: 0
+  pill_px: 999
+scene_archetypes:
+  - id: proposition
+    name: 冲击标题
+    use_for: 封面、钩子、章节开场、一句话强观点
+    example_png: assets/style-guide/examples/proposition.png
+  - id: comparison
+    name: 评级对决
+    use_for: 两方对比、优劣评级、旧做法与新做法、误区与真相
+    example_png: assets/style-guide/examples/comparison.png
+  - id: process
+    name: 菜单选项
+    use_for: 步骤、选择分支、排行清单、按顺序解锁的要点
+    example_png: assets/style-guide/examples/process.png
+  - id: capability_deck
+    name: 属性雷达
+    use_for: 多维能力、综合评分、角色化的系统画像、最终结果
+    example_png: assets/style-guide/examples/capability_deck.png
+motion:
+  phases: {build: 0.25, breathe: 0.55, resolve: 0.20}
+  entrance_seconds: {min: 0.16, max: 0.40}
+  exit_seconds: {min: 0.12, max: 0.28}
+  transition_seconds: {min: 0.12, max: 0.30}
+  first_action_delay_seconds: {min: 0.10, max: 0.25}
+  entrance_ease: [expo.out, power4.out, back.out(1.6)]
+  exit_ease: [power3.in, expo.in]
+  verbs: [SLASH, SLAM, CUT_IN, STAMP, SNAP, IMPACT_SHAKE, RANK_UP]
+  ambient_per_scene_max: 1
+  max_same_ease_tweens: 2
+audio:
+  sample_rate_hz: 48000
+  channels: 2
+  voice_integrated_lufs: {min: -18, max: -16}
+  bgm_integrated_lufs: {min: -30, max: -26}
+  bgm_ducking_db: {min: 6, max: 10}
+  ducking_attack_seconds: {min: 0.04, max: 0.12}
+  ducking_release_seconds: {min: 0.25, max: 0.60}
+  bgm_fade_seconds: {min: 0.80, max: 1.50}
+  sfx_gain_db: {min: -18, max: -12}
+  sfx_max_simultaneous: 2
+  final_integrated_lufs: -16
+  final_lufs_tolerance: 1
+  true_peak_max_dbtp: -1
+  lra_lu: {min: 2, max: 6}
+subtitles:
+  required: false
+  font_size_px: {min: 32, max: 38}
+  max_width_px: 812
+  max_lines: 2
+  max_fullwidth_chars_per_line: 16
+  line_height: {min: 1.30, max: 1.40}
+  background: "rgba(17, 17, 17, 0.90)"
+  text_color: "#F4F1EA"
+  padding_px: {vertical: 14, horizontal: 22}
+  radius_px: 0
+  break_rules:
+    - keep_proper_nouns_intact
+    - keep_english_phrases_intact
+    - keep_numbers_and_units_intact
+    - preserve_real_speech_gaps
+cover:
+  frame_zero_complete: true
+  default_lines: 2
+  max_lines: 3
+  max_fullwidth_chars_per_line: 8
+  font_size_px: {min: 88, max: 128}
+  line_height: {min: 0.96, max: 1.06}
+  max_width_px: 812
+  contrast_ratio_min: 7.0
+  stable_frames: 18
+forbidden:
+  - black_or_blank_frame_zero
+  - cover_fade_in_intermediate_state
+  - copying_commercial_game_ui_logos_or_characters
+  - persona_style_red_black_ransom_menu_replica
+  - small_dark_text_on_slash_red
+  - body_text_in_display_font
+  - text_moving_while_being_read
+  - continuous_or_long_screen_shake
+  - elastic_or_rubber_band_motion
+  - rounded_web_cards
+  - gradient_text
+  - more_than_three_hues_per_scene
+  - halftone_behind_body_text
+  - full_screen_flash_strobe
+  - arbitrary_new_brand_colors
+  - labels_or_icons_touching_edges
+  - skeleton_or_list_without_bottom_padding
+  - sfx_on_every_element
+  - music_masking_voice

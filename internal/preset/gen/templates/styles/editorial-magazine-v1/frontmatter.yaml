@@ -1,0 +1,162 @@
+schema_version: 1
+style_id: editorial-magazine-v1
+style_name: 杂志编辑排版
+scope:
+  - opinion_essay
+  - humanities_and_culture
+  - business_commentary
+  - books_and_history
+  - long_form_reading
+# @@CANVAS_AND_SAFE_AREA@@
+colors:
+  canvas: "#F4EFE6"
+  paper_shade: "#EAE3D5"
+  paper_light: "#FBF8F2"
+  ink: "#1A1714"
+  body_ink: "#4A433B"
+  caption_gray: "#6B6155"
+  vermilion: "#A82E1C"
+  vermilion_tint: "#F2D9CF"
+  vermilion_on_ink: "#E0664F"
+  hairline: "#CBC1AF"
+  hairline_strong: "#9C9080"
+typography:
+  primary_stack: '"Noto Serif SC", serif'
+  mono_stack: '"Noto Sans SC", sans-serif'
+  display_stack: '"Playfair Display", "Noto Serif SC", serif'
+  font_files:
+    - {family: "Noto Serif SC", weight: 400, file: "assets/fonts/noto-serif-sc-400.woff2"}
+    - {family: "Noto Serif SC", weight: 700, file: "assets/fonts/noto-serif-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
+  sizes_px:
+    cover_min: 84
+    cover_max: 120
+    title_min: 50
+    title_max: 68
+    body_min: 26
+    body_max: 34
+    label_min: 24
+    label_max: 28
+  weights:
+    display: 700
+    heading: 700
+    body: 400
+    body_emphasis: 700
+    metadata: 600
+  line_heights:
+    display_min: 1.10
+    display_max: 1.20
+    body: 1.60
+    metadata: 1.30
+spacing:
+  content_left_px: 88
+  content_width_px: 904
+  group_min_px: 14
+  group_max_px: 24
+  card_stack_min_px: 24
+  card_main_padding_min_px: 32
+  card_main_padding_max_px: 44
+  card_secondary_padding_min_px: 24
+  card_secondary_padding_max_px: 32
+  section_min_px: 40
+  section_max_px: 72
+  element_edge_min_px: 22
+  skeleton_bottom_min_px: 22
+radius:
+  sm_px: 0
+  md_px: 2
+  lg_px: 4
+  xl_px: 6
+  pill_px: 999
+scene_archetypes:
+  - id: proposition
+    name: 封面故事
+    use_for: 封面、钩子、章节开篇、一句定调的强观点
+    example_png: assets/style-guide/examples/proposition.png
+  - id: comparison
+    name: 双栏对照
+    use_for: 两种观点、旧说与新说、表象与本质、正方与反方
+    example_png: assets/style-guide/examples/comparison.png
+  - id: process
+    name: 编号长文
+    use_for: 分节论证、时间线、因果链、逐层推进的论点
+    example_png: assets/style-guide/examples/process.png
+  - id: capability_deck
+    name: 目录页
+    use_for: 全片导读、章节总览、要点汇总、结语回顾
+    example_png: assets/style-guide/examples/capability_deck.png
+motion:
+  phases: {build: 0.35, breathe: 0.45, resolve: 0.20}
+  entrance_seconds: {min: 0.50, max: 1.10}
+  exit_seconds: {min: 0.30, max: 0.60}
+  transition_seconds: {min: 0.40, max: 0.80}
+  first_action_delay_seconds: {min: 0.20, max: 0.40}
+  entrance_ease: [power2.out, power3.out, sine.inOut]
+  exit_ease: [power2.in, sine.in]
+  verbs: [SET_LINE, DRAW_RULE, MASK_WIPE, DROP_CAP, PULL_QUOTE, MARK, TURN_PAGE]
+  ambient_per_scene_max: 1
+  max_same_ease_tweens: 3
+audio:
+  sample_rate_hz: 48000
+  channels: 2
+  voice_integrated_lufs: {min: -18, max: -16}
+  bgm_integrated_lufs: {min: -30, max: -26}
+  bgm_ducking_db: {min: 6, max: 10}
+  ducking_attack_seconds: {min: 0.04, max: 0.12}
+  ducking_release_seconds: {min: 0.25, max: 0.60}
+  bgm_fade_seconds: {min: 0.80, max: 1.50}
+  sfx_gain_db: {min: -18, max: -12}
+  sfx_max_simultaneous: 2
+  final_integrated_lufs: -16
+  final_lufs_tolerance: 1
+  true_peak_max_dbtp: -1
+  lra_lu: {min: 2, max: 6}
+subtitles:
+  required: false
+  font_size_px: {min: 32, max: 38}
+  max_width_px: 812
+  max_lines: 2
+  max_fullwidth_chars_per_line: 16
+  line_height: {min: 1.35, max: 1.45}
+  background: "rgba(26, 23, 20, 0.86)"
+  text_color: "#F4EFE6"
+  padding_px: {vertical: 14, horizontal: 24}
+  radius_px: 2
+  break_rules:
+    - keep_proper_nouns_intact
+    - keep_english_phrases_intact
+    - keep_numbers_and_units_intact
+    - keep_quotation_marks_with_quote
+    - preserve_real_speech_gaps
+cover:
+  frame_zero_complete: true
+  default_lines: 2
+  max_lines: 3
+  max_fullwidth_chars_per_line: 9
+  font_size_px: {min: 84, max: 120}
+  line_height: {min: 1.10, max: 1.20}
+  max_width_px: 812
+  contrast_ratio_min: 7.0
+  stable_frames: 24
+forbidden:
+  - black_or_blank_frame_zero
+  - cover_fade_in_intermediate_state
+  - real_magazine_masthead_or_logo
+  - imitated_publication_trade_dress
+  - more_than_one_accent_color
+  - pure_black_or_pure_white_page
+  - gradient_text
+  - glow_or_neon_effects
+  - drop_shadow_cards
+  - rounded_web_card_stack
+  - elastic_or_bouncy_motion
+  - per_character_typewriter_on_body_text
+  - all_lines_same_direction_same_speed
+  - empty_lower_half
+  - justified_text_with_rivers
+  - body_text_below_24px
+  - sfx_on_every_line
+  - music_masking_voice

@@ -1,0 +1,160 @@
+schema_version: 1
+style_id: scifi-hud-v1
+style_name: 科幻HUD
+scope:
+  - aerospace_and_space_explainer
+  - hardware_and_systems_architecture
+  - engineering_mission_walkthrough
+  - technology_explainer
+  - diagnostics_and_monitoring
+# @@CANVAS_AND_SAFE_AREA@@
+colors:
+  canvas: "#0A1622"
+  panel: "#0F2233"
+  panel_raised: "#132C40"
+  ink: "#E6F6FA"
+  hud_cyan: "#3FE0F0"
+  cyan_tint: "#0F3A48"
+  readout_gray: "#8FB3C4"
+  grid_line: "#16304A"
+  line_dim: "#2E5A73"
+  lock_teal: "#37D6B5"
+  warning_amber: "#FFB547"
+typography:
+  primary_stack: '"Noto Sans SC", sans-serif'
+  mono_stack: '"Orbitron", "JetBrains Mono", "Noto Sans SC", monospace'
+  font_files:
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
+    - {family: "Orbitron", weight: 700, file: "assets/fonts/orbitron-variable.woff2"}
+  sizes_px:
+    cover_min: 78
+    cover_max: 108
+    title_min: 46
+    title_max: 64
+    body_min: 24
+    body_max: 34
+    label_min: 18
+    label_max: 23
+  weights:
+    display: 900
+    heading: 700
+    body: 400
+    body_emphasis: 600
+    metadata: 700
+  line_heights:
+    display_min: 1.00
+    display_max: 1.10
+    body: 1.38
+    metadata: 1.2
+spacing:
+  content_left_px: 88
+  content_width_px: 904
+  group_min_px: 12
+  group_max_px: 20
+  card_stack_min_px: 16
+  card_main_padding_min_px: 28
+  card_main_padding_max_px: 36
+  card_secondary_padding_min_px: 22
+  card_secondary_padding_max_px: 28
+  section_min_px: 32
+  section_max_px: 56
+  element_edge_min_px: 22
+  skeleton_bottom_min_px: 22
+radius:
+  sm_px: 2
+  md_px: 4
+  lg_px: 6
+  xl_px: 8
+  pill_px: 999
+scene_archetypes:
+  - id: proposition
+    name: 目标锁定
+    use_for: 封面、钩子、章节开场、强结论
+    example_png: assets/style-guide/examples/proposition.png
+  - id: comparison
+    name: 扫描对比
+    use_for: 两个对象的参数对照、旧方案与新方案、预期与实测
+    example_png: assets/style-guide/examples/comparison.png
+  - id: process
+    name: 启动序列
+    use_for: 步骤、发射或上线流程、因果链、状态切换
+    example_png: assets/style-guide/examples/process.png
+  - id: capability_deck
+    name: 系统诊断
+    use_for: 系统总览、子系统状态、能力清单、验证结果
+    example_png: assets/style-guide/examples/capability_deck.png
+motion:
+  phases: {build: 0.30, breathe: 0.45, resolve: 0.25}
+  entrance_seconds: {min: 0.25, max: 0.60}
+  exit_seconds: {min: 0.15, max: 0.40}
+  transition_seconds: {min: 0.15, max: 0.35}
+  first_action_delay_seconds: {min: 0.10, max: 0.30}
+  entrance_ease: [power2.out, power3.out, expo.out]
+  exit_ease: [power2.in, power3.in]
+  verbs: [BOOT, DRAW, SCAN, TRACK, LOCK_ON, TICK, CONFIRM]
+  ambient_per_scene_max: 1
+  max_same_ease_tweens: 2
+audio:
+  sample_rate_hz: 48000
+  channels: 2
+  voice_integrated_lufs: {min: -18, max: -16}
+  bgm_integrated_lufs: {min: -30, max: -26}
+  bgm_ducking_db: {min: 6, max: 10}
+  ducking_attack_seconds: {min: 0.04, max: 0.12}
+  ducking_release_seconds: {min: 0.25, max: 0.60}
+  bgm_fade_seconds: {min: 0.80, max: 1.50}
+  sfx_gain_db: {min: -18, max: -12}
+  sfx_max_simultaneous: 2
+  final_integrated_lufs: -16
+  final_lufs_tolerance: 1
+  true_peak_max_dbtp: -1
+  lra_lu: {min: 2, max: 6}
+subtitles:
+  required: false
+  font_size_px: {min: 32, max: 38}
+  max_width_px: 812
+  max_lines: 2
+  max_fullwidth_chars_per_line: 16
+  line_height: {min: 1.30, max: 1.40}
+  background: "rgba(10, 22, 34, 0.86)"
+  text_color: "#E6F6FA"
+  padding_px: {vertical: 14, horizontal: 22}
+  radius_px: 4
+  break_rules:
+    - keep_proper_nouns_intact
+    - keep_english_phrases_intact
+    - keep_numbers_and_units_intact
+    - preserve_real_speech_gaps
+cover:
+  frame_zero_complete: true
+  default_lines: 2
+  max_lines: 3
+  max_fullwidth_chars_per_line: 10
+  font_size_px: {min: 78, max: 108}
+  line_height: {min: 1.00, max: 1.10}
+  max_width_px: 812
+  contrast_ratio_min: 7.0
+  stable_frames: 18
+forbidden:
+  - black_or_blank_frame_zero
+  - cover_fade_in_intermediate_state
+  - copying_commercial_game_or_film_ui_logos_or_characters
+  - arbitrary_new_brand_colors
+  - warm_or_multi_hue_neon_palette
+  - magenta_yellow_glitch_aesthetic
+  - gradient_text
+  - glow_blur_on_body_text
+  - persistent_full_frame_flicker
+  - excessive_glitch
+  - elastic_or_bouncy_motion
+  - decorative_fake_data_without_meaning
+  - warning_amber_as_decoration
+  - hairline_key_linework_under_2px
+  - all_elements_same_direction_same_speed
+  - labels_or_icons_touching_edges
+  - skeleton_or_list_without_bottom_padding
+  - sfx_on_every_element
+  - music_masking_voice

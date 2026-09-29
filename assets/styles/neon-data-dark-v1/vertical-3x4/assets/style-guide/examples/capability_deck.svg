@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <defs>
+    <pattern id="grid" width="72" height="72" patternUnits="userSpaceOnUse">
+      <path d="M 72 0 L 0 0 0 72" fill="none" stroke="#1C2538" stroke-width="1.5"/>
+    </pattern>
+    <radialGradient id="haloV" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#A493FF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#A493FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="haloL" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#C8F560" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#C8F560" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C8F560" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#C8F560" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="b"/>
+      <feComponentTransfer in="b" result="s"><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowDot" x="-400%" y="-400%" width="900%" height="900%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="b"/>
+      <feComponentTransfer in="b" result="s"><feFuncA type="linear" slope="0.7"/></feComponentTransfer>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1080" height="1440" fill="#070A12"/>
+  <rect width="1080" height="1440" fill="url(#grid)" opacity="0.55"/>
+  <circle cx="960" cy="140" r="520" fill="url(#haloV)"/>
+  <circle cx="300" cy="640" r="420" fill="url(#haloL)"/>
+  <g fill="none" stroke="#5F6B85" stroke-width="2" opacity="0.7">
+    <path d="M40 140v-44h44 M996 96h44v44 M40 1340v40h44 M996 1380h44v-40"/>
+  </g>
+  <circle cx="96" cy="138" r="8" fill="#C8F560" filter="url(#glowDot)"/>
+  <text x="118" y="148" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="30" font-weight="700" letter-spacing="3">指标看板</text>
+  <text x="992" y="146" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500" letter-spacing="4">CAPABILITY DECK</text>
+  <rect x="88" y="180" width="904" height="2" fill="#1C2538"/>
+  <rect x="88" y="180" width="200" height="2" fill="#C8F560"/>
+  <text x="88" y="280" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="56" font-weight="700">模型上线之前</text>
+  <text x="88" y="352" font-family="'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="56" font-weight="700">先看这五个数</text>
+  <rect x="660" y="318" width="240" height="46" rx="23" fill="#0E1422" stroke="#5F6B85" stroke-width="1.5"/>
+  <text x="780.0" y="349" text-anchor="middle" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="600">示意 · 压测环境</text>
+  <rect x="88" y="406" width="904" height="300" rx="24" fill="#151D2F" stroke="#1C2538" stroke-width="1.5"/>
+  <rect x="88" y="434" width="5" height="244" rx="2.5" fill="#C8F560"/>
+  <text x="128" y="464" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="600">首字延迟 · P50</text>
+  <text x="120" y="636" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#C8F560" font-size="176" font-weight="700" letter-spacing="-4" filter="url(#glow)">320</text>
+  <text x="447" y="636" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#C8F560" font-size="56" font-weight="700">ms</text>
+  <text x="880" y="464" text-anchor="end" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24" font-weight="500">7 DAYS</text>
+  <line x1="600" y1="654" x2="880" y2="654" stroke="#5F6B85" stroke-width="2"/>
+  <polygon points="600,642 600,502.0 639,520.7 677,516.0 716,548.7 754,586.0 793,576.7 831,614.0 870,642.0 870,642" fill="url(#area)"/>
+  <polyline points="600,502.0 639,520.7 677,516.0 716,548.7 754,586.0 793,576.7 831,614.0 870,642.0" fill="none" stroke="#C8F560" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="870" cy="642.0" r="8" fill="#C8F560" filter="url(#glowDot)"/>
+  <rect x="88" y="722" width="444" height="180" rx="16" fill="#0E1422" stroke="#1C2538" stroke-width="1.5" stroke-opacity="1"/>
+  <text x="120" y="774" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="600">吞吐</text>
+  <text x="118" y="866" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="72" font-weight="700">1,850<tspan dx="10" font-size="30" fill="#9AA6BF" font-weight="500">tok/s</tspan></text>
+  <rect x="548" y="722" width="444" height="180" rx="16" fill="#0E1422" stroke="#1C2538" stroke-width="1.5" stroke-opacity="1"/>
+  <text x="580" y="774" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="600">准确率</text>
+  <text x="578" y="866" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="72" font-weight="700">86<tspan dx="10" font-size="30" fill="#9AA6BF" font-weight="500">%</tspan></text>
+  <rect x="88" y="918" width="444" height="180" rx="16" fill="#0E1422" stroke="#1C2538" stroke-width="1.5" stroke-opacity="1"/>
+  <text x="120" y="970" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="600">可用性</text>
+  <text x="118" y="1062" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#EEF2FA" font-size="72" font-weight="700">99.9<tspan dx="10" font-size="30" fill="#9AA6BF" font-weight="500">%</tspan></text>
+  <rect x="548" y="918" width="444" height="180" rx="16" fill="#0E1422" stroke="#FF7A6B" stroke-width="1.5" stroke-opacity="0.7"/>
+  <text x="580" y="970" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="26" font-weight="600">拒答误伤</text>
+  <text x="578" y="1062" font-family="'Space Grotesk', 'Noto Sans SC', sans-serif" fill="#FF7A6B" font-size="72" font-weight="700">3.2<tspan dx="10" font-size="30" fill="#9AA6BF" font-weight="500">%</tspan></text>
+  <text x="960" y="970" text-anchor="end" font-family="'Noto Sans SC', sans-serif" fill="#FF7A6B" font-size="24" font-weight="700">需关注</text>
+  <text x="88" y="1154" font-family="'Noto Sans SC', sans-serif" fill="#9AA6BF" font-size="24">以上均为示意数据，不对应任何真实产品</text>
+</svg>

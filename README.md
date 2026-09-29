@@ -34,6 +34,31 @@ cd my-video
 
 非交互环境（CI、管道）必须显式传入 `--canvas`，不会静默取默认值。
 
+### 视觉风格
+
+风格与画幅正交，同样在初始化时一次性选定：画幅决定画布与安全区，风格决定配色、字体、版式骨架、动效语法与禁用项。用 `--style` 指定，不传时在终端里交互选择；非交互环境不传则取默认的清晰系统蓝图。
+
+```bash
+am init my-video --canvas vertical-9x16 --style pixel-arcade-v1
+```
+
+| 风格 | 名称 | 适合 |
+|---|---|---|
+| `clear-system-blueprint-v1` | 清晰系统蓝图 | 默认；知识、技术与产品机制讲解 |
+| `pixel-arcade-v1` | 像素街机 | 8/16-bit 复古游戏、怀旧、入门科普 |
+| `scifi-hud-v1` | 科幻 HUD | 航天、硬件、系统架构、任务式讲解 |
+| `cyberpunk-glitch-v1` | 赛博故障 | 安全攻防、黑客叙事、反差观点 |
+| `candy-casual-v1` | 糖果休闲 | 轻松科普、生活技巧、成长激励 |
+| `rebel-graphic-v1` | 二次元锐利拼贴 | 强观点、排行、角色化表达 |
+| `fantasy-quest-v1` | 奇幻羊皮卷 | 历史、故事、学习路线、世界观 |
+| `esports-broadcast-v1` | 电竞赛事转播 | 对比评测、排行榜、数据战报 |
+| `visual-novel-v1` | 视觉小说对话 | 故事、对话体、情感与人物 |
+| `neon-data-dark-v1` | 暗夜数据霓虹 | AI、前沿技术、数据与指标 |
+| `editorial-magazine-v1` | 杂志编辑排版 | 观点、人文、商业评论 |
+| `whiteboard-doodle-v1` | 白板手绘 | 教程、概念拆解、课堂讲解 |
+
+每套风格写入 `frame.md`、`docs/<风格名>-视频风格说明书.md` 与四张版式示例图，并把该风格用到的字体（均为 SIL OFL 1.1，许可证随附）拷进 `assets/fonts/`。
+
 `am init` 不覆盖内容不同的已有文件。默认联网安装固定版本 0.8.14 的 HyperFrames 官方技能到项目的 `.agents/skills/`，与随二进制下发的 `text-to-lottie`、`algorithmic-art` 同处一个目录；安装依赖 `git`，离线或 CI 环境可使用 `--skip-hyperframes`。
 
 技能装进项目而不是 HOME，是因为项目之间互不覆盖只有这样才成立：上游安装器只认 `homedir`，一台机器上只有一份技能，项目 A 与项目 B 固定不同版本时谁后初始化谁说了算。安装全程不写用户 HOME——上游安装器在项目外的临时目录里运行，产物再搬进项目。

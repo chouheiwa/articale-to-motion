@@ -1,0 +1,177 @@
+schema_version: 1
+style_id: pixel-arcade-v1
+style_name: 像素街机
+scope:
+  - retro_game_culture
+  - nostalgia_and_history
+  - beginner_science_explainer
+  - tech_basics_for_newcomers
+  - gamified_learning
+# @@CANVAS_AND_SAFE_AREA@@
+colors:
+  canvas: "#1B1B2F"
+  panel: "#2B2B52"
+  shadow: "#0B0B16"
+  ink: "#FFF1E8"
+  frame_gray: "#C2C3C7"
+  muted: "#A6A6C8"
+  coin_yellow: "#FFEC27"
+  p1_blue: "#29ADFF"
+  p2_orange: "#FFA300"
+  power_green: "#00E436"
+  hp_red: "#FF4D6D"
+typography:
+  primary_stack: '"Fusion Pixel 12px Prop zh-Hans", "Noto Sans SC", sans-serif'
+  mono_stack: '"Press Start 2P", "Silkscreen", "Fusion Pixel 12px Prop zh-Hans", monospace'
+  font_files:
+    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
+    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
+    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
+    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
+    - {family: "Fusion Pixel 12px Prop zh-Hans", weight: 400, file: "assets/fonts/fusion-pixel-12px-zh_hans.woff2"}
+    - {family: "Press Start 2P", weight: 400, file: "assets/fonts/press-start-2p-400.woff2"}
+    - {family: "Silkscreen", weight: 400, file: "assets/fonts/silkscreen-400.woff2"}
+  sizes_px:
+    cover_min: 72
+    cover_max: 96
+    title_min: 48
+    title_max: 72
+    body_min: 36
+    body_max: 48
+    body_long_min: 28
+    body_long_max: 34
+    label_min: 24
+    label_max: 32
+    pixel_grid_unit: 12
+    latin_pixel_grid_unit: 8
+  weights:
+    display: 400
+    heading: 400
+    body: 400
+    body_emphasis: 400
+    body_long: 400
+    body_long_emphasis: 700
+    metadata: 400
+  line_heights:
+    display_min: 1.17
+    display_max: 1.34
+    body: 1.34
+    body_long: 1.45
+    metadata: 1.5
+spacing:
+  pixel_unit_px: 6
+  content_left_px: 88
+  content_width_px: 904
+  group_min_px: 12
+  group_max_px: 24
+  card_stack_min_px: 18
+  card_main_padding_min_px: 30
+  card_main_padding_max_px: 42
+  card_secondary_padding_min_px: 24
+  card_secondary_padding_max_px: 30
+  section_min_px: 36
+  section_max_px: 60
+  element_edge_min_px: 24
+  skeleton_bottom_min_px: 24
+  border_px: 6
+  hard_shadow_offset_px: 12
+radius:
+  sm_px: 0
+  md_px: 0
+  lg_px: 0
+  xl_px: 0
+  corner_notch_px: 6
+  pill_px: 999
+scene_archetypes:
+  - id: proposition
+    name: 开机标题
+    use_for: 封面、钩子、章节开场、强结论（像开机画面或关卡标题卡）
+    example_png: assets/style-guide/examples/proposition.png
+  - id: comparison
+    name: 双人选角
+    use_for: 两种方案、旧与新、条件与结果的对照（1P / 2P 选角界面）
+    example_png: assets/style-guide/examples/comparison.png
+  - id: process
+    name: 关卡地图
+    use_for: 步骤、阶段、因果链、成长路线（世界地图上逐关解锁）
+    example_png: assets/style-guide/examples/process.png
+  - id: capability_deck
+    name: 道具栏
+    use_for: 系统组成、能力清单、工具箱、最终成果（背包格与道具说明框）
+    example_png: assets/style-guide/examples/capability_deck.png
+motion:
+  phases: {build: 0.30, breathe: 0.45, resolve: 0.25}
+  entrance_seconds: {min: 0.20, max: 0.50}
+  exit_seconds: {min: 0.13, max: 0.33}
+  transition_seconds: {min: 0.20, max: 0.40}
+  first_action_delay_seconds: {min: 0.10, max: 0.30}
+  entrance_ease: ["steps(3)", "steps(4)", "steps(6)", "steps(8)"]
+  exit_ease: ["steps(2)", "steps(3)", "steps(4)"]
+  typewriter_chars_per_second: {min: 12, max: 24}
+  cursor_blink_period_seconds: {min: 0.50, max: 0.80}
+  count_up_steps: {min: 6, max: 12}
+  verbs: [POP_IN, TYPEWRITE, BLINK, STEP, COUNT_UP, UNLOCK, POWER_UP, SELECT]
+  ambient_per_scene_max: 1
+  max_same_ease_tweens: 2
+audio:
+  sample_rate_hz: 48000
+  channels: 2
+  voice_integrated_lufs: {min: -18, max: -16}
+  bgm_integrated_lufs: {min: -30, max: -26}
+  bgm_ducking_db: {min: 6, max: 10}
+  ducking_attack_seconds: {min: 0.04, max: 0.12}
+  ducking_release_seconds: {min: 0.25, max: 0.60}
+  bgm_fade_seconds: {min: 0.80, max: 1.50}
+  sfx_gain_db: {min: -18, max: -12}
+  sfx_max_simultaneous: 2
+  final_integrated_lufs: -16
+  final_lufs_tolerance: 1
+  true_peak_max_dbtp: -1
+  lra_lu: {min: 2, max: 6}
+subtitles:
+  required: false
+  font_size_px: {min: 36, max: 36}
+  max_width_px: 812
+  max_lines: 2
+  max_fullwidth_chars_per_line: 16
+  line_height: {min: 1.34, max: 1.50}
+  background: "rgba(11, 11, 22, 0.88)"
+  text_color: "#FFF1E8"
+  padding_px: {vertical: 12, horizontal: 24}
+  radius_px: 0
+  break_rules:
+    - keep_proper_nouns_intact
+    - keep_english_phrases_intact
+    - keep_numbers_and_units_intact
+    - preserve_real_speech_gaps
+cover:
+  frame_zero_complete: true
+  default_lines: 2
+  max_lines: 3
+  max_fullwidth_chars_per_line: 10
+  font_size_px: {min: 72, max: 96}
+  line_height: {min: 1.17, max: 1.34}
+  max_width_px: 812
+  contrast_ratio_min: 7.0
+  stable_frames: 18
+forbidden:
+  - black_or_blank_frame_zero
+  - cover_fade_in_intermediate_state
+  - copying_commercial_game_logos_characters_or_ui
+  - trademarked_console_or_controller_likeness
+  - pixel_font_at_non_integer_multiple_size
+  - antialiased_blurry_pixel_edges
+  - scaled_pixel_art_with_smoothing
+  - rounded_corners_on_pixel_frames
+  - soft_blur_shadows_or_glow
+  - gradient_fills_or_gradient_text
+  - smooth_elastic_or_bouncy_easing
+  - motion_blur_or_opacity_crossfade_as_main_motion
+  - heavy_crt_curvature_or_chromatic_aberration
+  - scanlines_over_critical_text_above_10_percent
+  - arbitrary_new_palette_colors
+  - long_body_text_in_pixel_font
+  - red_text_on_panel
+  - more_than_one_ambient_motion
+  - sfx_on_every_element
+  - music_masking_voice

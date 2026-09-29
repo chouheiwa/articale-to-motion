@@ -34,6 +34,16 @@ Canvas is chosen once at init and written to `frame.md`. Built-in presets:
 
 Non-interactive environments (CI, pipes) must pass `--canvas` explicitly; there is no silent default.
 
+### Visual style
+
+Style is orthogonal to canvas and is also chosen once at init: the canvas fixes the frame and safe areas, the style fixes palette, fonts, layout archetypes, motion grammar and forbidden patterns. Pass `--style`, or pick interactively in a terminal; non-interactive runs without `--style` get the default `clear-system-blueprint-v1`.
+
+```bash
+am init my-video --canvas vertical-9x16 --style pixel-arcade-v1
+```
+
+Built-in styles: `clear-system-blueprint-v1` (default, knowledge/tech explainers), `pixel-arcade-v1`, `scifi-hud-v1`, `cyberpunk-glitch-v1`, `candy-casual-v1`, `rebel-graphic-v1`, `fantasy-quest-v1`, `esports-broadcast-v1`, `visual-novel-v1` (game-inspired), plus `neon-data-dark-v1`, `editorial-magazine-v1`, `whiteboard-doodle-v1`. Each writes `frame.md`, a style guide under `docs/`, four layout example images, and copies the fonts it uses (all SIL OFL 1.1, licenses included) into `assets/fonts/`.
+
 `am init` refuses to overwrite existing files with different content. By default it installs the pinned HyperFrames 0.8.14 skills into the project's `.agents/skills/`, alongside the binary-delivered `text-to-lottie` and `algorithmic-art`; use `--skip-hyperframes` for offline or CI environments.
 
 Skills go into the project rather than `$HOME` because that is the only way projects stop clobbering each other: the upstream installer only honours `homedir`, so a machine has exactly one copy — with two projects pinned to different versions, whichever was initialized last wins. The install never writes to your HOME; the upstream installer runs in a temporary directory outside the project and its output is moved in.
