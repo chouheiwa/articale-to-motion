@@ -358,3 +358,34 @@ func TestSceneDirsOrdersByDirectoryName(t *testing.T) {
 		}
 	}
 }
+
+// TestRetryCarriesPreviousFailure：重试必须带上上一次的失败原因与归档日志位置，
+// 同一提示词原样重跑大概率重蹈覆辙。首次尝试不带任何说明。
+func TestRetryCarriesPreviousFailure(t *testing.T) {
+	recordSleeps(t)
+	root := t.TempDir()
+	scenes := []scene.Scene{testScene(t, root, "scene-001")}
+	var notes []string
+	RunAll(context.Background(), scenes, 1, 2, func(_ context.Context, s scene.Scene) error {
+		notes = append(notes, s.RetryNote)
+		return fmt.Errorf("渲染器退出码 %d", len(notes))
+	})
+	if len(notes) != 3 {
+		t.Fatalf("应尝试 3 次，实际 %d 次", len(notes))
+	}
+	if notes[0] != "" {
+		t.Errorf("首次尝试不应带重试说明：%q", notes[0])
+	}
+	for i, want := range []struct{ reason, archive string }{
+		{"渲染器退出码 1", "attempts/attempt-01/"},
+		{"渲染器退出码 2", "attempts/attempt-02/"},
+	} {
+		note := notes[i+1]
+		if !strings.Contains(note, want.reason) || !strings.Contains(note, want.archive) {
+			t.Errorf("第 %d 次重试说明应含 %q 与 %q，实际：%q", i+1, want.reason, want.archive, note)
+		}
+		if strings.Contains(note, root) {
+			t.Errorf("归档路径应相对镜头目录，实际：%q", note)
+		}
+	}
+}

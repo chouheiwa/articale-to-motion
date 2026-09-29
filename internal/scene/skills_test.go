@@ -234,13 +234,13 @@ func TestBuildPromptEmbedsResolvedSkillPath(t *testing.T) {
 		rulesIndexFile,
 		blueprintsIndexFile,
 		"动效要求（强制）",
-		"3 个不同分类",
 		"decorative",
-		// 只约束属性种类会让渲染器"用新属性做更少的动作"：实测最后 3 秒画面完全冻结。
-		// 时间覆盖必须一起约束。
-		"贯穿整个镜头时长",
-		"45 帧",
-		"不等于画面冻结",
+		// 数量配额会让渲染器为了达标堆砌与文案无关的动效，改为要求每个动效说得出理由。
+		"说得出",
+		// 实测出现过最后 3 秒画面完全冻结，整画面冻结的上限必须保留。
+		"完全冻结超过 3 秒",
+		// 与 frame.md 的 ambient_per_scene_max 一致，不得反过来强制贯穿全镜的环境动效。
+		"最多 1 条",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Errorf("prompt missing %q", want)

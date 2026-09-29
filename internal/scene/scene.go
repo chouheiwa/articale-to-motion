@@ -81,6 +81,16 @@ type Scene struct {
 	// Cast 是可选的角色配置。老镜头没有这个字段，Cast 为 nil，行为完全不变。
 	Cast *Cast     `json:"cast,omitempty"`
 	Song *song.Cue `json:"song,omitempty"`
+	// RetryNote 是调度器在重试前填入的上一次失败说明，不来自 scene.json。
+	// 同一提示词重跑大概率重蹈覆辙，把失败原因和归档日志位置交给渲染器，
+	// 它才有机会换一种做法。
+	RetryNote string `json:"-"`
+}
+
+// WithRetryNote 返回带上一次失败说明的副本，不修改原镜头。
+func (s Scene) WithRetryNote(note string) Scene {
+	s.RetryNote = note
+	return s
 }
 
 // Cast 是镜头的角色配置。老镜头没有这个字段，Scene.Cast 为 nil。
@@ -512,7 +522,10 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 			"字体（强制）：只允许使用 " + s.StyleGuide + " 的 typography 字体栈中声明的字体族。" +
 			"其中 typography.font_files 列出的字体必须在 composition 里用 @font-face 指向本镜头目录内的对应文件，" +
 			"每个用到的字重各写一条，并使用 font-display: block（并行抽帧下 swap 会让部分帧抓到回退字体）。" +
-			"不得引用任何未随镜头目录一起提供的字体文件。\n"
+			"不得引用任何未随镜头目录一起提供的字体文件。\n" +
+			"版式参照：" + s.StyleGuide + " 的 scene_archetypes 里每种骨架都带 example_png 示例图。" +
+			"动手设计前先打开与本镜头最接近的一两张（路径相对镜头目录；缺失时跳过），" +
+			"参照其构图密度、层次和留白，不照抄其中的文字与数据。\n"
 	}
 	prompt := fmt.Sprintf(`当前只执行一个 MG 动画镜头，不进行交互提问。
 
@@ -531,14 +544,44 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 先阅读完整字幕并检查素材。使用安装好的 HyperFrames 技能和 CLI，动画必须确定性、可按任意帧计算，并渲染完整时长。
 
 %s%s%s
-%s
+%s%s%s
 阶段性汇报规则：仅在关键阶段输出以下原文：
 [[USER_MESSAGE]]需求理解和素材检查已完成
 [[USER_MESSAGE]]开始联网搜索
 [[USER_MESSAGE]]代码已完成，开始渲染
 [[USER_MESSAGE]]视频已渲染完成：%s
-`, canvas.Label(), s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, castSection(s)+songSection(s, resolvedSkills), skillPromptSections(resolvedSkills), s.Output)
+`, canvas.Label(), s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, castSection(s)+songSection(s, resolvedSkills), skillPromptSections(resolvedSkills), selfReviewSection, retrySection(s), s.Output)
 	return prompt, nil
+}
+
+// selfReviewSection 要求渲染器在正式渲染前看自己的画面并至少返工一轮。
+//
+// 产物校验只查画幅、帧率、时长和无音轨，文字溢出、元素相撞、画面半空、
+// 焦点不清这些真正决定观感的问题机器一个都拦不住。公开的高质量案例几乎
+// 都靠「出静帧 → 看图 → 改代码」的多轮循环，一次盲写就渲染是本项目产出
+// 偏差的最大单点原因。清单写成具体可判的问题而不是「好不好看」：视觉模型
+// 擅长照清单找问题，不擅长凭空自我批评。
+const selfReviewSection = `
+画面自查（强制，正式渲染前完成）：
+- 代码写完先跑 check，修掉全部报错与对比度问题。
+- 用 snapshot --at 截取关键时刻的静帧：至少覆盖开头、每个主要阶段的稳定期中点和结尾，带 --describe false。
+- 逐张打开截图亲眼看，按下列清单找问题：
+  1. 文字溢出、被裁切、互相重叠，或越出视觉规范的安全区；
+  2. 同一时刻主焦点是否唯一、一眼可辨；
+  3. 字号在手机竖屏上是否可读，层级是否分明；
+  4. 画面是否大面积空白（尤其下半部）或过度拥挤；
+  5. 是否有背景、中景、前景的层次，还是只有文字压在纯色底上；
+  6. 与版式示例图相比，构图密度与风格是否一致。
+- 发现问题就改代码，改完重新截图确认。至少完成一轮「截图 → 修改 → 再截图」；确认无问题后才正式 render。
+`
+
+// retrySection 把上一次失败的原因交给本次渲染；首次渲染时为空。
+func retrySection(s Scene) string {
+	if s.RetryNote == "" {
+		return ""
+	}
+	return "\n上一次尝试失败（强制参考）：\n" + s.RetryNote + "\n" +
+		"先弄清失败原因再动手，不要原样重复上一次的做法。\n"
 }
 
 func songSection(s Scene, resolved map[string]string) string {

@@ -70,6 +70,7 @@ go vet ./...
 注册上游技能时要收窄范围，上游技能的职责范围通常比单镜头渲染大得多：
 
 - `hyperframes-core` 同时覆盖建子项目与 `STORYBOARD.md` / `SCRIPT.md` 计划格式，那是整片工作流。分镜由上层决定并已写进 `scene.json`，不收窄的话渲染器会产出计划文件并试图自己排布多镜头。
+- `hyperframes-creative` 同时覆盖选色板、选字体、`design-picker` 与整片旁白/节拍规划。本项目配色与字体由 `frame.md` 锁定，只让渲染器读构图与密度（`house-style.md`、`video-composition.md`）和写完后的对照清单（`design-adherence.md`）。
 - `hyperframes-cli` 覆盖 `cloud` / `cloudrun` / `lambda` / `publish` 远端渲染路径，以及 `skills` / `upgrade` 这类改动已装技能的命令。前者绕开本机确定性前提，后者会顶掉固定版本、影响同项目其他镜头。
 
 这两条禁令只存在于我们自己写的提示词片段里，上游不会替我们守，所以 `skills_test.go` 有对应的门禁盯着。**入口技能 `hyperframes` 刻意不注册**：它的职责是「选择并安装 owning workflow」，会把渲染器往整片制作上带。

@@ -218,7 +218,8 @@ func waitBeforeRetry(ctx context.Context, attempt int) {
 	waitFunc(ctx, retryBackoff[index])
 }
 
-func archiveAttempt(s scene.Scene) {
+// archiveAttempt 把本次尝试的产物与日志移进 attempts/attempt-NN，返回该目录。
+func archiveAttempt(s scene.Scene) string {
 	attemptsRoot := filepath.Join(s.Directory, "attempts")
 	_ = os.MkdirAll(attemptsRoot, 0o755)
 	entries, _ := os.ReadDir(attemptsRoot)
@@ -230,6 +231,17 @@ func archiveAttempt(s scene.Scene) {
 			_ = os.Rename(path, filepath.Join(destination, filepath.Base(path)))
 		}
 	}
+	return destination
+}
+
+// retryNote 描述上一次失败，供下一次渲染的提示词引用。
+// 日志位置写成相对镜头目录的路径：渲染器被锁在镜头目录内工作。
+func retryNote(s scene.Scene, reason, archived string) string {
+	relative, err := filepath.Rel(s.Directory, archived)
+	if err != nil {
+		relative = archived
+	}
+	return fmt.Sprintf("- 失败原因：%s\n- 上一次的输出流与错误日志已归档到 %s/，先读它们的末尾定位问题。", reason, filepath.ToSlash(relative))
 }
 
 func RunAll(ctx context.Context, scenes []scene.Scene, jobs, retries int, runner Runner) Report {
@@ -251,9 +263,10 @@ func RunAll(ctx context.Context, scenes []scene.Scene, jobs, retries int, runner
 						result.Reason = fmt.Sprintf("渲染器 panic: %v", r)
 					}
 				}()
+				current := s
 				for attempt := 1; attempt <= retries+1; attempt++ {
 					result.Attempts = attempt
-					err := runner(ctx, s)
+					err := runner(ctx, current)
 					if err == nil {
 						result.Status, result.Reason = Succeeded, ""
 						break
@@ -275,7 +288,8 @@ func RunAll(ctx context.Context, scenes []scene.Scene, jobs, retries int, runner
 						break
 					}
 					if attempt <= retries {
-						archiveAttempt(s)
+						archived := archiveAttempt(s)
+						current = s.WithRetryNote(retryNote(s, result.Reason, archived))
 						waitBeforeRetry(ctx, attempt)
 					}
 				}

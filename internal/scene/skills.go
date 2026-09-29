@@ -32,6 +32,9 @@ const HyperFramesCoreSkillName = "hyperframes-core"
 // HyperFramesCLISkillName 是 HyperFrames CLI 用法技能目录名。
 const HyperFramesCLISkillName = "hyperframes-cli"
 
+// HyperFramesCreativeSkillName 是构图、版式与设计遵从的创意方向技能目录名。
+const HyperFramesCreativeSkillName = "hyperframes-creative"
+
 // AlgorithmicArtSkillName 是生成式艺术技能目录名。
 const AlgorithmicArtSkillName = "algorithmic-art"
 
@@ -104,6 +107,12 @@ var RegisteredSkills = []SkillDescriptor{
 		Source:        SourceUpstream,
 		RequiredFiles: []string{skillManifestFile},
 		PromptSection: hyperFramesCLIPrompt,
+	},
+	{
+		Name:          HyperFramesCreativeSkillName,
+		Source:        SourceUpstream,
+		RequiredFiles: []string{skillManifestFile},
+		PromptSection: hyperFramesCreativePrompt,
 	},
 	{
 		Name:          AlgorithmicArtSkillName,
@@ -269,14 +278,14 @@ func skillPromptSections(resolved map[string]string) string {
 
 // animationPrompt 是动效技能的提示词片段。
 //
-// 其中的分类清单必须与 hyperframes-animation 的 rules-index.md 章节保持一致
-// （截至 0.8.14 是 8 个：Text & Typography / Data & Stats / Camera & Viewport /
-// Layout & Network / SVG & Icons / Idle & Ambient / Transition & Motion /
-// Effect Recipes，共 48 条 rule）。
+// 这里刻意不设数量配额（几条 rule、几个分类、几个属性）。配额是可以逐项打勾的
+// 指标，渲染器会为了达标加一个与文案无关的 rotation 或 clip-path；公开案例里
+// 把「好看」压成蓝图名与指标的版本，指标全绿、画面反而拥挤平庸。动效数量由
+// 文案决定，这里只要求每个动效说得出理由。
 //
-// 这里没有测试能守：清单在联网安装的技能里，本仓库拿不到。升 HyperFrames 固定
-// 版本时要顺手核对一遍——漏掉一个分类不会报错，只会让「来自 3 个不同分类」这条
-// 约束对该分类的 rule 失效。
+// 环境动效与静止停留必须与 frame.md 一致：motion.ambient_per_scene_max 是 1，
+// 风格说明书要求重要信息稳定停留、禁止持续漂浮。这里再强制「贯穿全镜的环境
+// 动效」「不得静止超过 1.5 秒」就是两份强制约束互相打架，渲染器只能择一违反。
 func animationPrompt(skillsDir string) string {
 	reference := fmt.Sprintf(
 		"- 加载 %s 技能，实现前必须读取该技能目录下的 %s（原子动效 rule 索引）。\n"+
@@ -291,16 +300,15 @@ func animationPrompt(skillsDir string) string {
 			AnimationSkillName, skill, rulesIndexFile, AnimationSkillName)
 	}
 	return "动效要求（强制）：\n" + reference +
-		"- 本镜头至少组合 3 条 rule，且必须来自 3 个不同分类" +
-		"（文字排版 / 数据统计 / 相机视口 / 布局网络 / SVG 图标 / 环境待机 / 转场运动 / 特效配方）。\n" +
-		"- 除 scale、x、y、opacity 之外，至少再动用 2 个属性：" +
-		"rotation、rotate3d、filter、clip-path、strokeDashoffset、backgroundPosition、translateZ 任选。\n" +
+		"- 按文案选 rule，不设数量下限：每个动效都要说得出它在表达哪句话、哪层关系或哪个转折，" +
+		"说不出理由的不加。宁可少而准，不要为了显得丰富堆叠属性。\n" +
 		"- 镜头包含 3 个及以上阶段时，先读同目录 " + blueprintsIndexFile + " 选一个模板再落地。\n" +
-		"- 必须有 1 条持续性环境动效（如 sine-wave-loop、ambient-glow-bloom 一类）贯穿整个镜头时长垫底，" +
-		"振幅小到不干扰阅读即可，但不得中断。\n" +
-		"- 画面不得出现连续超过 45 帧（1.5 秒）的完全静止，镜头结尾同样适用：" +
-		"「保留可读稳定状态」指语义元素不再变化，不等于画面冻结，环境动效必须继续运行到最后一帧。\n" +
-		"- 新增动效只能落在装饰层（显式标记 decorative）或语义元素的入场 / 退场窗口内，" +
+		"- 环境动效可选，整镜最多 1 条，振幅小到不干扰阅读；不得持续漂浮或晃动语义元素。\n" +
+		"- 语义元素到位后应当稳定停留供阅读，这段停留允许画面静止；" +
+		"镜头结尾停在可读的终态，不得停在入场中间态。\n" +
+		"- 但整个画面不得完全冻结超过 3 秒（含结尾）：长停留期间用那条环境动效或极缓的镜头推移维持画面活性，" +
+		"语义元素本身保持不动。\n" +
+		"- 装饰性动效只能落在装饰层（显式标记 decorative）或语义元素的入场 / 退场窗口内，" +
 		"不得侵占任何元素的可读稳定区间，也不得改变已约定的短语帧。\n"
 }
 
@@ -342,9 +350,35 @@ func hyperFramesCLIPrompt(skillsDir string) string {
 			HyperFramesCLISkillName, filepath.Join(skillsDir, HyperFramesCLISkillName))
 	}
 	return "渲染命令（强制）：\n" + reference +
-		"- 只用本地渲染与检查相关的命令（render、check、preview）。\n" +
+		"- 只用本地渲染与检查相关的命令（render、check、snapshot）。preview 需要浏览器交互，本环境是无头的，不要用。\n" +
+		"- snapshot 一律带 --describe false：它默认会把画面发给外部视觉服务，本镜头的自查由你自己看图完成。\n" +
 		"- 禁止 cloud、cloudrun、lambda、publish 等远端渲染路径：本镜头必须在本机渲染。\n" +
 		"- 禁止 skills、upgrade 以及任何会改动已装技能的命令：版本已固定，改动会影响其他镜头。\n"
+}
+
+// hyperFramesCreativePrompt 把渲染器指向上游的构图与设计判断参考。
+//
+// 上游 SKILL.md 原话把 house-style.md 与 video-composition.md 称为避免
+// 「generic, web-page-looking output」的首要读物——那正是本项目产出最常见的
+// 毛病。design-adherence.md 则是写完之后对照设计规范自查的清单，供画面自查用。
+//
+// 同时要收窄范围：该技能还覆盖选配色、选字体、design-picker、旁白与整片节拍
+// 规划。本项目的配色与字体由 frame.md 锁定，旁白和分镜由上层决定，渲染器照
+// 那些路由走会自己换色板、改字体、重排整片节奏，直接违反单镜头契约。
+func hyperFramesCreativePrompt(skillsDir string) string {
+	reference := fmt.Sprintf("- 设计本镜头版式前读 %s 技能的 references/house-style.md 与 references/video-composition.md，"+
+		"画面自查时对照 references/design-adherence.md。\n"+
+		"  （本机未能定位该技能目录，请使用你自身的技能加载机制载入。）\n",
+		HyperFramesCreativeSkillName)
+	if skillsDir != "" {
+		reference = fmt.Sprintf("- 设计本镜头版式前读 %s 技能的 references/house-style.md 与 references/video-composition.md，"+
+			"画面自查时对照 references/design-adherence.md。本机该技能目录为：\n    %s\n",
+			HyperFramesCreativeSkillName, filepath.Join(skillsDir, HyperFramesCreativeSkillName))
+	}
+	return "构图与版式参考：\n" + reference +
+		"- 只取其中构图、景深层次、画面密度与避免网页式空版面的部分。" +
+		"配色、字体与安全区以视觉规范为准，不另选色板或字体，不走 design-picker；" +
+		"旁白、分镜与整片节拍已由上层决定，不做整片规划。\n"
 }
 
 func algorithmicArtPrompt(skillsDir string) string {
