@@ -238,6 +238,7 @@ TTS 工具由 `article-to-motion.conf`（或环境变量 `TTS_PROVIDER`）决定
 
 - 所有镜头 `scene.json` 中 `duration_seconds` 之和等于最终节目时长，误差不超过 0.1 秒。
 - 换算后的各镜头帧数之和等于总帧数。
+- 每个镜头先定帧数，再写 `duration_seconds = 帧数 ÷ 帧率`，保留 6 位小数（431 帧写 `14.366667`，不写 `14.367`）。渲染器按向上取整出帧，14.367 秒是 431.01 帧，会渲出 432 帧；`am scene run-all` 在渲染前会拒绝任何非整数帧的时长。
 - 没有时间重叠、缺口或负时长。
 
 把分镜写入 `production/scene-plan.json` 和 `production/scene-plan.md`。

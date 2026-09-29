@@ -553,6 +553,16 @@ AI CLI 调用。这类失败要先改提示词或时长声明再重跑。
 				}
 				fmt.Fprintf(stderr, "警告：%s\n用 --strict-coverage 让这类问题在渲染前直接失败。\n", message)
 			}
+			// 非整数帧时长会让渲染器多出一帧，拼接时才暴露；渲染前一次列全。
+			var misaligned []string
+			for _, s := range scenes {
+				if err := scene.VerifyFrameAlignment(s); err != nil {
+					misaligned = append(misaligned, err.Error())
+				}
+			}
+			if len(misaligned) > 0 {
+				return fmt.Errorf("镜头时长未对齐整数帧：\n  - %s", strings.Join(misaligned, "\n  - "))
+			}
 			for _, s := range scenes {
 				if s.Song != nil && songTimelinePath == "" {
 					return fmt.Errorf("歌曲镜头必须提供 --song-timeline production/song/timeline.json")

@@ -224,8 +224,8 @@ func songCoverage(root string, scenes []scene.Scene, t song.Timeline, requireCue
 		if s.Cast != nil {
 			return fmt.Errorf("首版不支持 song + cast")
 		}
-		if math.Abs(s.DurationSeconds*float64(canvas.FPS)-math.Round(s.DurationSeconds*float64(canvas.FPS))) > 1e-5 {
-			return fmt.Errorf("镜头 %s 时长必须对齐整数帧", s.ID)
+		if err := scene.VerifyFrameAlignment(s); err != nil {
+			return err
 		}
 		if requireCues {
 			if s.Song == nil || s.Song.FPS != canvas.FPS || math.Abs(s.Song.Start-cursor) > 1e-6 {

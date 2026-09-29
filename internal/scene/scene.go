@@ -502,6 +502,9 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 	if err := VerifySongInputs(s); err != nil {
 		return "", err
 	}
+	if err := VerifyFrameAlignment(s); err != nil {
+		return "", err
+	}
 	body := "创意方向：\n- 用图形、概念文字和必要的真实素材表达镜头语义。\n- 视觉复杂度服务于文案，不为炫技拉长渲染。\n"
 	promptFile, err := contained(s.Directory, "prompt.md", "prompt.md")
 	if err != nil {
@@ -514,6 +517,7 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	frames := int(math.Round(s.DurationSeconds * float64(canvas.FPS)))
 	style := ""
 	if s.StyleGuide != "" {
 		// 渲染机是干净的无头 Chrome：字体栈里任何没有 @font-face 的字体族都会静默回退，
@@ -533,7 +537,7 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 任务目标：
 - 制作 %s、静音、无音轨的 HyperFrames 动画。
 - 镜头编号：%s
-- 时长：%.3f 秒
+- 时长：%.6g 秒，共 %d 帧（%dfps）。composition 总时长按 %d/%d 秒设置，渲染产物必须正好 %d 帧，不多不少。
 - 输出：%s
 - 完整字幕：%s
 
@@ -551,7 +555,7 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 [[USER_MESSAGE]]开始联网搜索
 [[USER_MESSAGE]]代码已完成，开始渲染
 [[USER_MESSAGE]]视频已渲染完成：%s
-`, canvas.Label(), s.ID, s.DurationSeconds, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, castSection(s)+songSection(s, resolvedSkills), skillPromptSections(resolvedSkills), selfReviewSection, retrySection(s), s.Output)
+`, canvas.Label(), s.ID, s.DurationSeconds, frames, canvas.FPS, frames, canvas.FPS, frames, s.Output, s.Transcript, TextOpen, s.Text, TextClose, body, style, castSection(s)+songSection(s, resolvedSkills), skillPromptSections(resolvedSkills), selfReviewSection, retrySection(s), s.Output)
 	return prompt, nil
 }
 

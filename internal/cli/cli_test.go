@@ -346,3 +346,39 @@ func TestInitRejectsUnknownNarration(t *testing.T) {
 		t.Fatal("期望拒绝未知叙事模式")
 	}
 }
+
+// 渲染前一次列全所有非整数帧时长的镜头，且不启动任何渲染器：这类错误到
+// 拼接时才暴露的话，每一镜都已经烧掉一次完整的 AI CLI 调用。
+func TestRunAllRejectsFractionalFrameDurationsBeforeRendering(t *testing.T) {
+	project := t.TempDir()
+	os.WriteFile(filepath.Join(project, "article-to-motion.conf"), []byte("ORCHESTRATOR=codex\nRENDERER=claude\n"), 0o644)
+	for id, duration := range map[string]string{"scene-001": "14.367", "scene-002": "4", "scene-003": "2.01"} {
+		dir := filepath.Join(project, "scenes", id)
+		os.MkdirAll(dir, 0o755)
+		os.WriteFile(filepath.Join(dir, "transcription.srt"), []byte("1\n00:00:00,000 --> 00:00:01,000\nhi\n"), 0o644)
+		os.WriteFile(filepath.Join(dir, "scene.json"), []byte(`{"id":"`+id+`","duration_seconds":`+duration+`,"output":"`+id+`.mp4","transcript":"transcription.srt","text":"hi"}`), 0o644)
+	}
+	// PATH 里放一个一旦被调用就留痕的假 claude，证明渲染前就被拦下。
+	bin := t.TempDir()
+	marker := filepath.Join(project, "renderer-called")
+	os.WriteFile(filepath.Join(bin, "claude"), []byte("#!/bin/sh\ntouch "+marker+"\n"), 0o755)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	old, _ := os.Getwd()
+	os.Chdir(project)
+	defer os.Chdir(old)
+	var out bytes.Buffer
+	if code := Execute([]string{"scene", "run-all", "scenes", "--jobs", "1", "--retries", "0"}, &out, &out); code == 0 {
+		t.Fatalf("非整数帧时长应在渲染前失败：%s", out.String())
+	}
+	for _, want := range []string{"未对齐整数帧", "scene-001", "scene-003"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("错误信息缺少 %q：%s", want, out.String())
+		}
+	}
+	if strings.Contains(out.String(), "镜头 scene-002") {
+		t.Errorf("整数帧的 scene-002 不应被点名：%s", out.String())
+	}
+	if _, err := os.Stat(marker); err == nil {
+		t.Error("渲染器不应被调用")
+	}
+}
