@@ -38,17 +38,55 @@ func TestRenderCanvasAndSafeAreaBlock(t *testing.T) {
 // frame.md 与说明书的 frontmatter 必须逐字节相同，validate.Style 会做 DeepEqual。
 func TestRenderKeepsFrontmatterIdenticalAcrossFiles(t *testing.T) {
 	p, _ := preset.ByID("vertical-9x16")
-	files, err := Render(p, loadTemplates())
+	for _, style := range preset.AllStyles() {
+		t.Run(style.ID, func(t *testing.T) {
+			files := renderStyle(t, p, style)
+			frame := frontmatterOf(t, files["frame.md"])
+			guide := frontmatterOf(t, files[style.GuideDoc()])
+			if frame != guide {
+				t.Error("frame.md 与说明书的 frontmatter 不一致")
+			}
+			if !strings.Contains(frame, "height_px: 1920") {
+				t.Error("frontmatter 未写入 9:16 画布高度")
+			}
+		})
+	}
+}
+
+func renderStyle(t *testing.T, p preset.Preset, style preset.Style) map[string][]byte {
+	t.Helper()
+	tpl, err := loadTemplates(style.ID)
 	if err != nil {
-		t.Fatalf("Render: %v", err)
+		t.Fatal(err)
 	}
-	frame := frontmatterOf(t, files["frame.md"])
-	guide := frontmatterOf(t, files["docs/清晰系统蓝图-视频风格说明书.md"])
-	if frame != guide {
-		t.Error("frame.md 与说明书的 frontmatter 不一致")
+	files, err := RenderStyle(p, style, tpl)
+	if err != nil {
+		t.Fatalf("RenderStyle: %v", err)
 	}
-	if !strings.Contains(frame, "height_px: 1920") {
-		t.Error("frontmatter 未写入 9:16 画布高度")
+	return files
+}
+
+// 模板的 style_id / style_name 与风格表不一致时必须报错：validate 靠
+// style_id 反查说明书文件名，对不上的项目会找不到自己的说明书。
+func TestRenderStyleRejectsMismatchedIdentity(t *testing.T) {
+	p, _ := preset.ByID("vertical-3x4")
+	style := preset.DefaultStyle()
+	tpl, err := loadTemplates(style.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tpl.Frontmatter = strings.Replace(tpl.Frontmatter, "style_id: "+style.ID, "style_id: other-v1", 1)
+	if _, err := RenderStyle(p, style, tpl); err == nil {
+		t.Fatal("style_id 与风格表不一致时应报错")
+	}
+}
+
+// 每套注册的风格都必须有完整模板，否则 go generate 在中途失败。
+func TestEveryStyleHasTemplates(t *testing.T) {
+	for _, style := range preset.AllStyles() {
+		if _, err := loadTemplates(style.ID); err != nil {
+			t.Error(err)
+		}
 	}
 }
 
@@ -63,11 +101,7 @@ func frontmatterOf(t *testing.T, body []byte) string {
 
 func TestRenderSubstitutesCanvasLabel(t *testing.T) {
 	p, _ := preset.ByID("vertical-9x16")
-	files, err := Render(p, loadTemplates())
-	if err != nil {
-		t.Fatalf("Render: %v", err)
-	}
-	body := string(files["PROMPT-PRODUCTION.md"])
+	body := string(RenderCanvas(p, loadProduction())["PROMPT-PRODUCTION.md"])
 	if strings.Contains(body, "1080×1440") {
 		t.Error("PROMPT-PRODUCTION.md 仍含 3:4 画幅")
 	}
@@ -82,9 +116,12 @@ func TestRenderSubstitutesCanvasLabel(t *testing.T) {
 // 模板标记丢失时必须报错，否则会静默产出没有 canvas 段的 frame.md。
 func TestRenderRejectsTemplateWithoutMarker(t *testing.T) {
 	p, _ := preset.ByID("vertical-3x4")
-	tpl := loadTemplates()
+	tpl, err := loadTemplates(preset.DefaultStyle().ID)
+	if err != nil {
+		t.Fatal(err)
+	}
 	tpl.Frontmatter = "schema_version: 1\n"
-	if _, err := Render(p, tpl); err == nil {
+	if _, err := RenderStyle(p, preset.DefaultStyle(), tpl); err == nil {
 		t.Fatal("缺少标记时应报错")
 	}
 }
@@ -121,7 +158,7 @@ func TestRepoRootFailsWithoutGoMod(t *testing.T) {
 // 缺手写 SVG 时必须报错并点名文件，而不是产出一套残缺示例。
 func TestRenderExamplesReportsMissingSVG(t *testing.T) {
 	p, _ := preset.ByID("vertical-3x4")
-	err := renderExamples(t.TempDir(), p, io.Discard)
+	err := renderExamples(filepath.Join("..", "..", ".."), t.TempDir(), p, preset.DefaultStyle(), io.Discard)
 	if err == nil {
 		t.Fatal("缺少 SVG 时应报错")
 	}
@@ -145,11 +182,7 @@ func TestCanvasAndSafeAreaRejectsBrokenAnchor(t *testing.T) {
 func TestRenderProducesParseableFrontmatter(t *testing.T) {
 	for _, p := range preset.All() {
 		t.Run(p.ID, func(t *testing.T) {
-			files, err := Render(p, loadTemplates())
-			if err != nil {
-				t.Fatal(err)
-			}
-			body := string(files["frame.md"])
+			body := string(renderStyle(t, p, preset.DefaultStyle())["frame.md"])
 			if !strings.HasPrefix(body, "---\n") {
 				t.Error("frame.md 未以 --- 开头")
 			}
@@ -163,50 +196,71 @@ func TestRenderProducesParseableFrontmatter(t *testing.T) {
 	}
 }
 
+// outputs 列出 generate 应写出的全部文本产物（相对 assets/）。
+func outputs() []string {
+	var out []string
+	for _, p := range preset.All() {
+		out = append(out, filepath.Join("presets", p.ID, "PROMPT-PRODUCTION.md"))
+		for _, style := range preset.AllStyles() {
+			dir := filepath.Join("styles", style.ID, p.ID)
+			out = append(out, filepath.Join(dir, "frame.md"), filepath.Join(dir, filepath.FromSlash(style.GuideDoc())))
+		}
+	}
+	return out
+}
+
 func TestGenerateWritesEveryPresetIntoRoot(t *testing.T) {
 	root := t.TempDir()
 	var log bytes.Buffer
-	if err := generate(root, preset.All(), loadTemplates(), false, &log); err != nil {
+	if err := generate(root, preset.All(), preset.AllStyles(), false, &log); err != nil {
 		t.Fatalf("generate: %v", err)
 	}
+	for _, name := range outputs() {
+		if _, err := os.ReadFile(filepath.Join(root, "assets", name)); err != nil {
+			t.Fatalf("缺少 %s: %v", name, err)
+		}
+	}
 	for _, p := range preset.All() {
-		for _, name := range []string{"frame.md", "PROMPT-PRODUCTION.md", filepath.Join("docs", "清晰系统蓝图-视频风格说明书.md")} {
-			path := filepath.Join(root, "assets", "presets", p.ID, name)
-			body, err := os.ReadFile(path)
-			if err != nil {
-				t.Fatalf("缺少 %s/%s: %v", p.ID, name, err)
-			}
-			if !strings.Contains(string(body), p.Canvas.Label()) && name == "PROMPT-PRODUCTION.md" {
-				t.Errorf("%s/%s 未写入画幅 %s", p.ID, name, p.Canvas.Label())
-			}
+		body, _ := os.ReadFile(filepath.Join(root, "assets", "presets", p.ID, "PROMPT-PRODUCTION.md"))
+		if !strings.Contains(string(body), p.Canvas.Label()) {
+			t.Errorf("%s 的 PROMPT-PRODUCTION.md 未写入画幅 %s", p.ID, p.Canvas.Label())
 		}
 	}
 	// 日志按路径排序，便于 diff 比对。
-	if !strings.Contains(log.String(), "generated assets/presets/vertical-9x16/frame.md") {
-		t.Errorf("日志缺少 9:16 产物：%s", log.String())
+	want := "generated assets/styles/" + preset.DefaultStyle().ID + "/vertical-9x16/frame.md"
+	if !strings.Contains(log.String(), want) {
+		t.Errorf("日志缺少 %s：%s", want, log.String())
 	}
 }
 
 // generate 的产物必须与仓库里签入的一致——这正是 CI 幂等门要保证的事。
 func TestGenerateMatchesCommittedAssets(t *testing.T) {
 	root := t.TempDir()
-	if err := generate(root, preset.All(), loadTemplates(), false, io.Discard); err != nil {
+	if err := generate(root, preset.All(), preset.AllStyles(), false, io.Discard); err != nil {
 		t.Fatalf("generate: %v", err)
 	}
-	for _, p := range preset.All() {
-		for _, name := range []string{"frame.md", "PROMPT-PRODUCTION.md", filepath.Join("docs", "清晰系统蓝图-视频风格说明书.md")} {
-			fresh, err := os.ReadFile(filepath.Join(root, "assets", "presets", p.ID, name))
-			if err != nil {
-				t.Fatal(err)
-			}
-			committed, err := os.ReadFile(filepath.Join("..", "..", "..", "assets", "presets", p.ID, name))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !bytes.Equal(fresh, committed) {
-				t.Errorf("%s/%s 与签入产物不一致，需重跑 go generate", p.ID, name)
-			}
+	for _, name := range outputs() {
+		fresh, err := os.ReadFile(filepath.Join(root, "assets", name))
+		if err != nil {
+			t.Fatal(err)
 		}
+		committed, err := os.ReadFile(filepath.Join("..", "..", "..", "assets", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(fresh, committed) {
+			t.Errorf("%s 与签入产物不一致，需重跑 go generate", name)
+		}
+	}
+}
+
+func TestSelectStyles(t *testing.T) {
+	all, err := selectStyles("")
+	if err != nil || len(all) != len(preset.AllStyles()) {
+		t.Fatalf("空 id 应返回全部：%v %v", len(all), err)
+	}
+	if _, err := selectStyles("no-such-style"); err == nil {
+		t.Fatal("未知风格应报错")
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
 	assets "github.com/chouheiwa/articale-to-motion"
@@ -25,6 +26,10 @@ func frontmatter(path string) (map[string]any, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
+	return parseFrontmatter(path, body)
+}
+
+func parseFrontmatter(path string, body []byte) (map[string]any, string, error) {
 	parts := bytes.SplitN(body, []byte("---"), 3)
 	if len(parts) != 3 || len(bytes.TrimSpace(parts[0])) != 0 {
 		return nil, "", fmt.Errorf("%s 缺少 YAML frontmatter", path)
@@ -145,7 +150,13 @@ func Style(projectRoot string) error {
 	if err != nil {
 		return err
 	}
-	guide, _, err := frontmatter(filepath.Join(projectRoot, "docs", "清晰系统蓝图-视频风格说明书.md"))
+	// 说明书文件名随风格而定，从 frame.md 的 style_id 反查，不写死某一套风格。
+	styleID, _ := frame["style_id"].(string)
+	style, err := preset.StyleByIDOrError(styleID)
+	if err != nil {
+		return fmt.Errorf("frame.md: %w", err)
+	}
+	guide, _, err := frontmatter(filepath.Join(projectRoot, filepath.FromSlash(style.GuideDoc())))
 	if err != nil {
 		return err
 	}
@@ -306,7 +317,7 @@ func validateStyleSchema(tokens map[string]any) (preset.Preset, error) {
 		return preset.Preset{}, fmt.Errorf("radius.pill_px 必须为 999")
 	}
 	archetypes, ok := tokens["scene_archetypes"].([]any)
-	canonical := []string{"proposition", "comparison", "process", "capability_deck"}
+	canonical := preset.ArchetypeIDs
 	if !ok || len(archetypes) != len(canonical) {
 		return preset.Preset{}, fmt.Errorf("scene_archetypes 必须包含四种标准类型")
 	}
@@ -440,7 +451,13 @@ func validateFontStacks(typography map[string]any) error {
 		declared[strings.ToLower(family)] = true
 	}
 	used := map[string]bool{}
-	for _, key := range []string{"primary_stack", "mono_stack"} {
+	// display_stack 可选：游戏与编辑类风格的展示字（像素字、手写字、粗黑展示体）
+	// 不能放进 primary_stack 的首位，否则渲染器会拿它排正文。
+	keys := []string{"primary_stack", "mono_stack"}
+	if _, ok := typography["display_stack"]; ok {
+		keys = append(keys, "display_stack")
+	}
+	for _, key := range keys {
 		stack, ok := typography[key].(string)
 		if !ok || stack == "" {
 			return fmt.Errorf("typography.%s 必须是非空字符串", key)
@@ -460,7 +477,7 @@ func validateFontStacks(typography map[string]any) error {
 	}
 	for family := range declared {
 		if !used[family] {
-			return fmt.Errorf("typography.font_files 声明了字体 %s，但两个字体栈都没有使用它", family)
+			return fmt.Errorf("typography.font_files 声明了字体 %s，但没有任何字体栈使用它", family)
 		}
 	}
 	return nil
@@ -525,9 +542,13 @@ func pngDimensions(path string) (uint32, uint32, error) {
 
 var hexColor = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
 
-// RegenerateExamples recreates the generic style SVGs and renders their PNG
-// counterparts with ImageMagick. The embedded SVGs are immutable templates,
-// so regeneration never depends on files left by an earlier run.
+// RegenerateExamples recreates the style SVGs and renders their PNG
+// counterparts. The embedded SVGs are immutable templates, so regeneration
+// never depends on files left by an earlier run.
+//
+// 项目改过配色时，示例图要跟着换色：以内置 frame.md 的配色为基准，把 SVG 里
+// 每个基准色替换成项目 frame.md 同名 token 的值。基准取自项目所用风格自己的
+// 内置 frame.md，而不是写死某一套风格的色板。
 func RegenerateExamples(projectRoot string, output io.Writer) error {
 	frame, _, err := frontmatter(filepath.Join(projectRoot, "frame.md"))
 	if err != nil {
@@ -537,16 +558,10 @@ func RegenerateExamples(projectRoot string, output io.Writer) error {
 	if !ok {
 		return fmt.Errorf("frame.md 的 colors 必须是对象")
 	}
-	baseline := map[string]string{
-		"canvas": "#F5F7FB", "ink": "#0E2340", "engineering_blue": "#1857C4",
-		"capability_deck": "#12294A", "blue_tint": "#EAF1FD", "support_gray": "#4E6076",
-		"structure_line": "#D5DEEB", "structure_line_strong": "#C3D2E6", "white": "#FFFFFF",
-	}
-	for name := range baseline {
-		value, ok := colors[name].(string)
-		if !ok || !hexColor.MatchString(value) {
-			return fmt.Errorf("frame.md 的 colors.%s 必须是六位十六进制颜色", name)
-		}
+	styleID, _ := frame["style_id"].(string)
+	style, err := preset.StyleByIDOrError(styleID)
+	if err != nil {
+		return fmt.Errorf("frame.md: %w", err)
 	}
 	// 示例图模板按画幅分目录，必须从项目自己的 canvas 反查，不能取默认预设：
 	// 拿 3:4 的模板铺进 9:16 项目，Style 会立刻拒绝，但用户看到的是尺寸报错而
@@ -563,28 +578,38 @@ func RegenerateExamples(projectRoot string, output io.Writer) error {
 	if !ok {
 		return fmt.Errorf("frame.md 的画幅 %dx%d 不是内置画幅，无法定位示例模板", width, height)
 	}
+	templateDir := "assets/styles/" + style.ID + "/" + active.ID
+	recolor, err := recolorMap(templateDir+"/frame.md", colors)
+	if err != nil {
+		return err
+	}
 	outputDir := filepath.Join(projectRoot, "assets", "style-guide", "examples")
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return err
 	}
-	names := []string{"proposition", "comparison", "process", "capability_deck"}
-	pngPaths := make([]string, 0, len(names))
-	for _, name := range names {
-		sourcePath := "assets/presets/" + active.ID + "/assets/style-guide/examples/" + name + ".svg"
+	if err := styleimage.CheckRenderer(); err != nil {
+		return err
+	}
+	projectFonts, _ := filepath.Glob(filepath.Join(projectRoot, "assets", "fonts", "*.woff2"))
+	fontDir, cleanup, err := styleimage.DecompressFonts(projectFonts)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+	pngPaths := make([]string, 0, len(preset.ArchetypeIDs))
+	for _, name := range preset.ArchetypeIDs {
+		sourcePath := templateDir + "/assets/style-guide/examples/" + name + ".svg"
 		source, readErr := assets.Files.ReadFile(sourcePath)
 		if readErr != nil {
 			return fmt.Errorf("读取内置示例 %s: %w", name, readErr)
 		}
-		svg := string(source)
-		for colorName, original := range baseline {
-			svg = strings.ReplaceAll(svg, original, colors[colorName].(string))
-		}
+		svg := recolor.Replace(string(source))
 		svgPath := filepath.Join(outputDir, name+".svg")
 		pngPath := filepath.Join(outputDir, name+".png")
 		if err := os.WriteFile(svgPath, []byte(svg), 0o644); err != nil {
 			return err
 		}
-		if err := styleimage.RenderSVG(svgPath, pngPath); err != nil {
+		if err := styleimage.RenderSVG(svgPath, pngPath, fontDir); err != nil {
 			return err
 		}
 		fmt.Fprintf(output, "generated %s\ngenerated %s\n", filepath.ToSlash(filepath.Join("assets", "style-guide", "examples", name+".svg")), filepath.ToSlash(filepath.Join("assets", "style-guide", "examples", name+".png")))
@@ -593,9 +618,44 @@ func RegenerateExamples(projectRoot string, output io.Writer) error {
 	contactPath := filepath.Join(outputDir, "contact-sheet.png")
 	const thumbnailWidthPx = 405
 	thumb := fmt.Sprintf("%dx%d", thumbnailWidthPx, thumbnailWidthPx*active.Canvas.HeightPx/active.Canvas.WidthPx)
-	if err := styleimage.ContactSheet(pngPaths, contactPath, thumb, colors["structure_line"].(string), "4x1"); err != nil {
+	if err := styleimage.ContactSheet(pngPaths, contactPath, thumb, recolor.Replace(style.SheetBackground), "4x1"); err != nil {
 		return err
 	}
 	fmt.Fprintf(output, "generated %s\n", filepath.ToSlash(filepath.Join("assets", "style-guide", "examples", "contact-sheet.png")))
 	return nil
+}
+
+// recolorMap 以内置 frame.md 的配色为基准，生成「基准色 → 项目色」的替换器。
+// 基准色按大小写不敏感匹配，SVG 里手写的十六进制色大小写不一。
+func recolorMap(embeddedFrame string, colors map[string]any) (*strings.Replacer, error) {
+	body, err := assets.Files.ReadFile(embeddedFrame)
+	if err != nil {
+		return nil, fmt.Errorf("读取内置风格 %s: %w", embeddedFrame, err)
+	}
+	builtin, _, err := parseFrontmatter(embeddedFrame, body)
+	if err != nil {
+		return nil, err
+	}
+	baseline, ok := builtin["colors"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("内置风格 %s 的 colors 不是对象", embeddedFrame)
+	}
+	names := make([]string, 0, len(baseline))
+	for name := range baseline {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	var pairs []string
+	for _, name := range names {
+		original, _ := baseline[name].(string)
+		value, ok := colors[name].(string)
+		if !ok || !hexColor.MatchString(value) {
+			return nil, fmt.Errorf("frame.md 的 colors.%s 必须是六位十六进制颜色", name)
+		}
+		if strings.EqualFold(original, value) {
+			continue
+		}
+		pairs = append(pairs, strings.ToUpper(original), value, strings.ToLower(original), value)
+	}
+	return strings.NewReplacer(pairs...), nil
 }

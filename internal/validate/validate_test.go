@@ -47,7 +47,7 @@ func TestPublishRejectsSecretsAndEscapingPaths(t *testing.T) {
 // 素材拆成两棵源树后仓库根不再是一个可校验的项目，改为在铺好的夹具上验。
 func TestStyleGuidePairPasses(t *testing.T) {
 	frame, _ := os.ReadFile(presetSource("frame.md"))
-	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
+	guide, _ := os.ReadFile(presetSource(filepath.FromSlash(preset.DefaultStyle().GuideDoc())))
 	if err := Style(styleFixture(t, string(frame), string(guide))); err != nil {
 		t.Fatal(err)
 	}
@@ -78,9 +78,9 @@ func TestStyleRejectsTokenDriftAndMissingDocuments(t *testing.T) {
 	}
 	os.MkdirAll(filepath.Join(root, "docs"), 0o755)
 	frame, _ := os.ReadFile(presetSource("frame.md"))
-	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
+	guide, _ := os.ReadFile(presetSource(filepath.FromSlash(preset.DefaultStyle().GuideDoc())))
 	os.WriteFile(filepath.Join(root, "frame.md"), frame, 0o644)
-	os.WriteFile(filepath.Join(root, "docs", "清晰系统蓝图-视频风格说明书.md"), []byte(replaceOnce(string(guide), "width_px: 1080", "width_px: 999")), 0o644)
+	os.WriteFile(filepath.Join(root, filepath.FromSlash(preset.DefaultStyle().GuideDoc())), []byte(replaceOnce(string(guide), "width_px: 1080", "width_px: 999")), 0o644)
 	if err := Style(root); err == nil {
 		t.Fatal("token drift should fail")
 	}
@@ -88,7 +88,7 @@ func TestStyleRejectsTokenDriftAndMissingDocuments(t *testing.T) {
 
 func TestStyleRejectsInvalidSchemaSections(t *testing.T) {
 	frame, _ := os.ReadFile(presetSource("frame.md"))
-	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
+	guide, _ := os.ReadFile(presetSource(filepath.FromSlash(preset.DefaultStyle().GuideDoc())))
 	cases := map[string][2]string{
 		"schema":     {"schema_version: 1", "schema_version: 2"},
 		"identity":   {"style_id: clear-system-blueprint-v1", "style_id: [invalid]"},
@@ -115,7 +115,7 @@ func TestStyleRejectsInvalidSchemaSections(t *testing.T) {
 				t.Fatalf("fixture replacement did not match: %q", replacement[0])
 			}
 			os.WriteFile(filepath.Join(root, "frame.md"), []byte(modified), 0o644)
-			os.WriteFile(filepath.Join(root, "docs", "清晰系统蓝图-视频风格说明书.md"), guide, 0o644)
+			os.WriteFile(filepath.Join(root, filepath.FromSlash(preset.DefaultStyle().GuideDoc())), guide, 0o644)
 			if err := Style(root); err == nil {
 				t.Fatal("expected schema rejection")
 			}
@@ -133,6 +133,13 @@ func styleFixture(t *testing.T, frameBody, guideBody string) string {
 // styleFixtureFor 同上，但示例图取自指定画幅预设。
 func styleFixtureFor(t *testing.T, presetID, frameBody, guideBody string) string {
 	t.Helper()
+	return styleFixtureForStyle(t, preset.DefaultStyle(), presetID, frameBody, guideBody)
+}
+
+// styleFixtureForStyle 按 am init 的叠加方式搭一个只含风格相关文件的项目：
+// frame.md、说明书、示例图来自风格 × 画幅树，字体来自共用树与风格树。
+func styleFixtureForStyle(t *testing.T, style preset.Style, presetID, frameBody, guideBody string) string {
+	t.Helper()
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "docs"), 0o755); err != nil {
 		t.Fatal(err)
@@ -140,15 +147,20 @@ func styleFixtureFor(t *testing.T, presetID, frameBody, guideBody string) string
 	if err := os.WriteFile(filepath.Join(root, "frame.md"), []byte(frameBody), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, "docs", "清晰系统蓝图-视频风格说明书.md"), []byte(guideBody), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(style.GuideDoc())), []byte(guideBody), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// 源在两棵素材树里，目标是项目内的扁平路径——两边不再同名，得分别给出。
+	// 源在多棵素材树里，目标是项目内的扁平路径——两边不再同名，得分别给出。
+	styleDir := filepath.Join("..", "..", "assets", "styles", style.ID, presetID)
 	for _, pair := range []struct{ source, destination string }{
-		{filepath.Join("..", "..", "assets", "presets", presetID, "assets", "style-guide", "examples"), filepath.Join("assets", "style-guide", "examples")},
+		{filepath.Join(styleDir, "assets", "style-guide", "examples"), filepath.Join("assets", "style-guide", "examples")},
 		{sharedSource("assets", "fonts"), filepath.Join("assets", "fonts")},
+		{filepath.Join(styleDir, "assets", "fonts"), filepath.Join("assets", "fonts")},
 	} {
 		entries, err := os.ReadDir(pair.source)
+		if os.IsNotExist(err) {
+			continue
+		}
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -168,13 +180,25 @@ func styleFixtureFor(t *testing.T, presetID, frameBody, guideBody string) string
 			}
 		}
 	}
+	// 风格独有的字体来自字体池，按 am init 的方式拷进 assets/fonts/。
+	for _, font := range style.Fonts {
+		for _, name := range []string{font.File, font.License} {
+			body, err := os.ReadFile(filepath.Join("..", "..", "assets", "fontpool", name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(root, "assets", "fonts", name), body, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
 	return root
 }
 
-// 素材已按画幅拆进 assets/presets 与 assets/shared 两棵源树，
+// 风格素材在 assets/styles/<风格>/<画幅>/，共用素材在 assets/shared，
 // 测试夹具统一走这两个辅助函数，避免相对路径散落各处。
 func presetSource(parts ...string) string {
-	return filepath.Join(append([]string{"..", "..", "assets", "presets", preset.Default().ID}, parts...)...)
+	return filepath.Join(append([]string{"..", "..", "assets", "styles", preset.DefaultStyle().ID, preset.Default().ID}, parts...)...)
 }
 
 func sharedSource(parts ...string) string {
@@ -183,7 +207,7 @@ func sharedSource(parts ...string) string {
 
 func TestStyleFixtureItselfPasses(t *testing.T) {
 	frame, _ := os.ReadFile(presetSource("frame.md"))
-	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
+	guide, _ := os.ReadFile(presetSource(filepath.FromSlash(preset.DefaultStyle().GuideDoc())))
 	if err := Style(styleFixture(t, string(frame), string(guide))); err != nil {
 		t.Fatalf("unmodified fixture must pass, otherwise every rejection case passes vacuously: %v", err)
 	}
@@ -193,7 +217,7 @@ func TestStyleFixtureItselfPasses(t *testing.T) {
 // 本地渲染会因为回退而"看着正常"，云端 / CI 上排版却是错的——必须在 token 层挡住。
 func TestStyleRejectsFontsThatDoNotShipWithTheProject(t *testing.T) {
 	frame, _ := os.ReadFile(presetSource("frame.md"))
-	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
+	guide, _ := os.ReadFile(presetSource(filepath.FromSlash(preset.DefaultStyle().GuideDoc())))
 	cases := map[string][2]string{
 		"system-font-in-primary": {
 			`primary_stack: '"Inter", "Noto Sans SC", sans-serif'`,
@@ -233,7 +257,7 @@ func TestStyleRejectsFontsThatDoNotShipWithTheProject(t *testing.T) {
 
 func TestStyleRejectsDeclaredFontFileThatIsMissing(t *testing.T) {
 	frame, _ := os.ReadFile(presetSource("frame.md"))
-	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
+	guide, _ := os.ReadFile(presetSource(filepath.FromSlash(preset.DefaultStyle().GuideDoc())))
 	const old, replacement = `file: "assets/fonts/noto-sans-sc-400.woff2"`, `file: "assets/fonts/absent.woff2"`
 	modifiedFrame := replaceOnce(string(frame), old, replacement)
 	modifiedGuide := replaceOnce(string(guide), old, replacement)
@@ -262,9 +286,9 @@ func TestRegenerateExamplesUsesImageMagickAndWritesAllArtifacts(t *testing.T) {
 		t.Fatal(err)
 	}
 	frame, _ := os.ReadFile(presetSource("frame.md"))
-	guide, _ := os.ReadFile(presetSource("docs", "清晰系统蓝图-视频风格说明书.md"))
+	guide, _ := os.ReadFile(presetSource(filepath.FromSlash(preset.DefaultStyle().GuideDoc())))
 	os.WriteFile(filepath.Join(root, "frame.md"), frame, 0o644)
-	os.WriteFile(filepath.Join(root, "docs", "清晰系统蓝图-视频风格说明书.md"), guide, 0o644)
+	os.WriteFile(filepath.Join(root, filepath.FromSlash(preset.DefaultStyle().GuideDoc())), guide, 0o644)
 	// montage 的产物是最后一个参数；rsvg-convert 的产物在 -o 之后，两者桩法不同。
 	magick := filepath.Join(bin, "magick")
 	os.WriteFile(magick, []byte("#!/bin/sh\nfor last; do :; done\n: > \"$last\"\n"), 0o755)
@@ -334,26 +358,43 @@ func replaceOnce(body, old, replacement string) string {
 // presetFixture 铺一份该画幅预设的完整项目。
 func presetFixture(t *testing.T, presetID string) string {
 	t.Helper()
-	dir := filepath.Join("..", "..", "assets", "presets", presetID)
+	return builtinFixture(t, preset.DefaultStyle(), presetID)
+}
+
+func builtinFixture(t *testing.T, style preset.Style, presetID string) string {
+	t.Helper()
+	dir := filepath.Join("..", "..", "assets", "styles", style.ID, presetID)
 	frame, err := os.ReadFile(filepath.Join(dir, "frame.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	guide, err := os.ReadFile(filepath.Join(dir, "docs", "清晰系统蓝图-视频风格说明书.md"))
+	guide, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(style.GuideDoc())))
 	if err != nil {
 		t.Fatal(err)
 	}
-	return styleFixtureFor(t, presetID, string(frame), string(guide))
+	return styleFixtureForStyle(t, style, presetID, string(frame), string(guide))
 }
 
-// 每套内置预设的产物都必须自洽，新增画幅无需再改这个用例。
+// 每套内置风格 × 画幅的产物都必须自洽，新增风格或画幅无需再改这个用例。
 func TestStyleAcceptsEveryBuiltinPreset(t *testing.T) {
-	for _, p := range preset.All() {
-		t.Run(p.ID, func(t *testing.T) {
-			if err := Style(presetFixture(t, p.ID)); err != nil {
-				t.Fatalf("%s 应通过校验：%v", p.ID, err)
-			}
-		})
+	for _, style := range preset.AllStyles() {
+		for _, p := range preset.All() {
+			t.Run(style.ID+"/"+p.ID, func(t *testing.T) {
+				if err := Style(builtinFixture(t, style, p.ID)); err != nil {
+					t.Fatalf("%s/%s 应通过校验：%v", style.ID, p.ID, err)
+				}
+			})
+		}
+	}
+}
+
+// frame.md 的 style_id 不在风格表里时，找不到对应说明书，必须明确报错。
+func TestStyleRejectsUnknownStyleID(t *testing.T) {
+	root := presetFixture(t, "vertical-3x4")
+	tamperBoth(t, root, "style_id: "+preset.DefaultStyle().ID, "style_id: unknown-style-v1")
+	err := Style(root)
+	if err == nil || !strings.Contains(err.Error(), "未知风格") {
+		t.Fatalf("未知 style_id 应报未知风格，实际：%v", err)
 	}
 }
 
@@ -384,9 +425,9 @@ func TestStyleRejectsUnknownCanvas(t *testing.T) {
 
 // 9:16 的 frame.md 配 3:4 的示例图必须被挡住。
 func TestStyleRejectsExamplesFromAnotherCanvas(t *testing.T) {
-	dir := filepath.Join("..", "..", "assets", "presets", "vertical-9x16")
+	dir := filepath.Join("..", "..", "assets", "styles", preset.DefaultStyle().ID, "vertical-9x16")
 	frame, _ := os.ReadFile(filepath.Join(dir, "frame.md"))
-	guide, _ := os.ReadFile(filepath.Join(dir, "docs", "清晰系统蓝图-视频风格说明书.md"))
+	guide, _ := os.ReadFile(filepath.Join(dir, filepath.FromSlash(preset.DefaultStyle().GuideDoc())))
 	root := styleFixtureFor(t, "vertical-3x4", string(frame), string(guide))
 	err := Style(root)
 	if err == nil {
@@ -400,7 +441,7 @@ func TestStyleRejectsExamplesFromAnotherCanvas(t *testing.T) {
 // tamperBoth 同时改两份文件，避免先被 frontmatter DeepEqual 拦下而测不到目标断言。
 func tamperBoth(t *testing.T, root, from, to string) {
 	t.Helper()
-	for _, name := range []string{"frame.md", filepath.Join("docs", "清晰系统蓝图-视频风格说明书.md")} {
+	for _, name := range []string{"frame.md", filepath.FromSlash(preset.DefaultStyle().GuideDoc())} {
 		path := filepath.Join(root, name)
 		body, err := os.ReadFile(path)
 		if err != nil {
@@ -413,5 +454,25 @@ func tamperBoth(t *testing.T, root, from, to string) {
 		if err := os.WriteFile(path, []byte(replaced), 0o644); err != nil {
 			t.Fatalf("写 %s: %v", name, err)
 		}
+	}
+}
+
+// display_stack 可选：声明了就按同样规则校验，展示字可以只出现在这里。
+func TestStyleAcceptsOptionalDisplayStack(t *testing.T) {
+	typography := map[string]any{
+		"primary_stack": `"Noto Sans SC", sans-serif`,
+		"mono_stack":    `"JetBrains Mono", monospace`,
+		"display_stack": `"Pixel Display", "Noto Sans SC", sans-serif`,
+		"font_files": []any{
+			map[string]any{"family": "Noto Sans SC", "weight": 400, "file": "assets/fonts/a.woff2"},
+			map[string]any{"family": "Pixel Display", "weight": 400, "file": "assets/fonts/b.woff2"},
+		},
+	}
+	if err := validateFontStacks(typography); err != nil {
+		t.Fatalf("展示字只出现在 display_stack 时应通过：%v", err)
+	}
+	typography["display_stack"] = `"PingFang SC", sans-serif`
+	if err := validateFontStacks(typography); err == nil {
+		t.Fatal("display_stack 里的系统字体应被拒绝")
 	}
 }

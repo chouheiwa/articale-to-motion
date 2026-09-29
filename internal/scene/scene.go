@@ -520,6 +520,7 @@ func BuildPrompt(s Scene, resolvedSkills map[string]string) (string, error) {
 		// 本地看着正常、成片排版是错的。所以字体自带文件这条必须由执行契约保证。
 		style = "\n视觉规范（强制）：完整读取 " + s.StyleGuide + "，严格遵守画布、配色、字体和安全区。\n" +
 			"字体（强制）：只允许使用 " + s.StyleGuide + " 的 typography 字体栈中声明的字体族。" +
+			"正文与说明用 primary_stack，数字与标签用 mono_stack；声明了 display_stack 时，其中的展示字只用于标题与大字，不得用来排正文。" +
 			"其中 typography.font_files 列出的字体必须在 composition 里用 @font-face 指向本镜头目录内的对应文件，" +
 			"每个用到的字重各写一条，并使用 font-display: block（并行抽帧下 swap 会让部分帧抓到回退字体）。" +
 			"不得引用任何未随镜头目录一起提供的字体文件。\n" +

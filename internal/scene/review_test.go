@@ -82,7 +82,7 @@ func TestBuildPromptPointsAtStyleExamples(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"scene_archetypes", "example_png", "不照抄"} {
+	for _, want := range []string{"scene_archetypes", "example_png", "不照抄", "display_stack"} {
 		if !strings.Contains(prompt, want) {
 			t.Errorf("提示词缺少 %q", want)
 		}

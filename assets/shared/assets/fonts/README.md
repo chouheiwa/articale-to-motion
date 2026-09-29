@@ -51,5 +51,5 @@ for w in 400 600 700 900; do
 done
 ```
 
-换字体或增删字重后必须同步改 `frame.md` 与 `docs/清晰系统蓝图-视频风格说明书.md` 的
+换字体或增删字重后必须同步改 `frame.md` 与 `docs/` 下风格说明书的
 `typography.font_files`，两份文件的 token 必须逐字节一致，`am validate style` 会校验。

@@ -1,174 +1,10 @@
----
-schema_version: 1
-style_id: clear-system-blueprint-v1
-style_name: 清晰系统蓝图
-scope:
-  - knowledge_explainer
-  - technology_explainer
-  - ai_and_programming
-  - product_mechanism
-  - business_and_science_education
-canvas:
-  width_px: 1080
-  height_px: 1920
-  fps: 30
-  orientation: vertical
-safe_area:
-  structural: {left_px: 40, right_px: 40, top_px: 96, bottom_px: 60}
-  main_content: {left_px: 88, right_px: 88, top_px: 120, bottom_px: 100}
-  critical_text: {left_px: 88, right_px: 180, top_px: 120, bottom_px: 260}
-  cover_title: {left_px: 88, right_px: 180, top_px: 260, bottom_px: 940}
-  subtitles: {left_px: 88, right_px: 180, top_px: 1470, bottom_px: 260}
-colors:
-  canvas: "#F5F7FB"
-  ink: "#0E2340"
-  engineering_blue: "#1857C4"
-  capability_deck: "#12294A"
-  blue_tint: "#EAF1FD"
-  support_gray: "#4E6076"
-  structure_line: "#D5DEEB"
-  structure_line_strong: "#C3D2E6"
-  white: "#FFFFFF"
-  warning_red: "#A8412A"
-  success_green: "#4FBF8B"
-typography:
-  primary_stack: '"Inter", "Noto Sans SC", sans-serif'
-  mono_stack: '"JetBrains Mono", "Noto Sans SC", monospace'
-  font_files:
-    - {family: "Noto Sans SC", weight: 400, file: "assets/fonts/noto-sans-sc-400.woff2"}
-    - {family: "Noto Sans SC", weight: 600, file: "assets/fonts/noto-sans-sc-600.woff2"}
-    - {family: "Noto Sans SC", weight: 700, file: "assets/fonts/noto-sans-sc-700.woff2"}
-    - {family: "Noto Sans SC", weight: 900, file: "assets/fonts/noto-sans-sc-900.woff2"}
-  sizes_px:
-    cover_min: 78
-    cover_max: 112
-    title_min: 46
-    title_max: 64
-    body_min: 24
-    body_max: 34
-    label_min: 18
-    label_max: 23
-  weights:
-    display: 900
-    heading: 700
-    body: 400
-    body_emphasis: 600
-    metadata: 700
-  line_heights:
-    display_min: 0.98
-    display_max: 1.08
-    body: 1.35
-    metadata: 1.2
-spacing:
-  content_left_px: 88
-  content_width_px: 904
-  group_min_px: 12
-  group_max_px: 20
-  card_stack_min_px: 16
-  card_main_padding_min_px: 28
-  card_main_padding_max_px: 36
-  card_secondary_padding_min_px: 22
-  card_secondary_padding_max_px: 28
-  section_min_px: 32
-  section_max_px: 56
-  element_edge_min_px: 22
-  skeleton_bottom_min_px: 22
-radius:
-  sm_px: 8
-  md_px: 12
-  lg_px: 18
-  xl_px: 22
-  pill_px: 999
-scene_archetypes:
-  - id: proposition
-    name: 命题型
-    use_for: 封面、钩子、章节开场、强结论
-    example_png: assets/style-guide/examples/proposition.png
-  - id: comparison
-    name: 对照型
-    use_for: 原料与结果、旧方法与新方法、条件与结论
-    example_png: assets/style-guide/examples/comparison.png
-  - id: process
-    name: 流程型
-    use_for: 步骤、层级、因果、状态变化
-    example_png: assets/style-guide/examples/process.png
-  - id: capability_deck
-    name: 能力板型
-    use_for: 系统、能力、工程资产、验证结果
-    example_png: assets/style-guide/examples/capability_deck.png
-motion:
-  phases: {build: 0.30, breathe: 0.40, resolve: 0.30}
-  entrance_seconds: {min: 0.30, max: 0.60}
-  exit_seconds: {min: 0.18, max: 0.45}
-  transition_seconds: {min: 0.20, max: 0.40}
-  first_action_delay_seconds: {min: 0.10, max: 0.30}
-  entrance_ease: [power2.out, power3.out, expo.out]
-  exit_ease: [power2.in, power3.in]
-  verbs: [DRAW, SLIDE, ASSEMBLE, FILL, LOCK_IN, STEP, VERIFY]
-  ambient_per_scene_max: 1
-  max_same_ease_tweens: 2
-audio:
-  sample_rate_hz: 48000
-  channels: 2
-  voice_integrated_lufs: {min: -18, max: -16}
-  bgm_integrated_lufs: {min: -30, max: -26}
-  bgm_ducking_db: {min: 6, max: 10}
-  ducking_attack_seconds: {min: 0.04, max: 0.12}
-  ducking_release_seconds: {min: 0.25, max: 0.60}
-  bgm_fade_seconds: {min: 0.80, max: 1.50}
-  sfx_gain_db: {min: -18, max: -12}
-  sfx_max_simultaneous: 2
-  final_integrated_lufs: -16
-  final_lufs_tolerance: 1
-  true_peak_max_dbtp: -1
-  lra_lu: {min: 2, max: 6}
-subtitles:
-  required: false
-  font_size_px: {min: 32, max: 38}
-  max_width_px: 812
-  max_lines: 2
-  max_fullwidth_chars_per_line: 16
-  line_height: {min: 1.30, max: 1.40}
-  background: "rgba(18, 41, 74, 0.84)"
-  text_color: "#F5F7FB"
-  padding_px: {vertical: 14, horizontal: 22}
-  radius_px: 12
-  break_rules:
-    - keep_proper_nouns_intact
-    - keep_english_phrases_intact
-    - keep_numbers_and_units_intact
-    - preserve_real_speech_gaps
-cover:
-  frame_zero_complete: true
-  default_lines: 2
-  max_lines: 3
-  max_fullwidth_chars_per_line: 10
-  font_size_px: {min: 78, max: 112}
-  line_height: {min: 0.98, max: 1.08}
-  max_width_px: 812
-  contrast_ratio_min: 7.0
-  stable_frames: 18
-forbidden:
-  - black_or_blank_frame_zero
-  - cover_fade_in_intermediate_state
-  - centered_floating_web_card_stack
-  - arbitrary_new_brand_colors
-  - gradient_text
-  - neon_purple_blue_gradient
-  - excessive_glitch
-  - elastic_or_bouncy_motion
-  - all_elements_same_direction_same_speed
-  - labels_or_icons_touching_edges
-  - skeleton_or_list_without_bottom_padding
-  - sfx_on_every_element
-  - music_masking_voice
----
+
 
 # “清晰系统蓝图”视频风格说明书
 
 - 版本：1.0
 - 适用：知识、科技、AI、编程、产品机制、商业与科学教育类竖屏解说
-- 基准画幅：1080×1920，30fps
+- 基准画幅：{{CANVAS}}，30fps
 
 ## 1. 风格定位
 
@@ -215,13 +51,15 @@ forbidden:
 
 ### 4.1 五层安全区
 
-| 区域 | 左 | 右 | 上 | 下 | 用途 |
-|---|---:|---:|---:|---:|---|
-| 结构装饰区 | 40 | 40 | 96 | 60 | 角标、网格、弱装饰 |
-| 主内容区 | 88 | 88 | 120 | 100 | 普通图形和卡片 |
-| 关键文字区 | 88 | 180 | 120 | 260 | 标题、数字、结论 |
-| 封面标题区 | 88 | 180 | 260 | 460 | 第 0 帧封面 |
-| 字幕区 | 88 | 180 | 990 | 260 | 可选内嵌字幕 |
+各区的像素内缩随画幅变化，以本文件 frontmatter 的 `safe_area` 为准（{{CANVAS}} 下已推导成绝对像素），这里只说明用途：
+
+| 区域 | `safe_area` 键 | 用途 |
+|---|---|---|
+| 结构装饰区 | `structural` | 角标、网格、弱装饰 |
+| 主内容区 | `main_content` | 普通图形和卡片 |
+| 关键文字区 | `critical_text` | 标题、数字、结论 |
+| 封面标题区 | `cover_title` | 第 0 帧封面 |
+| 字幕区 | `subtitles` | 可选内嵌字幕 |
 
 右侧 180px 和底部 260px 是抖音互动栏与底部 UI 的关键避让区。非关键装饰可以进入，但标题、数字、结论、Logo 和字幕不得进入。
 
@@ -393,10 +231,6 @@ forbidden:
 - 30fps 下至少稳定 18 帧后才允许转场。
 - 不得使用黑帧、空白、半透明中间态或必须等动画完成才看懂的封面。
 
-参考证据：
-
-![封面与转场检查](../production/visual-qc/layout-v2/cover-transition-contact.png)
-
 ## 13. 不可变项与可变项
 
 ### 不可变
@@ -464,7 +298,7 @@ forbidden:
 - [ ] BGM ducking 和淡入淡出正确。
 - [ ] SFX 数量受控且不覆盖关键词。
 - [ ] 第 0 帧完成并稳定至少 18 帧。
-- [ ] 1080×1920、30fps、H.264/yuv420p/BT.709。
+- [ ] {{CANVAS}}、30fps、H.264/yuv420p/BT.709。
 
 ## 16. 可复制镜头提示词模板
 
@@ -478,7 +312,7 @@ forbidden:
 - 同一时刻只有一个主焦点；整镜最多两个焦点，按节拍依次登场；背景/中景/前景三个层次。
 - 使用 DRAW / ASSEMBLE / FILL / LOCK IN / STEP / VERIFY 等机械、精确的动作。
 - 保持标签、编号、状态、图标和列表底部留白，不得贴边。
-- 输出 1080×1920、30fps、静音、无音轨 MP4。
+- 输出 {{CANVAS}}、30fps、静音、无音轨 MP4。
 
 镜头文案：
 {{SCENE_TEXT}}

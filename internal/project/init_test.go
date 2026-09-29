@@ -22,7 +22,11 @@ func builtinSources(t *testing.T) []fs.FS {
 	if err != nil {
 		t.Fatalf("取预设素材：%v", err)
 	}
-	return []fs.FS{shared, chosen}
+	style, err := assets.Style(preset.DefaultStyle().ID, preset.Default().ID)
+	if err != nil {
+		t.Fatalf("取风格素材：%v", err)
+	}
+	return []fs.FS{shared, chosen, style}
 }
 
 func TestInitializeWritesReusableSkeleton(t *testing.T) {

@@ -50,36 +50,41 @@ func isTerminal(f *os.File) bool {
 	return term.IsTerminal(int(f.Fd()))
 }
 
-type canvasPicker struct {
-	choices   []preset.Preset
+// choicePicker 是画幅与风格共用的单选框。
+type choicePicker[T any] struct {
+	title     string
+	choices   []T
+	label     func(T) string
 	cursor    int
 	confirmed bool
 	aborted   bool
 }
 
+type canvasPicker = choicePicker[preset.Preset]
+
 func newCanvasPicker() canvasPicker {
-	return canvasPicker{choices: preset.All()}
+	return canvasPicker{title: "选择画幅", choices: preset.All(), label: func(p preset.Preset) string { return p.Label }}
 }
 
-func (m canvasPicker) Selected() preset.Preset { return m.choices[m.cursor] }
+func (m choicePicker[T]) Selected() T { return m.choices[m.cursor] }
 
-func (m canvasPicker) Init() tea.Cmd { return nil }
+func (m choicePicker[T]) Init() tea.Cmd { return nil }
 
-func (m canvasPicker) up() canvasPicker {
+func (m choicePicker[T]) up() choicePicker[T] {
 	if m.cursor > 0 {
 		m.cursor--
 	}
 	return m
 }
 
-func (m canvasPicker) down() canvasPicker {
+func (m choicePicker[T]) down() choicePicker[T] {
 	if m.cursor < len(m.choices)-1 {
 		m.cursor++
 	}
 	return m
 }
 
-func (m canvasPicker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m choicePicker[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
 		return m, nil
@@ -109,31 +114,37 @@ func (m canvasPicker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m canvasPicker) View() string {
+func (m choicePicker[T]) View() string {
 	var b strings.Builder
-	b.WriteString("选择画幅\n\n")
-	for i, p := range m.choices {
+	b.WriteString(m.title + "\n\n")
+	for i, choice := range m.choices {
 		marker := "  "
 		if i == m.cursor {
 			marker = "❯ "
 		}
-		b.WriteString(marker + p.Label + "\n")
+		b.WriteString(marker + m.label(choice) + "\n")
 	}
 	b.WriteString("\n↑/↓ 移动　Enter 确认　Esc 取消\n")
 	return b.String()
 }
 
-func pickCanvas(stdout io.Writer) (preset.Preset, error) {
-	final, err := tea.NewProgram(newCanvasPicker(), tea.WithOutput(stdout)).Run()
+// runPicker 运行选择框并返回选中项；name 用于错误信息。
+func runPicker[T any](picker choicePicker[T], name string, stdout io.Writer) (T, error) {
+	var zero T
+	final, err := tea.NewProgram(picker, tea.WithOutput(stdout)).Run()
 	if err != nil {
-		return preset.Preset{}, fmt.Errorf("画幅选择框启动失败：%w", err)
+		return zero, fmt.Errorf("%s选择框启动失败：%w", name, err)
 	}
-	model, ok := final.(canvasPicker)
+	model, ok := final.(choicePicker[T])
 	if !ok {
-		return preset.Preset{}, fmt.Errorf("画幅选择框返回了意外的状态")
+		return zero, fmt.Errorf("%s选择框返回了意外的状态", name)
 	}
 	if model.aborted || !model.confirmed {
-		return preset.Preset{}, fmt.Errorf("已取消初始化")
+		return zero, fmt.Errorf("已取消初始化")
 	}
 	return model.Selected(), nil
+}
+
+func pickCanvas(stdout io.Writer) (preset.Preset, error) {
+	return runPicker(newCanvasPicker(), "画幅", stdout)
 }

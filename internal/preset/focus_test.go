@@ -11,11 +11,11 @@ import (
 // 视觉焦点」，PROMPT-PRODUCTION.md 却要求「一拍一个焦点」。渲染器同时读到两条
 // 强制约束只能择一违反，统一为「同一时刻一个主焦点，整镜最多两个依次登场」。
 func TestShippedSpecsAgreeOnFocus(t *testing.T) {
-	files, err := filepath.Glob(filepath.Join("..", "..", "assets", "presets", "*", "frame.md"))
+	files, err := filepath.Glob(filepath.Join("..", "..", "assets", "styles", "*", "*", "frame.md"))
 	if err != nil || len(files) == 0 {
 		t.Fatalf("找不到生成的 frame.md：%v", err)
 	}
-	docs, _ := filepath.Glob(filepath.Join("..", "..", "assets", "presets", "*", "docs", "*.md"))
+	docs, _ := filepath.Glob(filepath.Join("..", "..", "assets", "styles", "*", "*", "docs", "*.md"))
 	for _, path := range append(files, docs...) {
 		content, err := os.ReadFile(path)
 		if err != nil {

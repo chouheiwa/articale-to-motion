@@ -198,6 +198,7 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 
 	var skipHyperframes bool
 	var canvasID string
+	var styleID string
 	var narration string
 	var delivery string
 	initCmd := &cobra.Command{
@@ -208,6 +209,12 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 画幅在初始化时一次性选定并写入 frame.md，之后不再更改；改画幅意味着重建项目。
 可选值 vertical-3x4（1080x1440）与 vertical-9x16（1080x1920），均 30fps。
 非交互环境（CI、管道）必须显式传 --canvas，不会静默取默认值；不传且无法交互时报错退出。
+
+风格同样在初始化时一次性选定，与画幅正交：画幅决定画布与安全区，风格决定
+配色、字体、版式骨架、动效语法与禁用项。用 --style 指定，不传时在终端里交互
+选择；非交互环境不传则取默认风格 ` + preset.DefaultStyle().ID + `。改风格同样意味着重建项目。
+可选风格：
+` + styleOptions() + `
 
 写入内容：
   PROMPT.md、PROMPT-PRODUCTION.md、article-to-motion.conf、.env.example
@@ -246,6 +253,9 @@ PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 pack
   # 非交互环境必须显式指定画幅
   am init my-video --canvas vertical-9x16
 
+  # 指定风格
+  am init my-video --canvas vertical-9x16 --style ` + preset.DefaultStyle().ID + `
+
   # 离线或 CI：跳过联网安装 HyperFrames 技能
   am init my-video --canvas vertical-3x4 --skip-hyperframes
 
@@ -274,6 +284,10 @@ PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 pack
 			if err != nil {
 				return err
 			}
+			style, err := resolveStyle(styleID, os.Stdin, stdout)
+			if err != nil {
+				return err
+			}
 			shared, err := assets.Shared()
 			if err != nil {
 				return err
@@ -282,11 +296,18 @@ PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 pack
 			if err != nil {
 				return err
 			}
-			var extra map[string][]byte
-			if delivery == "song" {
-				extra = map[string][]byte{"song.yaml": []byte(song.DefaultConfig)}
+			styleFiles, err := assets.Style(style.ID, chosen.ID)
+			if err != nil {
+				return err
 			}
-			result, err := project.InitializeWithFiles(target, extra, shared, presetFiles)
+			extra, err := assets.StyleFonts(style)
+			if err != nil {
+				return err
+			}
+			if delivery == "song" {
+				extra["song.yaml"] = []byte(song.DefaultConfig)
+			}
+			result, err := project.InitializeWithFiles(target, extra, shared, presetFiles, styleFiles)
 			if err != nil {
 				return err
 			}
@@ -295,7 +316,7 @@ PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 pack
 					return fmt.Errorf("项目文件已写入，但写出 %s 失败：%w", cast.RosterFile, err)
 				}
 			}
-			fmt.Fprintf(stdout, "项目已初始化：%s（画幅 %s，新增 %d，未变 %d）\n", target, chosen.Label, result.Created, result.Unchanged)
+			fmt.Fprintf(stdout, "项目已初始化：%s（画幅 %s，风格 %s，新增 %d，未变 %d）\n", target, chosen.Label, style.Name, result.Created, result.Unchanged)
 			if skipHyperframes {
 				fmt.Fprintln(stdout, "警告：已跳过 HyperFrames 技能安装")
 				return nil
@@ -324,6 +345,7 @@ PROMPT-CAST-ADDENDUM.md，具体规则见该文件。cast.yaml 刚建出时 pack
 	}
 	initCmd.Flags().BoolVar(&skipHyperframes, "skip-hyperframes", false, "跳过联网安装 HyperFrames 官方技能；不影响随二进制下发的内置技能树")
 	initCmd.Flags().StringVar(&canvasID, "canvas", "", "画幅预设："+strings.Join(preset.IDs(), " | ")+"；不传则在终端里交互选择")
+	initCmd.Flags().StringVar(&styleID, "style", "", "视觉风格："+strings.Join(preset.StyleIDs(), " | ")+"；不传则在终端里交互选择，非交互环境取默认风格")
 	initCmd.Flags().StringVar(&narration, "narration", narrationSolo,
 		"叙事模式："+narrationSolo+"（单口播，默认） | "+narrationCast+"（多角色对话，额外写出 cast.yaml 与 cast/）")
 	initCmd.Flags().StringVar(&delivery, "delivery", "speech", "讲解形式：speech（默认）或 song（单人整曲）")

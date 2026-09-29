@@ -13,14 +13,15 @@ go vet ./...
 
 ## 内置资产
 
-项目骨架分两棵源树，`assets.go` 的 `//go:embed` 清单是唯一来源：
+项目骨架分三棵源树，`assets.go` 的 `//go:embed` 清单是唯一来源：
 
 | 源树 | 内容 |
 |---|---|
-| `assets/shared/` | 与画幅无关，所有预设共用（`PROMPT.md`、配置模板、字体、`templates/`、`.agents/skills/`） |
-| `assets/presets/<id>/` | 含画幅数字，每套预设一份（`frame.md`、`PROMPT-PRODUCTION.md`、风格说明书、示例图） |
+| `assets/shared/` | 与画幅、风格都无关，所有项目共用（`PROMPT.md`、配置模板、中文正文字体、`templates/`、`.agents/skills/`） |
+| `assets/presets/<画幅>/` | 只随画幅变化（`PROMPT-PRODUCTION.md`） |
+| `assets/styles/<风格>/<画幅>/` | 风格 × 画幅（`frame.md`、风格说明书、示例图，以及该风格独有的字体） |
 
-**每棵树的内部路径就是它在用户项目根下的目标路径**，`project.Initialize` 把选中的两棵树叠加拷贝，不做任何路径改写。所以 `assets/shared/assets/fonts/` 这层嵌套是刻意的——它对应项目里的 `assets/fonts/`。两棵树写入同一路径会直接报错，不静默覆盖。
+**每棵树的内部路径就是它在用户项目根下的目标路径**，`project.Initialize` 把选中的三棵树叠加拷贝，不做任何路径改写。所以 `assets/shared/assets/fonts/` 这层嵌套是刻意的——它对应项目里的 `assets/fonts/`。多棵树写入同一路径会直接报错，不静默覆盖；风格独有的字体要换一个文件名放进风格树，不能与共用树里的字体同名。
 
 **新增一个需要随 `am init` 下发的文件时，要放进对的那棵树，并确认它落在 `//go:embed` 清单覆盖范围内**，否则它只存在于本仓库，永远到不了用户项目。`.env.example` 和 `.agents` 这类点开头的条目必须在 embed 指令里单列——目录模式会跳过它们，漏了不报错，只是那份内容从二进制里静默消失。
 
@@ -79,21 +80,25 @@ go vet ./...
 
 fork 自外部项目的技能要带 `LICENSE` 和 `ATTRIBUTION.md`，后者记清上游 commit、保留了什么、丢了什么、改了哪几处，供日后同步上游时重做。`text-to-lottie` 的 `references/` 还有一道门禁止上游播放器契约（`Skottie`、`public/projects` 等）回流。
 
-## 画幅预设
+## 画幅预设与风格
 
-`assets/presets/<id>/` 下的**文本产物全部由 `go generate ./internal/preset/` 生成，不要手改**。真相源是 `internal/preset/table.go` 的预设表与 `internal/preset/gen/templates/` 下的模板。安全区在预设表里用 anchor 声明（贴顶 / 贴底 / 上下固定），构建期推导成绝对像素写进 `frame.md`——anchor 不进项目文件，渲染工具读到的始终是现成像素值。
+画幅与风格是两个正交维度，都在 `am init` 时各选一次（`--canvas`、`--style`）。画幅决定画布与安全区，风格决定配色、字体、版式骨架、动效语法与禁用项；`go generate` 把二者组合成每个风格 × 画幅的 `frame.md`：canvas 与 safe_area 两块来自画幅，其余 token 来自风格模板。
+
+`assets/presets/<画幅>/` 与 `assets/styles/<风格>/<画幅>/` 下的**文本产物全部由 `go generate ./internal/preset/` 生成，不要手改**。真相源是 `internal/preset/table.go` 的画幅表、`internal/preset/style.go` 的风格表，以及 `internal/preset/gen/templates/` 下的模板（`PROMPT-PRODUCTION.md` 与风格无关；每套风格在 `templates/styles/<风格>/` 下各有 `frontmatter.yaml`、`frame.body.md`、`style-guide.body.md`）。安全区在预设表里用 anchor 声明（贴顶 / 贴底 / 上下固定），构建期推导成绝对像素写进 `frame.md`——anchor 不进项目文件，渲染工具读到的始终是现成像素值。
 
 改完预设表后必须重跑 `go generate` 并提交产物，CI 的 `generated-assets` job 会校验二者一致。
 
-示例 SVG 是手绘的排版基准，生成器不改它们的内容；改完 SVG 用 `go run ./internal/preset/gen -examples -preset <id>` 更新 PNG。PNG 不参与 CI 幂等门——不同版本的 `rsvg-convert` 输出字节不同，纳进来会让门随 runner 随机失败。
+示例 SVG 是手绘的排版基准，生成器不改它们的内容；改完 SVG 用 `go run ./internal/preset/gen -examples -style <风格> -preset <画幅>` 更新 PNG。PNG 不参与 CI 幂等门——不同版本的 `rsvg-convert` 输出字节不同，纳进来会让门随 runner 随机失败。
 
 SVG 转 PNG 必须走 `rsvg-convert`（`internal/styleimage`），**不能用 ImageMagick**：多数 ImageMagick 构建自带内置 XML SVG 渲染器，会抢在 rsvg 委托前接管 `.svg`，渲染不出文字也画不对背景填充，却返回退出码 0。
 
-画幅只在 `am init` 时选定一次。新增画幅要动的地方：`internal/preset/table.go` 加一条、手绘 4 张该尺寸的示例 SVG、跑 `go generate` 与 `-examples`。`validate` 与 `scene.BuildPrompt` 都向预设表反查，不持有画幅常量，无需改动。
+新增画幅要动的地方：`internal/preset/table.go` 加一条、为每套风格手绘 4 张该尺寸的示例 SVG、跑 `go generate` 与 `-examples`。`validate` 与 `scene.BuildPrompt` 都向预设表反查，不持有画幅常量，无需改动。
+
+新增风格要动的地方：`internal/preset/style.go` 加一条；在 `templates/styles/<风格>/` 写三份模板（`style_id` / `style_name` 必须与风格表一致，生成器会校验）；为每个画幅手绘 4 张示例 SVG，放进 `assets/styles/<风格>/<画幅>/assets/style-guide/examples/`；跑 `go generate` 与 `-examples`。四种镜头骨架的 id（`preset.ArchetypeIDs`）是叙事职责，所有风格共用、顺序固定，风格只换名字、用途说明和示例图。`TestInitEveryStyleAndCanvasPassesStyleValidation` 会对每个风格 × 画幅跑一遍 `am init` 加 `validate style`。
 
 ## Prompt 文件
 
-`assets/shared/PROMPT.md` 和 `assets/presets/<id>/PROMPT-PRODUCTION.md` 是内置资产，不是本仓库的文档。它们随 `am init` 下发到项目根，被 `am run` 直接喂给编排工具。`PROMPT-PRODUCTION.md` 是生成产物，改它要改 `internal/preset/gen/templates/PROMPT-PRODUCTION.md`。
+`assets/shared/PROMPT.md` 和 `assets/presets/<画幅>/PROMPT-PRODUCTION.md` 是内置资产，不是本仓库的文档。它们随 `am init` 下发到项目根，被 `am run` 直接喂给编排工具。`PROMPT-PRODUCTION.md` 是生成产物，改它要改 `internal/preset/gen/templates/PROMPT-PRODUCTION.md`。
 
 - 要像直接写给人类操作者的任务说明，不暴露执行者是 agent、Codex 或 AI，也不使用「主控 agent」这类身份设定；但可以明确说明他需要操作其他 AI。
 - 不得出现 `./am` —— 用户项目里没有这个二进制，`am run` 通过 `PATH` 和 `AM_EXECUTABLE` 注入当前可执行文件。
