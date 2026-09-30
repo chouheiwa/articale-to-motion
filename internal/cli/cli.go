@@ -35,7 +35,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const Version = "1.0.0"
+// Version 是 `am --version` 输出的版本号。
+//
+// 由发布流程在构建时按 tag 注入（-ldflags "-X …/internal/cli.Version=1.2.0"），
+// 本地构建保持 dev。它曾是写死的 "1.0.0" 常量，发 v1.1.0 时没人改，下载到的
+// 二进制一直自称 1.0.0——版本号必须只有 tag 这一个来源。
+var Version = "dev"
 
 // hyperframesVersion 是本包内的简写，真相在 internal/hyperframes.PinnedVersion
 // ——那里同时是下发提示词里锁定指令的取值来源，避免两处字面量各自漂移。

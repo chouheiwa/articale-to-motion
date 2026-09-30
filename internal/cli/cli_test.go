@@ -382,3 +382,18 @@ func TestRunAllRejectsFractionalFrameDurationsBeforeRendering(t *testing.T) {
 		t.Error("渲染器不应被调用")
 	}
 }
+
+// 版本号只来自发布时注入的 tag；未注入的本地构建必须自称 dev，
+// 不能再出现一个写死、没人记得改的版本号。
+func TestVersionFlagReportsInjectedVersion(t *testing.T) {
+	var out bytes.Buffer
+	if code := Execute([]string{"--version"}, &out, &out); code != 0 {
+		t.Fatalf("--version exit=%d：%s", code, out.String())
+	}
+	if !strings.Contains(out.String(), Version) {
+		t.Errorf("--version 应输出 %q，实际：%s", Version, out.String())
+	}
+	if Version != "dev" {
+		t.Errorf("未注入时版本号应为 dev，实际 %q；版本号由发布流程按 tag 注入", Version)
+	}
+}

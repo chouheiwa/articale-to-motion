@@ -28,7 +28,9 @@ jobs:
             arch="${target#*/}"
             dir="article-to-motion-${GITHUB_REF_NAME}-${os}-${arch}"
             mkdir "$dir"
-            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags='-s -w' -o "$dir/am" ./cmd/am
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath \
+              -ldflags="-s -w -X github.com/chouheiwa/articale-to-motion/internal/cli.Version=${GITHUB_REF_NAME#v}" \
+              -o "$dir/am" ./cmd/am
             cp LICENSE README.md README.en.md "$dir/"
             tar -czf "dist/${dir}.tar.gz" "$dir"
           done
