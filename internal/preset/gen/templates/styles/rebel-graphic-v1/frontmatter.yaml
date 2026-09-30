@@ -151,7 +151,7 @@ forbidden:
   - elastic_or_rubber_band_motion
   - rounded_web_cards
   - gradient_text
-  - more_than_three_hues_per_scene
+  - colors_outside_palette_tokens
   - halftone_behind_body_text
   - full_screen_flash_strobe
   - arbitrary_new_brand_colors

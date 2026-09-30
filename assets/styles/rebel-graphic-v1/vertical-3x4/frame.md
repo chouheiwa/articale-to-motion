@@ -162,7 +162,7 @@ forbidden:
   - elastic_or_rubber_band_motion
   - rounded_web_cards
   - gradient_text
-  - more_than_three_hues_per_scene
+  - colors_outside_palette_tokens
   - halftone_behind_body_text
   - full_screen_flash_strobe
   - arbitrary_new_brand_colors
@@ -190,7 +190,7 @@ forbidden:
 ## 色彩与对比
 
 - 三色主轴：墨黑 `ink`/`canvas`、纸白 `paper`、打击黄 `strike_yellow`；斩击红 `slash_red` 只做大面积斜切色块和 46px 以上的白字标题底。
-- 同一镜头最多三种色相（黑白不计），不临时引入新色。
+- 颜色只取自 token，不临时引入新色。
 - **不在 `slash_red` 上放小号黑字。** 正文与标签一律放在纸白板（配墨黑字）、墨黑板（配纸白字）或 `deep_red` 板（配纸白字）上。
 - `strike_yellow` 上只放墨黑字；`halftone_gray` 只做墨黑底上的次级文字或网点。
 

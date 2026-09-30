@@ -284,7 +284,7 @@
 
 ### 画面
 
-- [ ] 色值全部来自 token，单镜不超过三种色相。
+- [ ] 色值全部来自 token。
 - [ ] 小号文字只落在纸白、墨黑、打击黄或 deep_red 底板上。
 - [ ] 正文只用 Noto Sans SC，且不小于 24px。
 - [ ] `typography.font_files` 用到的每个字重都有 `@font-face`，`src` 指向镜头目录内真实存在的文件，且都是 `font-display: block`。渲染机不装系统字体，漏一条会静默回退成通用字体，本地看不出来。

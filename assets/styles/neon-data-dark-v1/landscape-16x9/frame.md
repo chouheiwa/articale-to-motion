@@ -159,7 +159,7 @@ forbidden:
   - cover_fade_in_intermediate_state
   - count_up_unfinished_on_frame_zero
   - pure_black_canvas
-  - more_than_two_accent_hues
+  - colors_outside_palette_tokens
   - gradient_text
   - rainbow_multi_series_palette
   - glow_on_body_text
@@ -197,7 +197,7 @@ forbidden:
 
 - 底色 `canvas` 是带蓝调的近黑，不用纯黑。面板用 `surface` / `surface_raised` 分层，不用阴影堆高。
 - 全片只有两种强调色：`signal_lime` 表示主数据、当前、增长；`pulse_violet` 表示对照组、基线、第二序列。`alert_coral` 只表示下降、损耗、风险。
-- 一个镜头内同时发光的元素不超过两处；辉光只给数据标记（主数字、曲线端点、当前柱），不给正文。
+- 辉光只给数据标记（主数字、曲线端点、当前柱），不给正文。
 
 ## 字体
 

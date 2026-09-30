@@ -148,7 +148,7 @@ forbidden:
   - cover_fade_in_intermediate_state
   - count_up_unfinished_on_frame_zero
   - pure_black_canvas
-  - more_than_two_accent_hues
+  - colors_outside_palette_tokens
   - gradient_text
   - rainbow_multi_series_palette
   - glow_on_body_text

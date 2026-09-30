@@ -157,7 +157,7 @@ forbidden:
   - cover_fade_in_intermediate_state
   - real_magazine_masthead_or_logo
   - imitated_publication_trade_dress
-  - more_than_one_accent_color
+  - colors_outside_palette_tokens
   - pure_black_or_pure_white_page
   - gradient_text
   - glow_or_neon_effects
@@ -191,7 +191,7 @@ forbidden:
 ## 色彩
 
 - 纸面 `canvas` 与墨色 `ink` 构成全片基调；禁止纯黑与纯白页面。
-- 朱红 `vermilion` 是唯一强调色，只用于章节编号、首字下沉、引文符号、关键词下划线和一处结论标记。每镜头朱红面积不超过画面的 5%。
+- 朱红 `vermilion` 是唯一强调色，只用于章节编号、首字下沉、引文符号、关键词下划线和结论标记。
 - `vermilion_tint` 只作荧光笔式的关键词底衬；`vermilion_on_ink` 只在墨色底板上替代朱红。
 - 不得引入第二个强调色。否定、风险等语义用删除线、灰度或朱红细线表达，而不是新颜色。
 

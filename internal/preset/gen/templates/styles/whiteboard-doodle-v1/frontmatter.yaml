@@ -148,7 +148,7 @@ forbidden:
   - clip_art_or_stock_icons
   - copied_branded_whiteboard_templates
   - stick_figure_characters
-  - more_than_three_marker_colors_per_scene
+  - colors_outside_palette_tokens
   - colored_text_on_highlighter
   - gradient_or_glossy_fill
   - drop_shadow_on_strokes

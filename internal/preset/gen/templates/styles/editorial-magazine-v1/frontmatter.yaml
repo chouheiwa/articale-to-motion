@@ -146,7 +146,7 @@ forbidden:
   - cover_fade_in_intermediate_state
   - real_magazine_masthead_or_logo
   - imitated_publication_trade_dress
-  - more_than_one_accent_color
+  - colors_outside_palette_tokens
   - pure_black_or_pure_white_page
   - gradient_text
   - glow_or_neon_effects

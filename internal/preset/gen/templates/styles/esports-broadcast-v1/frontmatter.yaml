@@ -151,7 +151,7 @@ forbidden:
   - copied_broadcast_package_layouts
   - fake_betting_odds_or_gambling_ui
   - arbitrary_new_team_colors
-  - more_than_two_team_colors_per_scene
+  - colors_outside_palette_tokens
   - gradient_text
   - neon_purple_blue_gradient
   - motion_blur_or_smear_frames

@@ -16,8 +16,8 @@
 ## 颜色与字体角色
 
 - 画布 `canvas` 为深藏青黑，面板 `panel` 承载所有信息条；不做纯黑，不做大面积渐变。
-- `team_blue` / `team_red` 是两方阵营色，只标识归属，不作装饰轮换。一镜最多出现两种阵营色。填色块上放白字时改用 `team_blue_fill` / `team_red_fill`，保证对比度。
-- `highlight_gold` 只给胜者、MVP、第一名和最终结论，每镜至多一处。`live_green` 只表示「进行中 / 通过」。
+- `team_blue` / `team_red` 是两方阵营色，只标识归属，不作装饰轮换。填色块上放白字时改用 `team_blue_fill` / `team_red_fill`，保证对比度。
+- `highlight_gold` 只给胜者、MVP、第一名和最终结论。`live_green` 只表示「进行中 / 通过」。
 - 中文标题与正文用 `Noto Sans SC`（封面与大标题 900）。拉丁大数字、比分、队名缩写用 `display_stack`（`Bebas Neue`）；计时器、局数、元数据用 `mono_stack`（`Oxanium`）。`Bebas Neue` 与 `Oxanium` 没有中文字形，不得用来排中文。
 
 ## 构图
@@ -51,7 +51,7 @@
 
 ## 验收
 
-1. 核心颜色、字体、圆角和间距是否来自 frontmatter；阵营色是否只标识归属、每镜不超过两种。
+1. 核心颜色、字体、圆角和间距是否来自 frontmatter；阵营色是否只标识归属。
 2. `typography.font_files` 里用到的每个字重（含 `Bebas Neue` 400、`Oxanium` 600）是否都有对应的 `@font-face`，`src` 是否指向镜头目录内真实存在的文件，是否都是 `font-display: block`。渲染机不装系统字体，漏一条就会静默回退成通用字体，本地却看不出来。
 3. 中文是否全部落在 `Noto Sans SC`，正文不小于 24px。
 4. 关键文字是否避让平台 UI；标签、状态和图标距边缘是否至少 22px；列表与积分榜底部是否至少留 22px。
