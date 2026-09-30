@@ -1,6 +1,6 @@
 # 视觉小说对话
 
-这是故事化、对话体竖屏 MG 视频的品牌层规范。YAML frontmatter 是唯一规范性 token；正文解释如何使用。
+这是故事化、对话体{{ORIENTATION}} MG 视频的品牌层规范。YAML frontmatter 是唯一规范性 token；正文解释如何使用。
 
 ## 使用原则
 

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(-15)">
+      <circle cx="9" cy="9" r="3.6" fill="#2A2A2A"/>
+    </pattern>
+    <linearGradient id="fadeUp" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="fadeRad" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fadeMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="0.65" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="#111111"/>
+  <mask id="m1"><rect x="1000" y="120" width="920" height="520" fill="url(#fadeRad)"/></mask>
+  <rect x="1000" y="120" width="920" height="520" fill="url(#dots)" mask="url(#m1)"/>
+  <mask id="m2"><rect x="0" y="800" width="1920" height="280" fill="url(#fadeUp)"/></mask>
+  <rect x="0" y="800" width="1920" height="280" fill="url(#dots)" mask="url(#m2)"/>
+  <polygon points="0,1030 1920,621.9 1920,647.9 0,1056" fill="#D8152F"/>
+  <g>
+    <polygon points="176,118 300,118 284,172 160,172" fill="#FFE14A"/>
+    <text x="230" y="158" text-anchor="middle" fill="#111111" font-size="30" font-family="'Bungee', 'Noto Sans SC', sans-serif">03</text>
+    <text x="320" y="162" fill="#F4F1EA" font-size="44" font-family="'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif">菜单选项</text>
+    <text x="1760" y="158" text-anchor="end" fill="#B9B4AA" font-size="24" letter-spacing="2" font-family="'Bungee', 'Noto Sans SC', sans-serif">PROCESS</text>
+    <polygon points="160,196 1760,188 1760,192 160,200" fill="#B9B4AA" opacity="0.5"/>
+    <polygon points="160,196 560,194 560,198 160,200" fill="#FFE14A"/>
+  </g>
+  <text x="160" y="276" fill="#F4F1EA" font-size="64" font-family="'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif">费曼笔记 · 四步走</text>
+  <polygon points="186,344 536,344 510,456 160,456" fill="#2A2A2A"/>
+  <text x="204" y="415" fill="#B9B4AA" font-size="44" font-family="'Bungee', 'Noto Sans SC', sans-serif">01</text>
+  <text x="304" y="415" fill="#F4F1EA" font-size="36" font-weight="700" font-family="'Noto Sans SC', sans-serif">选一个概念</text>
+  <polygon points="594,320 944,320 918,468 568,468" fill="#FFE14A"/>
+  <text x="612" y="409" fill="#111111" font-size="44" font-family="'Bungee', 'Noto Sans SC', sans-serif">02</text>
+  <text x="712" y="409" fill="#111111" font-size="40" font-weight="700" font-family="'Noto Sans SC', sans-serif">讲给外行听</text>
+  <rect x="568" y="476" width="350" height="8" fill="#D8152F"/>
+  <polygon points="719,496 767,496 743,524" fill="#FFE14A"/>
+  <polygon points="1002,344 1352,344 1326,456 976,456" fill="#2A2A2A"/>
+  <text x="1020" y="415" fill="#B9B4AA" font-size="44" font-family="'Bungee', 'Noto Sans SC', sans-serif">03</text>
+  <text x="1120" y="415" fill="#F4F1EA" font-size="36" font-weight="700" font-family="'Noto Sans SC', sans-serif">标出卡壳处</text>
+  <polygon points="1410,344 1760,344 1734,456 1384,456" fill="#2A2A2A"/>
+  <text x="1428" y="415" fill="#B9B4AA" font-size="44" font-family="'Bungee', 'Noto Sans SC', sans-serif">04</text>
+  <text x="1528" y="415" fill="#F4F1EA" font-size="36" font-weight="700" font-family="'Noto Sans SC', sans-serif">简化后重讲</text>
+  <polygon points="160,552 1136,552 1168,584 1168,824 160,824" fill="#F4F1EA"/>
+  <rect x="160" y="552" width="190" height="48" fill="#111111"/>
+  <text x="180" y="588" fill="#FFE14A" font-size="26" font-family="'Bungee', 'Noto Sans SC', sans-serif">STEP 02</text>
+  <text x="200" y="662" fill="#111111" font-size="36" font-weight="700" font-family="'Noto Sans SC', sans-serif">假装对面坐着一个外行，</text>
+  <text x="200" y="720" fill="#6E6A63" font-size="30" font-family="'Noto Sans SC', sans-serif">不用术语，把它从头讲一遍。</text>
+  <text x="200" y="772" fill="#6E6A63" font-size="30" font-family="'Noto Sans SC', sans-serif">讲不下去的地方，就是下一步要标的卡壳处。</text>
+  <polygon points="1208,552 1760,552 1760,792 1728,824 1208,824" fill="#2A2A2A"/>
+  <text x="1244" y="608" fill="#B9B4AA" font-size="24" letter-spacing="2" font-family="'Bungee', 'Noto Sans SC', sans-serif">PROGRESS</text>
+  <text x="1244" y="716" fill="#FFE14A" font-size="96" font-family="'Bungee', 'Noto Sans SC', sans-serif">2/4</text>
+  <text x="1724" y="710" text-anchor="end" fill="#F4F1EA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif">已解锁两步</text>
+  <polygon points="1254,752 1360,752 1350,776 1244,776" fill="#FFE14A"/>
+  <polygon points="1378,752 1484,752 1474,776 1368,776" fill="#FFE14A"/>
+  <polygon points="1502,752 1608,752 1598,776 1492,776" fill="#111111"/>
+  <polygon points="1626,752 1732,752 1722,776 1616,776" fill="#111111"/>
+  <g fill="#B9B4AA" opacity="0.55">
+    <polygon points="48,1032 48,984 56,984 56,1024 104,1024 104,1032"/>
+    <polygon points="1872,1032 1872,984 1864,984 1864,1024 1816,1024 1816,1032"/>
+  </g>
+</svg>

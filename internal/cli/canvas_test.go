@@ -21,7 +21,7 @@ func TestResolveCanvasAcceptsKnownID(t *testing.T) {
 }
 
 func TestResolveCanvasRejectsUnknownID(t *testing.T) {
-	_, err := resolveCanvas("landscape-16x9", nil, &bytes.Buffer{})
+	_, err := resolveCanvas("square-1x1", nil, &bytes.Buffer{})
 	if err == nil {
 		t.Fatal("未内置的画幅应报错")
 	}

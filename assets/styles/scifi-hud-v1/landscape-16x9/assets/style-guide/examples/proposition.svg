@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#16304A" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="vignette" cx="0.62" cy="0.5" r="0.8">
+      <stop offset="0" stop-color="#0F2233" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#0A1622" stop-opacity="1"/>
+    </radialGradient>
+    <radialGradient id="earth" cx="0.3" cy="0.1" r="0.8">
+      <stop offset="0" stop-color="#132C40"/>
+      <stop offset="1" stop-color="#0A1622"/>
+    </radialGradient>
+    <clipPath id="earthClip"><circle cx="1520" cy="1520" r="820"/></clipPath>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect width="1920" height="1080" fill="#0A1622"/>
+  <rect width="1920" height="1080" fill="url(#vignette)"/>
+  <rect width="1920" height="1080" fill="url(#grid)" opacity="0.8"/>
+
+  <!-- structural: corner brackets + edge ruler -->
+  <g fill="none" stroke="#3FE0F0" stroke-opacity="0.6" stroke-width="2">
+    <path d="M40 110V56h54 M1880 110V56h-54 M40 970v54h54 M1880 970v54h-54"/>
+  </g>
+  <g stroke="#2E5A73" stroke-width="1">
+    <path d="M56 200h10M56 240h10M56 280h18M56 320h10M56 360h10M56 400h10M56 440h18M56 480h10M56 520h10M56 560h10M56 600h18M56 640h10M56 680h10M56 720h10M56 760h18M56 800h10M56 840h10"/>
+  </g>
+
+  <!-- earth & orbit (background / midground, right side) -->
+  <circle cx="1520" cy="1520" r="820" fill="url(#earth)" stroke="#3FE0F0" stroke-opacity="0.55" stroke-width="2"/>
+  <g clip-path="url(#earthClip)" fill="none" stroke="#2E5A73" stroke-width="1.5">
+    <ellipse cx="1520" cy="1520" rx="240" ry="820"/>
+    <ellipse cx="1520" cy="1520" rx="520" ry="820"/>
+    <path d="M700 860H2000M700 960H2000"/>
+  </g>
+  <circle cx="1520" cy="1520" r="960" fill="none" stroke="#3FE0F0" stroke-width="2" stroke-dasharray="14 10" opacity="0.8"/>
+  <text x="1600" y="546" fill="#8FB3C4" font-size="20" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">LEO 550 KM</text>
+
+  <!-- header -->
+  <g>
+    <rect x="160" y="110" width="14" height="14" fill="#37D6B5"/>
+    <text x="188" y="126" fill="#3FE0F0" font-size="28" font-weight="700" letter-spacing="4" font-family="'Noto Sans SC', sans-serif">目标锁定</text>
+    <text x="1760" y="125" text-anchor="end" fill="#8FB3C4" font-size="20" font-weight="700" letter-spacing="4" font-family="'Orbitron', 'Noto Sans SC', sans-serif">TGT-01 · LOCK</text>
+    <rect x="160" y="156" width="1600" height="2" fill="#2E5A73"/>
+    <rect x="160" y="156" width="300" height="2" fill="#3FE0F0"/>
+    <path d="M1760 150v14" stroke="#3FE0F0" stroke-width="2"/>
+  </g>
+
+  <!-- title (focus 1, left) -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <path d="M160 236h128l14 14v34H160z" fill="#0F3A48" stroke="#3FE0F0" stroke-width="2"/>
+    <text x="176" y="273" fill="#3FE0F0" font-size="22" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">Q-001</text>
+    <text x="160" y="410" fill="#E6F6FA" font-size="100" font-weight="900">卫星为什么</text>
+    <text x="160" y="522" fill="#3FE0F0" font-size="100" font-weight="900">不会掉下来？</text>
+    <rect x="160" y="558" width="80" height="4" fill="#3FE0F0"/>
+    <text x="160" y="618" fill="#8FB3C4" font-size="30" font-weight="400">它一直在下落，只是永远落不到地面。</text>
+  </g>
+
+  <!-- explanation strip: per-second readouts -->
+  <g>
+    <path d="M160 670h700v124H180l-20-20z" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+    <path d="M393 690v84M626 690v84" stroke="#2E5A73" stroke-width="1"/>
+    <g font-family="'Noto Sans SC', sans-serif" font-size="24" fill="#8FB3C4">
+      <text x="188" y="714">每秒向前</text>
+      <text x="421" y="714">同时下落</text>
+      <text x="654" y="714">地面弯下</text>
+    </g>
+    <g font-family="'Orbitron', 'Noto Sans SC', sans-serif" font-weight="700" font-size="34" letter-spacing="1">
+      <text x="188" y="768" fill="#E6F6FA">7.6<tspan fill="#3FE0F0" font-size="20" dx="8">KM</tspan></text>
+      <text x="421" y="768" fill="#E6F6FA">≈ 5<tspan fill="#3FE0F0" font-size="20" dx="8">M</tspan></text>
+      <text x="654" y="768" fill="#37D6B5">≈ 5<tspan font-size="20" dx="8">M</tspan></text>
+    </g>
+  </g>
+
+  <!-- telemetry panel (right top) -->
+  <g font-family="'Orbitron', 'Noto Sans SC', sans-serif" font-weight="700">
+    <path d="M1460 236h300v196H1480l-20-20z" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+    <path d="M1760 268v-32h-32" fill="none" stroke="#3FE0F0" stroke-width="3"/>
+    <text x="1488" y="276" fill="#8FB3C4" font-size="18" letter-spacing="3">VELOCITY</text>
+    <text x="1488" y="322" fill="#E6F6FA" font-size="34" letter-spacing="1">7.6<tspan fill="#3FE0F0" font-size="20" dx="8">KM/S</tspan></text>
+    <path d="M1488 344H1732" stroke="#2E5A73" stroke-width="1"/>
+    <text x="1488" y="376" fill="#8FB3C4" font-size="18" letter-spacing="3">PERIOD</text>
+    <text x="1488" y="416" fill="#E6F6FA" font-size="30" letter-spacing="1">95<tspan fill="#3FE0F0" font-size="20" dx="8">MIN</tspan></text>
+  </g>
+
+  <!-- target reticle on satellite (focus 2) -->
+  <g transform="translate(1160 630) scale(1.2)">
+    <g filter="url(#glow)" fill="none" stroke="#3FE0F0" stroke-width="3">
+      <path d="M-78 -46v-32h32 M78 -46v-32h-32 M-78 46v32h32 M78 46v32h-32"/>
+      <circle r="44" stroke-width="2"/>
+      <path d="M0 -66v-18 M0 66v18 M-66 0h-18 M66 0h18" stroke-width="2"/>
+    </g>
+    <rect x="-12" y="-9" width="24" height="18" fill="#E6F6FA"/>
+    <rect x="-40" y="-5" width="24" height="10" fill="#3FE0F0"/>
+    <rect x="16" y="-5" width="24" height="10" fill="#3FE0F0"/>
+    <path d="M-78 -92h92v-28h-92z" fill="#37D6B5"/>
+    <text x="-68" y="-99" fill="#0A1622" font-size="18" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">LOCK</text>
+  </g>
+  <!-- velocity vector (tangent to orbit) -->
+  <path d="M1262 589L1400 533" stroke="#3FE0F0" stroke-width="3"/>
+  <path d="M1414 527L1392 527L1399 543z" fill="#3FE0F0"/>
+  <text x="1330" y="516" fill="#3FE0F0" font-size="26" font-weight="600" font-family="'Noto Sans SC', sans-serif">速度</text>
+  <!-- gravity vector (toward earth center) -->
+  <path d="M1199 730L1210 756" stroke="#8FB3C4" stroke-width="3"/>
+  <path d="M1215 768L1203 755L1217 750z" fill="#8FB3C4"/>
+  <text x="1178" y="772" text-anchor="end" fill="#8FB3C4" font-size="26" font-weight="600" font-family="'Noto Sans SC', sans-serif">引力</text>
+
+  <!-- footer status (decorative, bottom band) -->
+  <rect x="100" y="986" width="250" height="30" fill="#0A1622" opacity="0.85"/>
+  <rect x="1680" y="986" width="150" height="30" fill="#0A1622" opacity="0.85"/>
+  <g font-family="'Orbitron', 'Noto Sans SC', sans-serif" font-weight="700" font-size="18" letter-spacing="3">
+    <rect x="110" y="996" width="10" height="10" fill="#37D6B5"/>
+    <text x="132" y="1006" fill="#8FB3C4">ORBIT NOMINAL</text>
+    <text x="1820" y="1006" text-anchor="end" fill="#8FB3C4">T+00:42:17</text>
+  </g>
+</svg>

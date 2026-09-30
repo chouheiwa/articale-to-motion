@@ -207,7 +207,8 @@ func newRoot(stdout, stderr io.Writer) *cobra.Command {
 		Long: `在 DIR（省略则为当前目录）写入视频项目骨架。
 
 画幅在初始化时一次性选定并写入 frame.md，之后不再更改；改画幅意味着重建项目。
-可选值 vertical-3x4（1080x1440）与 vertical-9x16（1080x1920），均 30fps。
+可选画幅（均 30fps）：
+` + canvasOptions() + `
 非交互环境（CI、管道）必须显式传 --canvas，不会静默取默认值；不传且无法交互时报错退出。
 
 风格同样在初始化时一次性选定，与画幅正交：画幅决定画布与安全区，风格决定

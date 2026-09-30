@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="#F4EEFF" opacity="0.035"/></pattern>
+    <pattern id="grid" width="54" height="54" patternUnits="userSpaceOnUse"><path d="M54 0H0V54" fill="none" stroke="#4A3772" stroke-width="1"/></pattern>
+    <pattern id="hatchY" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="24" fill="#120B1E"/></pattern>
+  </defs>
+
+  <!-- 背景层 -->
+  <rect width="1920" height="1080" fill="#120B1E"/>
+  <rect width="1920" height="1080" fill="url(#grid)" opacity="0.22"/>
+  <text x="1760" y="300" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="150" fill="#1E1433">4/4</text>
+  <rect width="1920" height="1080" fill="url(#scan)"/>
+  <g stroke="#4A3772" stroke-width="3" fill="none">
+    <path d="M48 88 V44 H92"/><path d="M1872 88 V44 H1828"/>
+    <path d="M48 992 V1036 H92"/><path d="M1872 992 V1036 H1828"/>
+  </g>
+
+  <!-- kicker + 标题 -->
+  <rect x="160" y="112" width="18" height="18" fill="#29E6F0"/>
+  <text x="192" y="130" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="26" fill="#29E6F0">破解链路</text>
+  <text x="1760" y="130" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#B9ABDB" letter-spacing="2">KILL CHAIN // 03</text>
+  <path d="M160 162 H1760" stroke="#4A3772" stroke-width="2"/>
+  <path d="M160 162 H460" stroke="#29E6F0" stroke-width="4"/>
+  <text x="160" y="262" font-family="'Smiley Sans', 'Noto Sans SC', sans-serif" font-size="68" fill="#F4EEFF">一次撞库，要走四步</text>
+
+  <!-- 链路轨道（中景，水平） -->
+  <path d="M200 350 H1418" stroke="#29E6F0" stroke-width="4"/>
+  <path d="M1418 350 H1720" stroke="#FF2E88" stroke-width="4" stroke-dasharray="10 8"/>
+  <g font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="18" fill="#4A3772" letter-spacing="2">
+    <text x="236" y="332">T+0</text><text x="642" y="332">T+3D</text><text x="1048" y="332">T+7D</text><text x="1454" y="332">T+7D 02:14</text>
+  </g>
+
+  <!-- 节点 01–03：已突破（青） -->
+  <g fill="#29E6F0">
+    <path d="M200 328 L222 350 L200 372 L178 350 Z"/>
+    <path d="M606 328 L628 350 L606 372 L584 350 Z"/>
+    <path d="M1012 328 L1034 350 L1012 372 L990 350 Z"/>
+  </g>
+  <!-- 节点 04：正在突破（品红） -->
+  <path d="M1418 324 L1444 350 L1418 376 L1392 350 Z" fill="#120B1E" stroke="#FF2E88" stroke-width="4"/>
+  <path d="M1418 338 L1430 350 L1418 362 L1406 350 Z" fill="#FF2E88"/>
+  <path d="M200 372 V400 M606 372 V400 M1012 372 V400 M1418 376 V400" stroke="#4A3772" stroke-width="2"/>
+
+  <!-- 步骤卡 -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <path d="M160 400 H518 L542 424 V660 H160 Z" fill="#1E1433" stroke="#4A3772" stroke-width="2"/>
+    <text x="188" y="452" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="24" fill="#29E6F0">01</text>
+    <text x="188" y="504" font-weight="700" font-size="32" fill="#F4EEFF">旧网站数据库泄露</text>
+    <text x="188" y="552" font-size="24" fill="#B9ABDB">弱加密的账号和密码</text>
+    <text x="188" y="588" font-size="24" fill="#B9ABDB">整批流出</text>
+    <text x="514" y="636" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="20" fill="#29E6F0" letter-spacing="2">[ LEAKED ]</text>
+
+    <path d="M566 400 H924 L948 424 V660 H566 Z" fill="#1E1433" stroke="#4A3772" stroke-width="2"/>
+    <text x="594" y="452" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="24" fill="#29E6F0">02</text>
+    <text x="594" y="504" font-weight="700" font-size="32" fill="#F4EEFF">组合被整理成字典</text>
+    <text x="594" y="552" font-size="24" fill="#B9ABDB">上亿条「邮箱 + 密码」</text>
+    <text x="594" y="588" font-size="24" fill="#B9ABDB">在地下流通</text>
+    <text x="920" y="636" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="20" fill="#29E6F0" letter-spacing="2">[ DUMPED ]</text>
+
+    <path d="M972 400 H1330 L1354 424 V660 H972 Z" fill="#1E1433" stroke="#4A3772" stroke-width="2"/>
+    <text x="1000" y="452" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="24" fill="#29E6F0">03</text>
+    <text x="1000" y="504" font-weight="700" font-size="32" fill="#F4EEFF">脚本批量尝试登录</text>
+    <text x="1000" y="552" font-size="24" fill="#B9ABDB">每秒上千次，</text>
+    <text x="1000" y="588" font-size="24" fill="#B9ABDB">不停换地址躲限流</text>
+    <text x="1326" y="636" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="20" fill="#29E6F0" letter-spacing="2">[ REPLAYED ]</text>
+
+    <!-- 04：当前焦点，切片错位残影 -->
+    <rect x="1394" y="416" width="366" height="8" fill="#29E6F0" opacity="0.7"/>
+    <path d="M1378 400 H1736 L1760 424 V660 H1378 Z" fill="#2A1C47" stroke="#FF2E88" stroke-width="3"/>
+    <rect x="1378" y="400" width="8" height="260" fill="#FF2E88"/>
+    <text x="1406" y="452" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="24" fill="#FF5A4E">04</text>
+    <text x="1406" y="504" font-weight="700" font-size="32" fill="#F4EEFF">命中你的主账号</text>
+    <text x="1406" y="552" font-size="24" fill="#B9ABDB">邮箱、支付、社交账号</text>
+    <text x="1406" y="588" font-size="24" fill="#B9ABDB">接连失守</text>
+    <path d="M1614 610 H1732 V648 H1624 L1614 638 Z" fill="#FF5A4E"/>
+    <text x="1673" y="637" text-anchor="middle" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="20" fill="#120B1E" letter-spacing="1">BREACH</text>
+  </g>
+  <rect x="1440" y="672" width="320" height="5" fill="#FF2E88" opacity="0.8"/>
+  <rect x="1390" y="684" width="90" height="5" fill="#29E6F0" opacity="0.8"/>
+
+  <!-- 结论（前景）：酸黄切角条，指向第 3 步 -->
+  <rect x="1196" y="336" width="40" height="28" fill="#120B1E"/>
+  <path d="M1200 334 L1232 366 M1232 334 L1200 366" stroke="#FF5A4E" stroke-width="5"/>
+  <path d="M920 786 H1163 V668" fill="none" stroke="#4A3772" stroke-width="2" stroke-dasharray="6 5"/>
+  <path d="M1153 680 L1163 666 L1173 680" fill="none" stroke="#4A3772" stroke-width="2"/>
+  <path d="M160 736 H900 L920 756 V836 H180 L160 816 Z" fill="#D4FF3A"/>
+  <rect x="180" y="756" width="64" height="60" fill="url(#hatchY)"/>
+  <text x="272" y="798" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="32" fill="#120B1E">切断第 3 步：打开两步验证</text>
+  <text x="1760" y="760" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="20" fill="#4A3772" letter-spacing="3">PATCH · STEP 03 BLOCKED</text>
+</svg>

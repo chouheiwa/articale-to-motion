@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#F4EFE6"/>
+
+  <!-- 版头 -->
+  <g font-family="'Noto Sans SC', sans-serif">
+    <text x="160" y="132" fill="#1A1714" font-size="24" font-weight="700" letter-spacing="4">长文 · 阅读与注意力</text>
+    <text x="1760" y="132" text-anchor="end" fill="#6B6155" font-size="24" font-weight="600" letter-spacing="3">第 07 期</text>
+  </g>
+  <rect x="160" y="152" width="1600" height="4" fill="#1A1714"/>
+
+  <!-- 左三栏：刊名页 -->
+  <text x="154" y="312" fill="#1A1714" font-family="'Noto Serif SC', serif" font-size="100" font-weight="700" letter-spacing="12">目录</text>
+  <text x="160" y="370" fill="#6B6155" font-family="'Noto Serif SC', serif" font-size="30" letter-spacing="8">CONTENTS</text>
+  <text x="160" y="436" fill="#4A433B" font-family="'Noto Serif SC', serif" font-size="28">一期关于注意力的长文，共五个章节。</text>
+  <rect x="160" y="472" width="545" height="4" fill="#1A1714"/>
+  <text x="160" y="520" fill="#6B6155" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" letter-spacing="2">本期共五章 · 全文约 1.8 万字</text>
+
+  <g font-family="'Noto Serif SC', serif">
+    <text x="160" y="598" fill="#6B6155" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" letter-spacing="3">编者按</text>
+    <text x="160" y="642" fill="#1A1714" font-size="28">这一期不谈效率，</text>
+    <text x="160" y="686" fill="#1A1714" font-size="28">只谈如何重新读完一本书。</text>
+  </g>
+
+  <!-- 下期预告（非关键） -->
+  <rect x="160" y="722" width="545" height="118" fill="#EAE3D5"/>
+  <text x="188" y="770" fill="#A82E1C" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="700" letter-spacing="4">下期预告</text>
+  <text x="188" y="812" fill="#1A1714" font-family="'Noto Serif SC', serif" font-size="26" font-weight="700">城市里，如何留出一段安静的时间</text>
+
+  <!-- 栏间细线 -->
+  <rect x="737" y="200" width="1.5" height="640" fill="#CBC1AF"/>
+
+  <!-- 右五栏：章节条目 -->
+  <g font-family="'Noto Serif SC', serif">
+    <text x="769" y="262" fill="#1A1714" font-size="44" font-weight="700">07</text>
+    <text x="920" y="254" fill="#1A1714" font-size="34" font-weight="700">我们为何读不完一本书</text>
+    <text x="920" y="296" fill="#4A433B" font-size="26">封面故事：注意力去了哪里</text>
+  </g>
+  <rect x="769" y="328" width="991" height="1.5" fill="#CBC1AF"/>
+  <g font-family="'Noto Serif SC', serif">
+    <text x="769" y="390" fill="#1A1714" font-size="44" font-weight="700">24</text>
+    <text x="920" y="382" fill="#1A1714" font-size="34" font-weight="700">碎片时间是怎样被切出来的</text>
+    <text x="920" y="424" fill="#4A433B" font-size="26">从通知到推送，一天被切成几百段</text>
+  </g>
+
+  <!-- 当前章节：墨色底板 -->
+  <rect x="745" y="456" width="1039" height="128" fill="#1A1714"/>
+  <g font-family="'Noto Serif SC', serif">
+    <text x="769" y="534" fill="#E0664F" font-size="44" font-weight="700">38</text>
+    <text x="920" y="512" fill="#F4EFE6" font-size="34" font-weight="700">纸与屏幕，读法不同</text>
+    <text x="920" y="554" fill="#EAE3D5" font-size="26">同一篇文章，两种阅读路径</text>
+  </g>
+  <text x="1736" y="512" text-anchor="end" fill="#E0664F" font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="700" letter-spacing="3">本节</text>
+
+  <g font-family="'Noto Serif SC', serif">
+    <text x="769" y="646" fill="#1A1714" font-size="44" font-weight="700">52</text>
+    <text x="920" y="638" fill="#1A1714" font-size="34" font-weight="700">找回专注的三个练习</text>
+    <text x="920" y="680" fill="#4A433B" font-size="26">每一步只需要十分钟</text>
+  </g>
+  <rect x="769" y="712" width="991" height="1.5" fill="#CBC1AF"/>
+  <g font-family="'Noto Serif SC', serif">
+    <text x="769" y="774" fill="#1A1714" font-size="44" font-weight="700">66</text>
+    <text x="920" y="766" fill="#1A1714" font-size="34" font-weight="700">慢读，不是读得慢</text>
+    <text x="920" y="808" fill="#4A433B" font-size="26">编后记</text>
+  </g>
+  <rect x="769" y="838" width="991" height="1.5" fill="#1A1714"/>
+
+  <!-- 页码列（非关键） -->
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6B6155" text-anchor="end" letter-spacing="2">
+    <text x="1760" y="254">封面故事</text>
+    <text x="1760" y="382">专题</text>
+    <text x="1760" y="638">方法</text>
+    <text x="1760" y="766">编后记</text>
+  </g>
+
+  <!-- 页脚（非关键，位于播放器避让区） -->
+  <rect x="160" y="1000" width="1600" height="1.5" fill="#1A1714"/>
+  <g font-family="'Noto Sans SC', sans-serif" font-size="24" font-weight="600" fill="#6B6155">
+    <text x="160" y="1032" letter-spacing="2">目录</text>
+    <text x="1760" y="1032" text-anchor="end" font-family="'Noto Serif SC', serif" font-weight="700" fill="#1A1714">03</text>
+  </g>
+</svg>

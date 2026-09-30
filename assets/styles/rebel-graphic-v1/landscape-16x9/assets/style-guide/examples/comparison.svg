@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(-15)">
+      <circle cx="9" cy="9" r="3.6" fill="#2A2A2A"/>
+    </pattern>
+    <linearGradient id="fadeUp" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="fadeRad" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fadeMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="0.65" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="#111111"/>
+  <mask id="m1"><rect x="0" y="300" width="1920" height="600" fill="url(#fadeMid)"/></mask>
+  <rect x="0" y="300" width="1920" height="600" fill="url(#dots)" mask="url(#m1)"/>
+  <mask id="m2"><rect x="0" y="840" width="1920" height="240" fill="url(#fadeUp)"/></mask>
+  <rect x="0" y="840" width="1920" height="240" fill="url(#dots)" mask="url(#m2)"/>
+  <polygon points="0,660.1 1920,251.9 1920,379.9 0,788.1" fill="#D8152F"/>
+  <polygon points="0,804.1 1920,395.9 1920,407.9 0,816.1" fill="#FFE14A"/>
+  <g>
+    <polygon points="176,118 300,118 284,172 160,172" fill="#FFE14A"/>
+    <text x="230" y="158" text-anchor="middle" fill="#111111" font-size="30" font-family="'Bungee', 'Noto Sans SC', sans-serif">02</text>
+    <text x="320" y="162" fill="#F4F1EA" font-size="44" font-family="'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif">评级对决</text>
+    <text x="1760" y="158" text-anchor="end" fill="#B9B4AA" font-size="24" letter-spacing="2" font-family="'Bungee', 'Noto Sans SC', sans-serif">COMPARISON</text>
+    <polygon points="160,196 1760,188 1760,192 160,200" fill="#B9B4AA" opacity="0.5"/>
+    <polygon points="160,196 560,194 560,198 160,200" fill="#FFE14A"/>
+  </g>
+  <text x="160" y="276" fill="#F4F1EA" font-size="64" font-family="'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif">摘抄式 VS 费曼式</text>
+  <polygon points="160,364 860,364 860,632 828,664 160,664" fill="#2A2A2A"/>
+  <rect x="160" y="364" width="10" height="300" fill="#B9B4AA"/>
+  <text x="196" y="428" fill="#B9B4AA" font-size="24" font-family="'Bungee', 'Noto Sans SC', sans-serif">A · COPY</text>
+  <text x="196" y="492" fill="#F4F1EA" font-size="40" font-weight="700" font-family="'Noto Sans SC', sans-serif">摘抄式笔记</text>
+  <text x="196" y="554" fill="#B9B4AA" font-size="30" font-family="'Noto Sans SC', sans-serif">抄得很全，合上本子就忘。</text>
+  <text x="196" y="602" fill="#B9B4AA" font-size="30" font-family="'Noto Sans SC', sans-serif">输入很多，输出为零。</text>
+  <circle cx="740" cy="494" r="78" fill="#B9B4AA"/>
+  <circle cx="740" cy="494" r="66" fill="none" stroke="#111111" stroke-width="4"/>
+  <text x="740" y="534" text-anchor="middle" fill="#111111" font-size="112" font-family="'Bungee', 'Noto Sans SC', sans-serif">C</text>
+  <text x="960" y="554" text-anchor="middle" fill="#F4F1EA" font-size="92" transform="rotate(-12 960 520)" font-family="'Bungee', 'Noto Sans SC', sans-serif">VS</text>
+  <polygon points="1060,364 1760,364 1760,632 1728,664 1060,664" fill="#F4F1EA"/>
+  <rect x="1060" y="364" width="10" height="300" fill="#FFE14A"/>
+  <text x="1096" y="428" fill="#6E6A63" font-size="24" font-family="'Bungee', 'Noto Sans SC', sans-serif">B · FEYNMAN</text>
+  <text x="1096" y="492" fill="#111111" font-size="40" font-weight="700" font-family="'Noto Sans SC', sans-serif">费曼式笔记</text>
+  <text x="1096" y="554" fill="#6E6A63" font-size="30" font-family="'Noto Sans SC', sans-serif">用自己的话重讲，卡点即盲点。</text>
+  <text x="1096" y="602" fill="#6E6A63" font-size="30" font-family="'Noto Sans SC', sans-serif">每一次卡壳，都是一次补课。</text>
+  <polygon points="1652,372 1675.3,407.1 1713,388.3 1715.6,430.4 1757.7,433 1738.9,470.7 1774,494 1738.9,517.3 1757.7,555 1715.6,557.6 1713,599.7 1675.3,580.9 1652,616 1628.7,580.9 1591,599.7 1588.4,557.6 1546.3,555 1565.1,517.3 1530,494 1565.1,470.7 1546.3,433 1588.4,430.4 1591,388.3 1628.7,407.1" fill="#FFE14A"/>
+  <circle cx="1652" cy="494" r="84" fill="#111111"/>
+  <text x="1652" y="538" text-anchor="middle" fill="#FFE14A" font-size="120" font-family="'Bungee', 'Noto Sans SC', sans-serif">S</text>
+  <g transform="rotate(-3 960 770)">
+    <rect x="660" y="724" width="600" height="92" fill="#9E0F22"/>
+    <rect x="670" y="734" width="580" height="72" fill="none" stroke="#F4F1EA" stroke-width="3"/>
+    <text x="960" y="784" text-anchor="middle" fill="#F4F1EA" font-size="36" font-family="'Noto Sans SC', sans-serif" font-weight="900">判定：讲得出来，才算真懂</text>
+  </g>
+  <g fill="#B9B4AA" opacity="0.55">
+    <polygon points="48,1032 48,984 56,984 56,1024 104,1024 104,1032"/>
+    <polygon points="1872,1032 1872,984 1864,984 1864,1024 1816,1024 1816,1032"/>
+  </g>
+</svg>

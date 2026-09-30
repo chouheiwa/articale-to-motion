@@ -2,7 +2,7 @@
 
 # 清晰系统蓝图
 
-这是知识与科技类竖屏 MG 视频的品牌层规范。YAML frontmatter 是唯一规范性 token；正文解释如何使用。
+这是知识与科技类{{ORIENTATION}} MG 视频的品牌层规范。YAML frontmatter 是唯一规范性 token；正文解释如何使用。
 
 ## 使用原则
 
@@ -19,7 +19,7 @@
 
 - 外层结构角标可进入 `structural` 区；关键内容不得进入该区。
 - 普通画面使用 `main_content` 区。
-- 标题、数字、结论和核心术语使用 `critical_text` 区，主动避让抖音右侧互动栏和底部 UI。
+- 标题、数字、结论和核心术语使用 `critical_text` 区，主动避让{{PLATFORM_UI}}。
 - 深蓝能力板只用于系统、能力、工程资产和结果，不作为普通装饰色块。
 
 ## 动画

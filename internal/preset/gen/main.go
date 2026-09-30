@@ -17,7 +17,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/chouheiwa/articale-to-motion/internal/hyperframes"
@@ -108,9 +110,72 @@ func substitute(p preset.Preset, s string) string {
 	return strings.ReplaceAll(s, "{{HYPERFRAMES_VERSION}}", hyperframes.PinnedVersion)
 }
 
+// numericPlaceholder 匹配 {{NAME}} 或带整数偏移的 {{NAME+8}} / {{NAME-16}}。
+// 偏移留给个别风格在推导值上做微调（例如奇幻风的内容左边距比安全区多 8px）。
+var numericPlaceholder = regexp.MustCompile(`\{\{([A-Z_]+)([+-][0-9]+)?\}\}`)
+
+// substituteCanvas 替换风格模板里随画幅变化的占位符。
+//
+// 风格模板原先把 content_width_px: 904、max_width_px: 812 这类按 1080 宽
+// 竖屏算出的像素，和「竖屏」「抖音右侧互动栏」这类措辞直接写死，同一套风格
+// 因此没法下发横屏项目。现在像素一律从已推导的安全区算出，措辞取自画幅表。
+func substituteCanvas(p preset.Preset, s string) (string, error) {
+	boxes, err := p.ResolveSafeArea()
+	if err != nil {
+		return "", err
+	}
+	box := map[string]preset.ResolvedBox{}
+	for _, item := range boxes {
+		box[item.Name] = item.Box
+	}
+	width := p.Canvas.WidthPx
+	numbers := map[string]int{
+		"CONTENT_LEFT_PX":       box["main_content"].LeftPx,
+		"CONTENT_WIDTH_PX":      width - box["main_content"].LeftPx - box["main_content"].RightPx,
+		"SUBTITLE_MAX_WIDTH_PX": width - box["subtitles"].LeftPx - box["subtitles"].RightPx,
+		"COVER_MAX_WIDTH_PX":    width - box["cover_title"].LeftPx - box["cover_title"].RightPx,
+		"CRITICAL_LEFT_PX":      box["critical_text"].LeftPx,
+		"CRITICAL_WIDTH_PX":     width - box["critical_text"].LeftPx - box["critical_text"].RightPx,
+	}
+	words := map[string]string{
+		"ORIENTATION":     p.Platform.Orientation,
+		"PLATFORM_UI":     p.Platform.UI,
+		"UI_ZONE":         p.Platform.Zone,
+		"AVOIDANCE_ZONES": p.Platform.Avoidance(box["critical_text"]),
+	}
+	var unknown []string
+	out := numericPlaceholder.ReplaceAllStringFunc(s, func(match string) string {
+		parts := numericPlaceholder.FindStringSubmatch(match)
+		name, offset := parts[1], parts[2]
+		if value, ok := numbers[name]; ok {
+			if offset != "" {
+				delta, _ := strconv.Atoi(offset)
+				value += delta
+			}
+			return strconv.Itoa(value)
+		}
+		if value, ok := words[name]; ok && offset == "" {
+			return value
+		}
+		if name == "CANVAS" || name == "HYPERFRAMES_VERSION" || strings.HasPrefix(name, "SCENE_") {
+			return match
+		}
+		unknown = append(unknown, match)
+		return match
+	})
+	if len(unknown) > 0 {
+		return "", fmt.Errorf("预设 %s 遇到未知占位符：%s", p.ID, strings.Join(unknown, " "))
+	}
+	return substitute(p, out), nil
+}
+
 // RenderCanvas 返回画幅源树的文件：只有编排提示词随画幅变化而与风格无关。
-func RenderCanvas(p preset.Preset, production string) map[string][]byte {
-	return map[string][]byte{"PROMPT-PRODUCTION.md": []byte(substitute(p, production))}
+func RenderCanvas(p preset.Preset, production string) (map[string][]byte, error) {
+	text, err := substituteCanvas(p, production)
+	if err != nil {
+		return nil, err
+	}
+	return map[string][]byte{"PROMPT-PRODUCTION.md": []byte(text)}, nil
 }
 
 // RenderStyle 返回风格 × 画幅源树内相对路径到文件内容的映射。
@@ -125,16 +190,30 @@ func RenderStyle(p preset.Preset, style preset.Style, tpl Templates) (map[string
 	if err := checkIdentity(style, tpl.Frontmatter); err != nil {
 		return nil, err
 	}
-	frontmatter := strings.Replace(tpl.Frontmatter, canvasMarker, block, 1)
-
-	// 原文件结构是 ---\n<frontmatter>---<body>，body 自带前导换行。
-	compose := func(body string) []byte {
-		return []byte("---\n" + frontmatter + "---" + substitute(p, body))
+	frontmatter, err := substituteCanvas(p, strings.Replace(tpl.Frontmatter, canvasMarker, block, 1))
+	if err != nil {
+		return nil, err
 	}
-	return map[string][]byte{
-		"frame.md":       compose(tpl.FrameBody),
-		style.GuideDoc(): compose(tpl.GuideBody),
-	}, nil
+	// 原文件结构是 ---\n<frontmatter>---<body>，body 自带前导换行。
+	compose := func(body string) ([]byte, error) {
+		text, err := substituteCanvas(p, body)
+		if err != nil {
+			return nil, err
+		}
+		if p.LayoutNotes != "" {
+			text = strings.TrimRight(text, "\n") + "\n" + p.LayoutNotes
+		}
+		return []byte("---\n" + frontmatter + "---" + text), nil
+	}
+	frame, err := compose(tpl.FrameBody)
+	if err != nil {
+		return nil, err
+	}
+	guide, err := compose(tpl.GuideBody)
+	if err != nil {
+		return nil, err
+	}
+	return map[string][]byte{"frame.md": frame, style.GuideDoc(): guide}, nil
 }
 
 // checkIdentity 保证模板里的 style_id / style_name 与风格表一致。
@@ -213,7 +292,11 @@ func generate(root string, targets []preset.Preset, styles []preset.Style, examp
 	production := loadProduction()
 	for _, p := range targets {
 		dir := filepath.Join("assets", "presets", p.ID)
-		if err := writeFiles(root, dir, RenderCanvas(p, production), out); err != nil {
+		files, err := RenderCanvas(p, production)
+		if err != nil {
+			return fmt.Errorf("渲染画幅 %s: %w", p.ID, err)
+		}
+		if err := writeFiles(root, dir, files, out); err != nil {
 			return err
 		}
 	}

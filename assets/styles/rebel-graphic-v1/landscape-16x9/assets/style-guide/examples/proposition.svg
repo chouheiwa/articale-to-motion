@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(-15)">
+      <circle cx="9" cy="9" r="3.6" fill="#2A2A2A"/>
+    </pattern>
+    <linearGradient id="fadeUp" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="fadeRad" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fadeMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="0.65" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="#111111"/>
+  <mask id="m1"><rect x="940" y="90" width="900" height="760" fill="url(#fadeRad)"/></mask>
+  <rect x="940" y="90" width="900" height="760" fill="url(#dots)" mask="url(#m1)"/>
+  <mask id="m2"><rect x="0" y="760" width="1920" height="320" fill="url(#fadeUp)"/></mask>
+  <rect x="0" y="760" width="1920" height="320" fill="url(#dots)" mask="url(#m2)"/>
+  <polygon points="0,1010 1920,601.9 1920,751.9 0,1160" fill="#D8152F"/>
+  <polygon points="0,1172 1920,763.9 1920,779.9 0,1188" fill="#FFE14A"/>
+  <g>
+    <polygon points="176,118 300,118 284,172 160,172" fill="#FFE14A"/>
+    <text x="230" y="158" text-anchor="middle" fill="#111111" font-size="30" font-family="'Bungee', 'Noto Sans SC', sans-serif">01</text>
+    <text x="320" y="162" fill="#F4F1EA" font-size="44" font-family="'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif">冲击标题</text>
+    <text x="1760" y="158" text-anchor="end" fill="#B9B4AA" font-size="24" letter-spacing="2" font-family="'Bungee', 'Noto Sans SC', sans-serif">PROPOSITION</text>
+    <polygon points="160,196 1760,188 1760,192 160,200" fill="#B9B4AA" opacity="0.5"/>
+    <polygon points="160,196 560,194 560,198 160,200" fill="#FFE14A"/>
+  </g>
+  <polygon points="1340,208 1389.2,316.5 1486,247.1 1474.4,365.6 1592.9,354 1523.5,450.8 1632,500 1523.5,549.2 1592.9,646 1474.4,634.4 1486,752.9 1389.2,683.5 1340,792 1290.8,683.5 1194,752.9 1205.6,634.4 1087.1,646 1156.5,549.2 1048,500 1156.5,450.8 1087.1,354 1205.6,365.6 1194,247.1 1290.8,316.5" fill="#D8152F"/>
+  <polygon points="1392.8,303 1416,368.4 1484.2,355.8 1471.6,424 1537,447.2 1492,500 1537,552.8 1471.6,576 1484.2,644.2 1416,631.6 1392.8,697 1340,652 1287.2,697 1264,631.6 1195.8,644.2 1208.4,576 1143,552.8 1188,500 1143,447.2 1208.4,424 1195.8,355.8 1264,368.4 1287.2,303 1340,348" fill="#111111"/>
+  <g transform="rotate(-12 1340 500)">
+    <rect x="1178" y="448" width="324" height="104" fill="#F4F1EA"/>
+    <text x="1340" y="530" text-anchor="middle" fill="#111111" font-size="72" font-family="'Bungee', 'Noto Sans SC', sans-serif">COPY</text>
+    <rect x="1150" y="490" width="380" height="20" fill="#D8152F" transform="rotate(-16 1340 500)"/>
+  </g>
+  <g transform="rotate(-4 160 300)">
+    <rect x="160" y="276" width="300" height="158" fill="#F4F1EA"/>
+    <text x="182" y="402" fill="#111111" font-size="128" font-family="'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif">笔记</text>
+  </g>
+  <g transform="rotate(3 600 350)">
+    <rect x="484" y="290" width="244" height="128" fill="#FFE14A"/>
+    <text x="500" y="394" fill="#111111" font-size="104" font-family="'Noto Sans SC', sans-serif" font-weight="900">不是</text>
+  </g>
+  <g transform="rotate(-3 160 500)">
+    <polygon points="160,466 732,466 704,656 160,656" fill="#9E0F22"/>
+    <text x="190" y="610" fill="#F4F1EA" font-size="128" font-family="'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif">抄书！</text>
+  </g>
+  <rect x="160" y="704" width="640" height="148" fill="#2A2A2A"/>
+  <rect x="160" y="704" width="10" height="148" fill="#FFE14A"/>
+  <text x="196" y="766" fill="#F4F1EA" font-size="34" font-weight="700" font-family="'Noto Sans SC', sans-serif">用自己的话讲一遍，</text>
+  <text x="196" y="820" fill="#F4F1EA" font-size="34" font-weight="400" font-family="'Noto Sans SC', sans-serif">卡住的地方，才是你还没懂的。</text>
+  <g transform="rotate(-12 1356 800)">
+    <rect x="1356" y="768" width="400" height="64" fill="#111111"/>
+    <text x="1380" y="812" fill="#FFE14A" font-size="26" font-family="'Bungee', 'Noto Sans SC', sans-serif">FEYNMAN</text>
+    <text x="1576" y="812" fill="#F4F1EA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif">费曼式笔记</text>
+  </g>
+  <g fill="#B9B4AA" opacity="0.55">
+    <polygon points="48,1032 48,984 56,984 56,1024 104,1024 104,1032"/>
+    <polygon points="1872,1032 1872,984 1864,984 1864,1024 1816,1024 1816,1032"/>
+  </g>
+</svg>

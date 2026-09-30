@@ -101,7 +101,11 @@ func frontmatterOf(t *testing.T, body []byte) string {
 
 func TestRenderSubstitutesCanvasLabel(t *testing.T) {
 	p, _ := preset.ByID("vertical-9x16")
-	body := string(RenderCanvas(p, loadProduction())["PROMPT-PRODUCTION.md"])
+	files, err := RenderCanvas(p, loadProduction())
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(files["PROMPT-PRODUCTION.md"])
 	if strings.Contains(body, "1080×1440") {
 		t.Error("PROMPT-PRODUCTION.md 仍含 3:4 画幅")
 	}
@@ -273,7 +277,7 @@ func TestSelectTargets(t *testing.T) {
 	if err != nil || len(one) != 1 || one[0].ID != "vertical-9x16" {
 		t.Fatalf("单选失败：%v %v", one, err)
 	}
-	if _, err := selectTargets("landscape-16x9"); err == nil {
+	if _, err := selectTargets("square-1x1"); err == nil {
 		t.Fatal("未知 id 应报错")
 	}
 }
@@ -293,5 +297,41 @@ func TestProductionPromptPinsYearReading(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Errorf("PROMPT-PRODUCTION 模板缺少年份读法约定：%q", want)
 		}
+	}
+}
+
+// 风格模板里随画幅变化的像素与措辞必须按画幅填入：竖屏保持原值，横屏换成
+// 横屏的推导值与平台措辞，并追加横屏构图要点。
+func TestRenderStyleFillsCanvasPlaceholders(t *testing.T) {
+	style := preset.DefaultStyle()
+	vertical, _ := preset.ByID("vertical-3x4")
+	landscape, _ := preset.ByID("landscape-16x9")
+	v := string(renderStyle(t, vertical, style)["frame.md"])
+	l := string(renderStyle(t, landscape, style)["frame.md"])
+	for _, want := range []string{"content_width_px: 904", "竖屏", "抖音右侧互动栏"} {
+		if !strings.Contains(v, want) {
+			t.Errorf("竖屏 frame.md 缺少 %q", want)
+		}
+	}
+	for _, want := range []string{"content_width_px: 1680", "横屏", "播放器底部控制栏", "## 横屏构图要点"} {
+		if !strings.Contains(l, want) {
+			t.Errorf("横屏 frame.md 缺少 %q", want)
+		}
+	}
+	for _, leaked := range []string{"{{", "抖音"} {
+		if strings.Contains(l, leaked) {
+			t.Errorf("横屏 frame.md 不应出现 %q", leaked)
+		}
+	}
+}
+
+func TestSubstituteCanvasRejectsUnknownPlaceholder(t *testing.T) {
+	p, _ := preset.ByID("vertical-3x4")
+	if _, err := substituteCanvas(p, "x {{NO_SUCH_TOKEN}} y"); err == nil {
+		t.Fatal("未知占位符应报错，而不是原样留在产物里")
+	}
+	got, err := substituteCanvas(p, "{{CONTENT_LEFT_PX+8}}/{{CONTENT_WIDTH_PX-16}}")
+	if err != nil || got != "96/888" {
+		t.Fatalf("偏移计算错误：%q %v", got, err)
 	}
 }

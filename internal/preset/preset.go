@@ -78,6 +78,25 @@ type Preset struct {
 	Label    string
 	Canvas   Canvas
 	SafeArea []Box
+	// Platform 描述这个画幅面向的平台界面，风格模板里与平台有关的措辞由它填入，
+	// 同一套风格因此能同时下发竖屏和横屏项目。
+	Platform Platform
+	// LayoutNotes 是追加在 frame.md 与风格说明书正文末尾的画幅构图要点；
+	// 为空时不追加。风格模板按竖屏写成，横屏需要补上的构图差异写在这里。
+	LayoutNotes string
+}
+
+// Platform 是画幅相关的平台措辞，对应模板占位符。
+type Platform struct {
+	// Orientation 填 {{ORIENTATION}}：竖屏 / 横屏。
+	Orientation string
+	// UI 填 {{PLATFORM_UI}}：需要主动避让的平台界面的完整说法。
+	UI string
+	// Zone 填 {{UI_ZONE}}：避让区的简称。
+	Zone string
+	// Avoidance 生成 {{AVOIDANCE_ZONES}}：关键避让区的位置与来源，像素取自
+	// 已推导的 critical_text 安全区，不在模板里写死。
+	Avoidance func(critical ResolvedBox) string
 }
 
 // ResolveSafeArea 按声明顺序推导全部安全区，顺序与 frame.md 字段顺序一致。

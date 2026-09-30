@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#16304A" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="vignette" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0" stop-color="#0F2233" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#0A1622"/>
+    </radialGradient>
+    <linearGradient id="scan" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3FE0F0" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3FE0F0" stop-opacity="0.22"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-200%" width="140%" height="500%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#0A1622"/>
+  <rect width="1920" height="1080" fill="url(#vignette)"/>
+  <rect width="1920" height="1080" fill="url(#grid)" opacity="0.8"/>
+
+  <!-- background: altitude horizon arcs -->
+  <g fill="none">
+    <circle cx="960" cy="2150" r="1180" fill="#0F2233" stroke="#3FE0F0" stroke-opacity="0.45" stroke-width="2"/>
+    <circle cx="960" cy="2150" r="1240" stroke="#3FE0F0" stroke-opacity="0.6" stroke-width="2" stroke-dasharray="10 8"/>
+    <circle cx="960" cy="2150" r="1400" stroke="#2E5A73" stroke-width="2" stroke-dasharray="10 8"/>
+  </g>
+
+  <g fill="none" stroke="#2E5A73" stroke-width="2">
+    <path d="M40 110V56h54 M1880 110V56h-54 M40 970v54h54 M1880 970v54h-54"/>
+  </g>
+
+  <!-- header -->
+  <g>
+    <rect x="160" y="110" width="14" height="14" fill="#37D6B5"/>
+    <text x="188" y="126" fill="#3FE0F0" font-size="28" font-weight="700" letter-spacing="4" font-family="'Noto Sans SC', sans-serif">扫描对比</text>
+    <text x="1760" y="125" text-anchor="end" fill="#8FB3C4" font-size="20" font-weight="700" letter-spacing="4" font-family="'Orbitron', 'Noto Sans SC', sans-serif">SCAN · A / B</text>
+    <rect x="160" y="156" width="1600" height="2" fill="#2E5A73"/>
+    <rect x="160" y="156" width="300" height="2" fill="#3FE0F0"/>
+  </g>
+  <text x="160" y="240" fill="#E6F6FA" font-size="56" font-weight="700" font-family="'Noto Sans SC', sans-serif">低轨还是高轨？</text>
+  <text x="160" y="290" fill="#8FB3C4" font-size="28" font-weight="400" font-family="'Noto Sans SC', sans-serif">同一颗通信卫星，放在两个不同高度</text>
+
+  <!-- window A -->
+  <g>
+    <rect x="160" y="320" width="780" height="416" fill="#0F2233"/>
+    <path d="M160 356v-36h36 M940 356v-36h-36 M160 700v36h36 M940 700v36h-36" fill="none" stroke="#3FE0F0" stroke-width="3"/>
+    <text x="188" y="368" fill="#3FE0F0" font-size="22" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">A · LEO</text>
+    <text x="916" y="368" text-anchor="end" fill="#8FB3C4" font-size="24" font-weight="600" font-family="'Noto Sans SC', sans-serif">近地轨道</text>
+    <circle cx="310" cy="540" r="76" fill="#132C40" stroke="#3FE0F0" stroke-opacity="0.6" stroke-width="2"/>
+    <ellipse cx="310" cy="540" rx="30" ry="76" fill="none" stroke="#2E5A73" stroke-width="1.5"/>
+    <circle cx="310" cy="540" r="96" fill="none" stroke="#3FE0F0" stroke-width="2" stroke-dasharray="8 6"/>
+    <rect x="370" y="459" width="14" height="14" fill="#E6F6FA" transform="rotate(45 377 466)"/>
+    <text x="310" y="690" text-anchor="middle" fill="#8FB3C4" font-size="18" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">550 KM</text>
+    <path d="M460 390V712" stroke="#2E5A73" stroke-width="1"/>
+  </g>
+  <!-- window B -->
+  <g>
+    <rect x="980" y="320" width="780" height="416" fill="#0F2233"/>
+    <path d="M980 356v-36h36 M1760 356v-36h-36 M980 700v36h36 M1760 700v36h-36" fill="none" stroke="#3FE0F0" stroke-width="3"/>
+    <text x="1008" y="368" fill="#3FE0F0" font-size="22" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">B · GEO</text>
+    <text x="1736" y="368" text-anchor="end" fill="#8FB3C4" font-size="24" font-weight="600" font-family="'Noto Sans SC', sans-serif">静止轨道</text>
+    <circle cx="1130" cy="540" r="18" fill="#132C40" stroke="#3FE0F0" stroke-opacity="0.6" stroke-width="2"/>
+    <circle cx="1130" cy="540" r="112" fill="none" stroke="#3FE0F0" stroke-width="2" stroke-dasharray="8 6"/>
+    <rect x="1228" y="490" width="14" height="14" fill="#E6F6FA" transform="rotate(45 1235 497)"/>
+    <path d="M1130 540L1235 497" stroke="#2E5A73" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <text x="1130" y="690" text-anchor="middle" fill="#8FB3C4" font-size="18" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">35786 KM</text>
+    <path d="M1280 390V712" stroke="#2E5A73" stroke-width="1"/>
+  </g>
+
+  <!-- readout rows -->
+  <g font-family="'Noto Sans SC', sans-serif" font-size="26" fill="#8FB3C4">
+    <path d="M488 454H916M1308 454H1736M488 526H916M1308 526H1736M488 612H916M1308 612H1736" stroke="#2E5A73" stroke-width="1"/>
+    <text x="488" y="428">轨道高度</text>
+    <text x="1308" y="428">轨道高度</text>
+    <text x="488" y="500">绕地一周</text>
+    <text x="1308" y="500">绕地一周</text>
+    <text x="488" y="666">全球覆盖</text>
+    <text x="1308" y="666">全球覆盖</text>
+  </g>
+  <g font-family="'Orbitron', 'Noto Sans SC', sans-serif" font-weight="700" font-size="26" fill="#E6F6FA" text-anchor="end">
+    <text x="916" y="429">550 KM</text>
+    <text x="1736" y="429">35786 KM</text>
+    <text x="916" y="501">95 MIN</text>
+    <text x="1736" y="501">23 H 56 M</text>
+  </g>
+  <g font-family="'Noto Sans SC', sans-serif" font-weight="600" font-size="26" fill="#E6F6FA" text-anchor="end">
+    <text x="916" y="666">上千颗</text>
+    <text x="1736" y="666">约 3 颗</text>
+  </g>
+
+  <!-- highlighted row with scan line (focus) -->
+  <rect x="120" y="540" width="1680" height="54" fill="url(#scan)"/>
+  <rect x="476" y="538" width="452" height="60" fill="#132C40" stroke="#3FE0F0" stroke-width="2"/>
+  <rect x="1296" y="538" width="452" height="60" fill="#132C40" stroke="#FFB547" stroke-width="2"/>
+  <text x="496" y="578" fill="#E6F6FA" font-size="26" font-weight="600" font-family="'Noto Sans SC', sans-serif">单跳时延</text>
+  <text x="1316" y="578" fill="#E6F6FA" font-size="26" font-weight="600" font-family="'Noto Sans SC', sans-serif">单跳时延</text>
+  <text x="908" y="580" text-anchor="end" fill="#3FE0F0" font-size="30" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">≈ 4 MS</text>
+  <text x="1728" y="580" text-anchor="end" fill="#FFB547" font-size="30" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">≈ 240 MS</text>
+  <path d="M100 598H1820" stroke="#3FE0F0" stroke-width="2" filter="url(#glow)"/>
+  <path d="M100 590v16M1820 590v16" stroke="#3FE0F0" stroke-width="2"/>
+
+  <!-- conclusion bar -->
+  <g>
+    <path d="M160 764h1600v88H180l-20-20z" fill="#0F2233" stroke="#37D6B5" stroke-width="2"/>
+    <rect x="160" y="764" width="8" height="68" fill="#37D6B5"/>
+    <text x="194" y="819" fill="#37D6B5" font-size="22" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">RESULT</text>
+    <text x="336" y="820" fill="#E6F6FA" font-size="30" font-weight="600" font-family="'Noto Sans SC', sans-serif">低轨换来低时延，代价是需要更多卫星</text>
+    <text x="1732" y="819" text-anchor="end" fill="#8FB3C4" font-size="24" font-weight="400" font-family="'Noto Sans SC', sans-serif">时延相差约 60 倍</text>
+  </g>
+
+  <!-- footer status (decorative) -->
+  <g font-family="'Orbitron', 'Noto Sans SC', sans-serif" font-weight="700" font-size="18" letter-spacing="3">
+    <rect x="110" y="996" width="10" height="10" fill="#37D6B5"/>
+    <text x="132" y="1006" fill="#8FB3C4">2 TARGETS SCANNED</text>
+    <text x="1820" y="1006" text-anchor="end" fill="#8FB3C4">CH 02</text>
+  </g>
+</svg>

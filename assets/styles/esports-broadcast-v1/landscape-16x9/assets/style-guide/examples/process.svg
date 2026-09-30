@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <pattern id="stripes" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(16)">
+      <rect width="8" height="24" fill="#26314A"/>
+    </pattern>
+  </defs>
+  <rect width="1920" height="1080" fill="#0B0F1A"/>
+
+  <!-- background layer -->
+  <path d="M1480 196 H1872 V520 Z" fill="url(#stripes)" opacity="0.45"/>
+  <path d="M48 1040 V860 L260 1040 Z" fill="url(#stripes)" opacity="0.35"/>
+  <text x="1868" y="1036" text-anchor="end" fill="#141B2D" font-size="280" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">M20</text>
+  <g fill="none" stroke="#26314A" stroke-width="3">
+    <path d="M48 100 V40 H108"/>
+    <path d="M1812 40 H1872 V100"/>
+    <path d="M48 980 V1040 H108"/>
+  </g>
+
+  <!-- header -->
+  <path d="M175 104 H390 L375 156 H160 Z" fill="#141B2D"/>
+  <path d="M175 104 H187 L172 156 H160 Z" fill="#2F8CFF"/>
+  <text x="198" y="141" fill="#F2F5FA" font-size="28" font-weight="700" font-family="'Noto Sans SC', sans-serif" letter-spacing="2">比赛时间线</text>
+  <text x="1760" y="140" text-anchor="end" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">R03 / 12:00</text>
+  <rect x="160" y="176" width="1600" height="2" fill="#26314A"/>
+  <rect x="160" y="176" width="260" height="2" fill="#2F8CFF"/>
+
+  <text x="158" y="260" fill="#F2F5FA" font-size="54" font-weight="900" font-family="'Noto Sans SC', sans-serif">从单体到微服务的 20 个月</text>
+  <text x="160" y="310" fill="#8C9BB5" font-size="26" font-family="'Noto Sans SC', sans-serif">一次拆分，决定了后面一年的节奏。</text>
+
+  <!-- track -->
+  <rect x="160" y="428" width="1600" height="4" fill="#26314A"/>
+  <rect x="160" y="428" width="660" height="4" fill="#2F8CFF"/>
+
+  <g font-family="'Noto Sans SC', sans-serif">
+    <!-- node 0 -->
+    <path d="M180 418 L192 430 L180 442 L168 430 Z" fill="#2F8CFF"/>
+    <text x="168" y="400" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 00</text>
+    <text x="168" y="488" fill="#F2F5FA" font-size="32" font-weight="700">单体上线</text>
+    <text x="168" y="526" fill="#8C9BB5" font-size="24">一周三次发布</text>
+
+    <!-- node 1 -->
+    <path d="M500 418 L512 430 L500 442 L488 430 Z" fill="#2F8CFF"/>
+    <text x="488" y="400" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 03</text>
+    <text x="488" y="488" fill="#F2F5FA" font-size="32" font-weight="700">用户破万</text>
+    <text x="488" y="526" fill="#8C9BB5" font-size="24">慢查询 2 次涨到 40 次</text>
+
+    <!-- turning node -->
+    <path d="M820 406 L844 430 L820 454 L796 430 Z" fill="#FF3B4E"/>
+    <text x="808" y="392" fill="#FF3B4E" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 08</text>
+    <rect x="818" y="454" width="4" height="142" fill="#FF3B4E"/>
+
+    <!-- node 3 -->
+    <path d="M1140 418 L1152 430 L1140 442 L1128 430 Z" fill="#8C9BB5"/>
+    <text x="1128" y="400" fill="#8C9BB5" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 14</text>
+    <text x="1128" y="488" fill="#F2F5FA" font-size="32" font-weight="700">拆出 6 个服务</text>
+    <text x="1128" y="526" fill="#8C9BB5" font-size="24">发布互不阻塞</text>
+
+    <!-- node 4 -->
+    <path d="M1460 416 L1474 430 L1460 444 L1446 430 Z" fill="#3DDC84"/>
+    <text x="1448" y="400" fill="#3DDC84" font-size="24" font-weight="600" font-family="'Oxanium', 'Noto Sans SC', monospace" letter-spacing="1">MONTH 20 / NOW</text>
+    <text x="1448" y="488" fill="#F2F5FA" font-size="32" font-weight="700">局面稳定</text>
+    <text x="1448" y="526" fill="#8C9BB5" font-size="24">平均恢复 18 分钟</text>
+
+    <!-- turning point card -->
+    <path d="M160 596 H1760 V784 L1728 816 H160 Z" fill="#141B2D" stroke="#26314A" stroke-width="2"/>
+    <rect x="160" y="596" width="10" height="220" fill="#FF3B4E"/>
+    <path d="M212 626 H342 L332 666 H202 Z" fill="#B8182E"/>
+    <text x="272" y="656" text-anchor="middle" fill="#F2F5FA" font-size="26" font-weight="700">转折点</text>
+    <text x="206" y="740" fill="#F2F5FA" font-size="48" font-weight="900">订单模块先拆出去</text>
+    <text x="206" y="786" fill="#8C9BB5" font-size="26">只拆最痛的一块，其余保持单体</text>
+
+    <rect x="1120" y="628" width="2" height="156" fill="#26314A"/>
+    <text x="1160" y="766" fill="#F2F5FA" font-size="150" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">1</text>
+    <text x="1238" y="766" fill="#8C9BB5" font-size="96" font-family="'Bebas Neue', 'Noto Sans SC', sans-serif">/ 6</text>
+    <text x="1400" y="690" fill="#F2F5FA" font-size="30" font-weight="700">先拆 1 个</text>
+    <text x="1400" y="734" fill="#8C9BB5" font-size="24">六个月后才拆满 6 个服务</text>
+  </g>
+</svg>

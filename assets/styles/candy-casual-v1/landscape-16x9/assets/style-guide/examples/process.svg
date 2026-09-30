@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs>
+<g id="star-on"><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" transform="translate(0,7)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" fill="#FFC83D" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><ellipse cx="-10" cy="-14" rx="9" ry="5" fill="#FFFFFF" opacity="0.6" transform="rotate(-30 -10 -14)"/></g>
+<g id="star-off"><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" transform="translate(0,7)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" fill="#FFE3EE" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/></g>
+<g id="coin"><circle cx="0" cy="6" r="30" fill="#3B1E54"/><circle r="30" fill="#FFC83D" stroke="#3B1E54" stroke-width="5"/><circle r="18" fill="none" stroke="#3B1E54" stroke-width="3" opacity="0.35"/><path d="M-10,-16 A18,18 0 0 1 12,-14" stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.7"/></g>
+<g id="drop"><path d="M0,-62 C18,-36 46,-8 46,20 A46,46 0 0 1 -46,20 C-46,-8 -18,-36 0,-62Z" transform="translate(0,9)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-62 C18,-36 46,-8 46,20 A46,46 0 0 1 -46,20 C-46,-8 -18,-36 0,-62Z" fill="#45B8F5" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><path d="M-22,0 C-24,16 -14,32 2,38" stroke="#FFFFFF" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.55"/><circle cx="-12" cy="-22" r="6" fill="#FFFFFF" opacity="0.6"/></g>
+<g id="sparkle"><path d="M0,-18 Q3,-3 18,0 Q3,3 0,18 Q-3,3 -18,0 Q-3,-3 0,-18Z" fill="#FFFFFF" stroke="#3B1E54" stroke-width="3" stroke-linejoin="round"/></g>
+<g id="check"><circle r="30" fill="#FFFFFF" stroke="#3B1E54" stroke-width="5"/><path d="M-13,1 L-3,11 L15,-9" fill="none" stroke="#25C08A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="lock"><rect x="-22" y="-4" width="44" height="34" rx="10" fill="#FFFFFF" stroke="#6E4E86" stroke-width="5"/><path d="M-12,-4 V-14 A12,12 0 0 1 12,-14 V-4" fill="none" stroke="#6E4E86" stroke-width="5"/><circle cy="12" r="5" fill="#6E4E86"/></g>
+</defs>
+<rect width="1920" height="1080" fill="#FFF4E8"/>
+<circle cx="80" cy="400" r="18" fill="#FFE3EE"/>
+<circle cx="1846" cy="360" r="14" fill="#FFE3EE"/>
+<circle cx="1850" cy="720" r="16" fill="#FFE3EE"/>
+<circle cx="74" cy="760" r="20" fill="#FFE3EE"/>
+<path d="M0,940 C420,870 760,880 1100,920 C1400,954 1680,900 1920,910 L1920,1080 L0,1080Z" fill="#FFE3EE"/>
+<use xlink:href="#sparkle" transform="translate(80,560) scale(0.9)"/>
+<use xlink:href="#sparkle" transform="translate(1850,250) scale(0.8)"/>
+<use xlink:href="#sparkle" transform="translate(1846,560) scale(1.0)"/>
+<use xlink:href="#sparkle" transform="translate(84,250) scale(0.7)"/>
+<rect x="160" y="104" width="304" height="54" rx="27.0" fill="#7A4BD1" stroke="#3B1E54" stroke-width="4"/>
+<text x="312.0" y="140.36" font-family="'Noto Sans SC', sans-serif" font-size="26" font-weight="700" fill="#FFFFFF" text-anchor="middle">签到日历 · 第 4 天</text>
+<rect x="1572" y="104" width="188" height="56" rx="28" fill="#FFFFFF" stroke="#3B1E54" stroke-width="4"/>
+<use xlink:href="#coin" transform="translate(1602,132) scale(0.78)"/>
+<text x="1732" y="146" font-family="'Fredoka', 'Noto Sans SC', sans-serif" font-size="38" font-weight="700" fill="#3B1E54" text-anchor="end">128</text>
+<text x="160" y="260" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="60" fill="#3B1E54" text-anchor="start">7 天养成喝水习惯</text>
+<text x="1760" y="256" font-family="'Noto Sans SC', sans-serif" font-size="28" font-weight="600" fill="#6E4E86" text-anchor="end">每天只加一个小动作</text>
+<rect x="160" y="304" width="1600" height="556" rx="48" fill="#3B1E54"/>
+<rect x="160" y="290" width="1600" height="556" rx="48" fill="#FFFFFF" stroke="#3B1E54" stroke-width="6"/>
+<text x="204" y="364" font-family="'Noto Sans SC', sans-serif" font-size="28" font-weight="700" fill="#3B1E54" text-anchor="start">已连续</text>
+<rect x="310" y="336" width="1270" height="36" rx="18" fill="#FFE3EE" stroke="#3B1E54" stroke-width="4"/>
+<rect x="310" y="336" width="544" height="36" rx="18" fill="#25C08A" stroke="#3B1E54" stroke-width="4"/>
+<rect x="326" y="342" width="512" height="8" rx="4" fill="#FFFFFF" opacity="0.45"/>
+<text x="1716" y="370" font-family="'Fredoka', 'Noto Sans SC', sans-serif" font-size="40" font-weight="700" fill="#3B1E54" text-anchor="end">3/7</text>
+<rect x="204" y="414" width="300" height="196" rx="24" fill="#3B1E54"/>
+<rect x="204" y="404" width="300" height="196" rx="24" fill="#25C08A" stroke="#3B1E54" stroke-width="5"/>
+<rect x="220.8" y="413" width="266.4" height="12" rx="6" fill="#FFFFFF" opacity="0.45"/>
+<text x="354.0" y="454" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="32" fill="#3B1E54" text-anchor="middle">第1天</text>
+<use xlink:href="#check" transform="translate(354.0,508)"/>
+<text x="354.0" y="574" font-family="'Noto Sans SC', sans-serif" font-size="27" font-weight="700" fill="#3B1E54" text-anchor="middle">起床一杯</text>
+<rect x="528" y="414" width="300" height="196" rx="24" fill="#3B1E54"/>
+<rect x="528" y="404" width="300" height="196" rx="24" fill="#25C08A" stroke="#3B1E54" stroke-width="5"/>
+<rect x="544.8" y="413" width="266.4" height="12" rx="6" fill="#FFFFFF" opacity="0.45"/>
+<text x="678.0" y="454" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="32" fill="#3B1E54" text-anchor="middle">第2天</text>
+<use xlink:href="#check" transform="translate(678.0,508)"/>
+<text x="678.0" y="574" font-family="'Noto Sans SC', sans-serif" font-size="27" font-weight="700" fill="#3B1E54" text-anchor="middle">饭前半杯</text>
+<rect x="852" y="414" width="300" height="196" rx="24" fill="#3B1E54"/>
+<rect x="852" y="404" width="300" height="196" rx="24" fill="#25C08A" stroke="#3B1E54" stroke-width="5"/>
+<rect x="868.8" y="413" width="266.4" height="12" rx="6" fill="#FFFFFF" opacity="0.45"/>
+<text x="1002.0" y="454" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="32" fill="#3B1E54" text-anchor="middle">第3天</text>
+<use xlink:href="#check" transform="translate(1002.0,508)"/>
+<text x="1002.0" y="574" font-family="'Noto Sans SC', sans-serif" font-size="27" font-weight="700" fill="#3B1E54" text-anchor="middle">随身带杯</text>
+<rect x="204" y="634" width="300" height="196" rx="24" fill="#3B1E54"/>
+<rect x="204" y="624" width="300" height="196" rx="24" fill="#FFC83D" stroke="#3B1E54" stroke-width="7"/>
+<rect x="220.8" y="633" width="266.4" height="12" rx="6" fill="#FFFFFF" opacity="0.45"/>
+<text x="354.0" y="674" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="32" fill="#3B1E54" text-anchor="middle">第4天</text>
+<use xlink:href="#drop" transform="translate(354.0,728) scale(0.5)"/>
+<text x="354.0" y="794" font-family="'Noto Sans SC', sans-serif" font-size="27" font-weight="700" fill="#3B1E54" text-anchor="middle">设个提醒</text>
+<rect x="408" y="598" width="110" height="48" rx="24.0" fill="#FF5C8A" stroke="#3B1E54" stroke-width="4"/>
+<text x="463.0" y="631.36" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="26" fill="#3B1E54" text-anchor="middle">今天</text>
+<rect x="528" y="634" width="300" height="196" rx="24" fill="#3B1E54"/>
+<rect x="528" y="624" width="300" height="196" rx="24" fill="#FFE3EE" stroke="#3B1E54" stroke-width="5"/>
+<text x="678.0" y="674" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="32" fill="#6E4E86" text-anchor="middle">第5天</text>
+<use xlink:href="#lock" transform="translate(678.0,724)"/>
+<text x="678.0" y="794" font-family="'Noto Sans SC', sans-serif" font-size="27" font-weight="700" fill="#6E4E86" text-anchor="middle">换刻度杯</text>
+<rect x="852" y="634" width="300" height="196" rx="24" fill="#3B1E54"/>
+<rect x="852" y="624" width="300" height="196" rx="24" fill="#FFE3EE" stroke="#3B1E54" stroke-width="5"/>
+<text x="1002.0" y="674" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="32" fill="#6E4E86" text-anchor="middle">第6天</text>
+<use xlink:href="#lock" transform="translate(1002.0,724)"/>
+<text x="1002.0" y="794" font-family="'Noto Sans SC', sans-serif" font-size="27" font-weight="700" fill="#6E4E86" text-anchor="middle">睡前少喝</text>
+<path d="M511.0,492.0 L521.0,502.0 L511.0,512.0" fill="none" stroke="#3B1E54" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M511.0,712.0 L521.0,722.0 L511.0,732.0" fill="none" stroke="#3B1E54" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M835.0,492.0 L845.0,502.0 L835.0,512.0" fill="none" stroke="#3B1E54" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M835.0,712.0 L845.0,722.0 L835.0,732.0" fill="none" stroke="#3B1E54" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="1188" y="416" width="528" height="416" rx="36" fill="#3B1E54"/>
+<rect x="1188" y="404" width="528" height="416" rx="36" fill="#7A4BD1" stroke="#3B1E54" stroke-width="6"/>
+<rect x="1213.2" y="413" width="477.6" height="12" rx="6" fill="#FFFFFF" opacity="0.45"/>
+<circle cx="1452.0" cy="554" r="92" fill="#FFFFFF" opacity="0.18"/>
+<use xlink:href="#star-on" transform="translate(1452.0,554) scale(1.6)"/>
+<use xlink:href="#coin" transform="translate(1564.0,600) scale(0.85)"/>
+<use xlink:href="#coin" transform="translate(1334.0,608) scale(0.7)"/>
+<use xlink:href="#sparkle" transform="translate(1332.0,480) scale(0.8)"/>
+<use xlink:href="#sparkle" transform="translate(1580.0,494) scale(0.6)"/>
+<text x="1452.0" y="716" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="60" fill="#FFFFFF" text-anchor="middle">第7天</text>
+<text x="1452.0" y="766" font-family="'Noto Sans SC', sans-serif" font-size="28" font-weight="700" fill="#FFFFFF" text-anchor="middle">习惯养成，不用再想</text>
+</svg>

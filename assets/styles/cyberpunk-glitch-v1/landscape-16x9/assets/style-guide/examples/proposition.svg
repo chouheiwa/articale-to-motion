@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="#F4EEFF" opacity="0.035"/></pattern>
+    <linearGradient id="gridFade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#120B1E" stop-opacity="1"/>
+      <stop offset="1" stop-color="#120B1E" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-200%" width="140%" height="500%"><feGaussianBlur stdDeviation="6"/></filter>
+    <clipPath id="bandA"><rect x="1240" y="200" width="340" height="120"/></clipPath>
+    <clipPath id="bandB"><rect x="1240" y="320" width="340" height="30"/></clipPath>
+  </defs>
+
+  <!-- 背景层：画布、透视地面网格、扫描线 -->
+  <rect width="1920" height="1080" fill="#120B1E"/>
+  <g opacity="0.5">
+    <path d="M960 820 L-700 1080 M960 820 L-120 1080 M960 820 L420 1080 M960 820 L960 1080 M960 820 L1500 1080 M960 820 L2040 1080 M960 820 L2620 1080" stroke="#4A3772" stroke-width="1.5"/>
+    <path d="M0 838 H1920 M0 864 H1920 M0 900 H1920 M0 950 H1920 M0 1010 H1920 M0 1080 H1920" stroke="#4A3772" stroke-width="1.5"/>
+  </g>
+  <rect y="820" width="1920" height="130" fill="url(#gridFade)"/>
+  <rect width="1920" height="1080" fill="url(#scan)"/>
+
+  <!-- 结构角标 -->
+  <g stroke="#4A3772" stroke-width="3" fill="none">
+    <path d="M48 88 V44 H92"/><path d="M1872 88 V44 H1828"/>
+    <path d="M48 992 V1036 H92"/><path d="M1872 992 V1036 H1828"/>
+  </g>
+
+  <!-- kicker -->
+  <rect x="160" y="112" width="18" height="18" fill="#FF2E88"/>
+  <text x="192" y="130" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="26" fill="#FF2E88">入侵警报</text>
+  <text x="1760" y="130" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#B9ABDB" letter-spacing="2">ALERT // 01</text>
+  <path d="M160 162 H1760" stroke="#4A3772" stroke-width="2"/>
+  <path d="M160 162 H460" stroke="#FF2E88" stroke-width="4"/>
+
+  <!-- 左栏：警报条（中景） -->
+  <path d="M160 204 H940 L960 224 V268 H180 L160 248 Z" fill="#FF2E88"/>
+  <g transform="translate(180 218)"><path d="M0 0 H70 L50 36 H-20 Z" fill="#120B1E" opacity="0.9"/><path d="M84 0 H120 L100 36 H64 Z" fill="#120B1E" opacity="0.9"/></g>
+  <text x="320" y="247" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="26" fill="#120B1E">WARNING · 检测到异地批量登录</text>
+
+  <!-- 左栏：主焦点，封面判断 -->
+  <text font-family="'Smiley Sans', 'Noto Sans SC', sans-serif" font-size="122" fill="#F4EEFF">
+    <tspan x="160" y="420">你的密码</tspan>
+    <tspan x="160" y="554">早就泄露了</tspan>
+  </text>
+  <!-- 切片故障残留：只在装饰条上，不压标题 -->
+  <rect x="160" y="590" width="470" height="12" fill="#FF2E88"/>
+  <rect x="646" y="590" width="110" height="12" fill="#29E6F0"/>
+  <rect x="192" y="608" width="180" height="4" fill="#FF2E88" opacity="0.6"/>
+  <rect x="168" y="590" width="470" height="12" fill="#FF2E88" filter="url(#glow)" opacity="0.7"/>
+
+  <text font-family="'Noto Sans SC', sans-serif" font-size="32" fill="#B9ABDB">
+    <tspan x="160" y="680">撞库攻击不需要破解你的密码，</tspan>
+    <tspan x="160" y="728">只需要你在别处<tspan fill="#F4EEFF" font-weight="700">用过同一个</tspan>。</tspan>
+  </text>
+
+  <!-- 左栏：泄露特征标签 -->
+  <g font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" letter-spacing="2">
+    <path d="M160 774 H352 L366 788 V818 H160 Z" fill="none" stroke="#4A3772" stroke-width="2"/>
+    <text x="180" y="804" fill="#B9ABDB">LEAK 2019</text>
+    <path d="M388 774 H588 L602 788 V818 H388 Z" fill="none" stroke="#FF2E88" stroke-width="2"/>
+    <text x="408" y="804" fill="#FF2E88">REUSED ×12</text>
+    <path d="M624 774 H808 L822 788 V818 H624 Z" fill="none" stroke="#29E6F0" stroke-width="2"/>
+    <text x="644" y="804" fill="#29E6F0">SRC 23 IP</text>
+  </g>
+
+  <!-- 右栏：被切片错位的警示三角（RGB 分离只作用于图形） -->
+  <g stroke="#4A3772" stroke-width="3" fill="none">
+    <path d="M1250 206 V186 H1270"/><path d="M1570 206 V186 H1550"/>
+    <path d="M1250 424 V444 H1270"/><path d="M1570 424 V444 H1550"/>
+  </g>
+  <g id="tri">
+    <path d="M1410 204 L1530 420 H1290 Z" fill="#1E1433" stroke="#FF2E88" stroke-width="10" stroke-linejoin="miter"/>
+    <rect x="1400" y="270" width="20" height="84" fill="#F4EEFF"/>
+    <rect x="1400" y="372" width="20" height="20" fill="#F4EEFF"/>
+  </g>
+  <g clip-path="url(#bandA)"><path d="M1410 204 L1530 420 H1290 Z" fill="none" stroke="#29E6F0" stroke-width="3" transform="translate(-10 0)" opacity="0.8"/></g>
+  <rect x="1280" y="320" width="260" height="30" fill="#120B1E"/>
+  <g clip-path="url(#bandB)" transform="translate(28 0)">
+    <path d="M1410 204 L1530 420 H1290 Z" fill="#1E1433" stroke="#FF2E88" stroke-width="10"/>
+    <rect x="1400" y="270" width="20" height="84" fill="#F4EEFF"/>
+  </g>
+  <g clip-path="url(#bandB)" transform="translate(12 0)"><path d="M1410 204 L1530 420 H1290 Z" fill="none" stroke="#29E6F0" stroke-width="4"/></g>
+
+  <!-- 右栏：威胁读数（三角两侧） -->
+  <g font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" letter-spacing="2">
+    <text x="1060" y="232" font-size="20" fill="#B9ABDB">THREAT</text>
+    <text x="1060" y="290" font-size="52" fill="#FF2E88">HIGH</text>
+    <g fill="#FF2E88">
+      <rect x="1060" y="312" width="28" height="12"/><rect x="1094" y="312" width="28" height="12"/><rect x="1128" y="312" width="28" height="12"/><rect x="1162" y="312" width="28" height="12"/>
+    </g>
+    <rect x="1196" y="312" width="28" height="12" fill="none" stroke="#4A3772" stroke-width="2"/>
+    <text x="1060" y="410" font-size="20" fill="#4A3772">TRACE 4/4</text>
+    <text x="1760" y="232" text-anchor="end" font-size="20" fill="#B9ABDB">ERR 0x401</text>
+    <text x="1760" y="290" text-anchor="end" font-size="52" fill="#29E6F0">02:14</text>
+    <text x="1760" y="330" text-anchor="end" font-size="20" fill="#B9ABDB">UTC+8 · NIGHT</text>
+    <text x="1760" y="410" text-anchor="end" font-size="20" fill="#4A3772">SIG 0x3F</text>
+  </g>
+
+  <!-- 右栏：登录监控终端（中景 + 前景命中行） -->
+  <path d="M1060 474 H1736 L1760 498 V820 H1084 L1060 796 Z" fill="#1E1433" stroke="#4A3772" stroke-width="2"/>
+  <path d="M1060 474 H1736 L1760 498 V518 H1060 Z" fill="#2A1C47"/>
+  <rect x="1084" y="488" width="14" height="14" fill="#FF2E88"/>
+  <rect x="1106" y="488" width="14" height="14" fill="#4A3772"/>
+  <rect x="1128" y="488" width="14" height="14" fill="#4A3772"/>
+  <text x="1164" y="504" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="18" fill="#B9ABDB" letter-spacing="2">LOGIN_MONITOR.LOG</text>
+  <text x="1730" y="504" text-anchor="end" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="18" fill="#29E6F0" letter-spacing="2">LIVE</text>
+
+  <g font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="24">
+    <text x="1094" y="566" fill="#B9ABDB">&gt; 02:14:07</text><text x="1290" y="566" fill="#F4EEFF">mail.example</text><text x="1726" y="566" text-anchor="end" fill="#B9ABDB">FAIL</text>
+    <text x="1094" y="610" fill="#B9ABDB">&gt; 02:14:08</text><text x="1290" y="610" fill="#F4EEFF">shop.example</text><text x="1726" y="610" text-anchor="end" fill="#B9ABDB">FAIL</text>
+    <text x="1094" y="654" fill="#B9ABDB">&gt; 02:14:09</text><text x="1290" y="654" fill="#F4EEFF">game.example</text><text x="1726" y="654" text-anchor="end" fill="#B9ABDB">FAIL</text>
+  </g>
+  <rect x="1084" y="688" width="652" height="96" fill="#2A1C47"/>
+  <rect x="1084" y="688" width="6" height="96" fill="#FF2E88"/>
+  <text x="1108" y="746" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="24" fill="#FF5A4E">&gt; 02:14:10</text>
+  <text x="1290" y="747" font-family="'Noto Sans SC', sans-serif" font-weight="700" font-size="28" fill="#F4EEFF">你的主账号 · 登录成功</text>
+  <path d="M1638 716 H1718 V756 H1648 L1638 746 Z" fill="#FF5A4E"/>
+  <text x="1678" y="744" text-anchor="middle" font-family="'Chakra Petch', 'Noto Sans SC', sans-serif" font-weight="700" font-size="22" fill="#120B1E">HIT</text>
+
+  <!-- 错位切片（终端外框的故障残影） -->
+  <rect x="1400" y="834" width="360" height="6" fill="#29E6F0" opacity="0.8"/>
+  <rect x="1350" y="846" width="120" height="6" fill="#FF2E88" opacity="0.8"/>
+</svg>

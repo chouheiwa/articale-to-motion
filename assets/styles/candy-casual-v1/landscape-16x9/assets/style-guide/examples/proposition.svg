@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs>
+<g id="star-on"><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" transform="translate(0,7)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" fill="#FFC83D" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><ellipse cx="-10" cy="-14" rx="9" ry="5" fill="#FFFFFF" opacity="0.6" transform="rotate(-30 -10 -14)"/></g>
+<g id="star-off"><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" transform="translate(0,7)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-50 L14.7,-20.2 L47.6,-15.5 L23.8,7.7 L29.4,40.5 L0,25 L-29.4,40.5 L-23.8,7.7 L-47.6,-15.5 L-14.7,-20.2Z" fill="#FFE3EE" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/></g>
+<g id="coin"><circle cx="0" cy="6" r="30" fill="#3B1E54"/><circle r="30" fill="#FFC83D" stroke="#3B1E54" stroke-width="5"/><circle r="18" fill="none" stroke="#3B1E54" stroke-width="3" opacity="0.35"/><path d="M-10,-16 A18,18 0 0 1 12,-14" stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.7"/></g>
+<g id="drop"><path d="M0,-62 C18,-36 46,-8 46,20 A46,46 0 0 1 -46,20 C-46,-8 -18,-36 0,-62Z" transform="translate(0,9)" fill="#3B1E54" stroke="#3B1E54" stroke-width="8" stroke-linejoin="round"/><path d="M0,-62 C18,-36 46,-8 46,20 A46,46 0 0 1 -46,20 C-46,-8 -18,-36 0,-62Z" fill="#45B8F5" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/><path d="M-22,0 C-24,16 -14,32 2,38" stroke="#FFFFFF" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.55"/><circle cx="-12" cy="-22" r="6" fill="#FFFFFF" opacity="0.6"/></g>
+<g id="sparkle"><path d="M0,-18 Q3,-3 18,0 Q3,3 0,18 Q-3,3 -18,0 Q-3,-3 0,-18Z" fill="#FFFFFF" stroke="#3B1E54" stroke-width="3" stroke-linejoin="round"/></g>
+<g id="check"><circle r="30" fill="#FFFFFF" stroke="#3B1E54" stroke-width="5"/><path d="M-13,1 L-3,11 L15,-9" fill="none" stroke="#25C08A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="lock"><rect x="-22" y="-4" width="44" height="34" rx="10" fill="#FFFFFF" stroke="#6E4E86" stroke-width="5"/><path d="M-12,-4 V-14 A12,12 0 0 1 12,-14 V-4" fill="none" stroke="#6E4E86" stroke-width="5"/><circle cy="12" r="5" fill="#6E4E86"/></g>
+</defs>
+<rect width="1920" height="1080" fill="#FFF4E8"/>
+<path d="M1300,600 L3300,600 L3232,1118Z M1300,600 L3032,1600 L2714,2014Z M1300,600 L2300,2332 L1818,2532Z M1300,600 L1300,2600 L782,2532Z M1300,600 L300,2332 L-114,2014Z M1300,600 L-432,1600 L-632,1118Z M1300,600 L-700,600 L-632,82Z M1300,600 L-432,-400 L-114,-814Z M1300,600 L300,-1132 L782,-1332Z M1300,600 L1300,-1400 L1818,-1332Z M1300,600 L2300,-1132 L2714,-814Z M1300,600 L3032,-400 L3232,82Z" fill="#FFE3EE"/>
+<circle cx="90" cy="420" r="14" fill="#FFFFFF"/>
+<circle cx="1850" cy="300" r="18" fill="#FFFFFF"/>
+<circle cx="1840" cy="720" r="12" fill="#FFFFFF"/>
+<circle cx="86" cy="700" r="20" fill="#FFFFFF"/>
+<path d="M0,930 C420,860 760,870 1100,910 C1400,944 1680,890 1920,900 L1920,1080 L0,1080Z" fill="#FFFFFF"/>
+<use xlink:href="#sparkle" transform="translate(80,560) scale(0.9)"/>
+<use xlink:href="#sparkle" transform="translate(1850,470) scale(0.8)"/>
+<use xlink:href="#sparkle" transform="translate(1846,860) scale(1.0)"/>
+<use xlink:href="#sparkle" transform="translate(96,300) scale(0.7)"/>
+<rect x="160" y="104" width="304" height="54" rx="27.0" fill="#7A4BD1" stroke="#3B1E54" stroke-width="4"/>
+<text x="312.0" y="140.36" font-family="'Noto Sans SC', sans-serif" font-size="26" font-weight="700" fill="#FFFFFF" text-anchor="middle">第 3 关 · 喝水常识</text>
+<rect x="1572" y="104" width="188" height="56" rx="28" fill="#FFFFFF" stroke="#3B1E54" stroke-width="4"/>
+<use xlink:href="#coin" transform="translate(1602,132) scale(0.78)"/>
+<text x="1732" y="146" font-family="'Fredoka', 'Noto Sans SC', sans-serif" font-size="38" font-weight="700" fill="#3B1E54" text-anchor="end">128</text>
+<rect x="200" y="244" width="1520" height="606" rx="48" fill="#3B1E54"/>
+<rect x="200" y="230" width="1520" height="606" rx="48" fill="#FFFFFF" stroke="#3B1E54" stroke-width="6"/>
+<rect x="222" y="252" width="1476" height="562" rx="36" fill="#FFE3EE" opacity="0.55"/>
+<polygon points="690.0,208 614.0,208 592.0,254 614.0,300 690.0,300" fill="#B8285A" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/>
+<polygon points="1230.0,208 1306.0,208 1328.0,254 1306.0,300 1230.0,300" fill="#B8285A" stroke="#3B1E54" stroke-width="6" stroke-linejoin="round"/>
+<rect x="660.0" y="196" width="600" height="92" rx="16" fill="#3B1E54"/>
+<rect x="660.0" y="186" width="600" height="92" rx="16" fill="#FF5C8A" stroke="#3B1E54" stroke-width="6"/>
+<rect x="676.0" y="195" width="568.0" height="12" rx="6" fill="#FFFFFF" opacity="0.45"/>
+<text x="960" y="250" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="50" fill="#3B1E54" text-anchor="middle">新知识解锁！</text>
+<text x="330" y="452" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="104" fill="#3B1E54" text-anchor="start">喝水不用</text>
+<text x="330" y="566" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="104" fill="#B8285A" text-anchor="start">等口渴</text>
+<rect x="330" y="600" width="96" height="10" rx="5" fill="#FF5C8A"/>
+<text x="330" y="664" font-family="'Noto Sans SC', sans-serif" font-size="30" font-weight="600" fill="#6E4E86" text-anchor="start">口渴往往说明身体已经在提醒你补水</text>
+<rect x="330" y="714" width="440" height="92" rx="46" fill="#3B1E54"/>
+<rect x="330" y="704" width="440" height="92" rx="46" fill="#25C08A" stroke="#3B1E54" stroke-width="6"/>
+<rect x="362.2" y="713" width="375.6" height="12" rx="6" fill="#FFFFFF" opacity="0.45"/>
+<text x="550" y="767" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="46" fill="#3B1E54" text-anchor="middle">领取小技巧</text>
+<circle cx="1300" cy="608" r="190" fill="#3B1E54"/>
+<circle cx="1300" cy="600" r="190" fill="#FFFFFF" stroke="#3B1E54" stroke-width="6"/>
+<circle cx="1300" cy="600" r="160" fill="#FFE3EE"/>
+<use xlink:href="#drop" transform="translate(1300,620) scale(2.1)"/>
+<rect x="1410" y="730" width="150" height="56" rx="28.0" fill="#FFC83D" stroke="#3B1E54" stroke-width="4"/>
+<text x="1485.0" y="768.8" font-family="'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif" font-size="30" fill="#3B1E54" text-anchor="middle">+1 技巧</text>
+<use xlink:href="#sparkle" transform="translate(1180,710) scale(0.9)"/>
+<use xlink:href="#sparkle" transform="translate(1428,560) scale(1.1)"/>
+<use xlink:href="#star-on" transform="translate(1124,470) rotate(-14) scale(1.0)"/>
+<use xlink:href="#star-on" transform="translate(1300,404) scale(1.38)"/>
+<use xlink:href="#star-on" transform="translate(1476,470) rotate(14) scale(1.0)"/>
+<use xlink:href="#coin" transform="translate(1790,250) scale(1.0)"/>
+<use xlink:href="#coin" transform="translate(150,960) scale(1.1)"/>
+<use xlink:href="#coin" transform="translate(212,990) scale(0.9)"/>
+<use xlink:href="#coin" transform="translate(112,1002) scale(0.8)"/>
+<use xlink:href="#drop" transform="translate(1780,968) scale(0.8)"/>
+</svg>

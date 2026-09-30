@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+<rect width="1920" height="1080" fill="#FBFBF8"/>
+<path d="M1297.1 958.4 C1440.0 956.7 1580.0 964.1 1721.9 961.5" fill="none" stroke="#ECEEEA" stroke-width="23" stroke-linecap="round" opacity="0.75"/>
+<path d="M1294.6 990.1 C1440.0 990.6 1580.0 983.1 1714.0 992.0" fill="none" stroke="#ECEEEA" stroke-width="15" stroke-linecap="round" opacity="0.75"/>
+<path d="M138.5 982.9 C260.0 981.5 380.0 987.2 492.0 986.2" fill="none" stroke="#ECEEEA" stroke-width="24" stroke-linecap="round" opacity="0.75"/>
+<path d="M142.0 1010.7 C260.0 1013.9 380.0 1012.3 494.8 1014.9" fill="none" stroke="#ECEEEA" stroke-width="16" stroke-linecap="round" opacity="0.75"/>
+<text x="160" y="150" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="32" fill="#596268">费曼学习法 · 全景</text>
+<text x="1760" y="150" font-family="'Caveat', 'Xiaolai', sans-serif" font-size="36" fill="#1C5BB8" text-anchor="end">mind map</text>
+<path d="M158.6 178.4 C313.4 178.1 463.8 177.4 618.9 177.2" fill="none" stroke="#C9CED1" stroke-width="3" stroke-linecap="round"/>
+<text x="160" y="262" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="60" fill="#1D2327">一张图记住费曼学习法</text>
+<path d="M800.7 473.7 Q828.8 460.6 862.0 449.9 Q900.2 443.3 940.7 441.7 Q981.4 438.9 1021.8 442.6 Q1058.0 451.4 1091.4 461.6 Q1124.3 472.5 1146.9 487.9 Q1166.9 504.1 1176.4 522.1 Q1179.1 540.5 1171.9 558.5 Q1161.7 576.1 1146.1 593.0 Q1123.2 608.4 1091.1 619.9 Q1057.8 630.7 1018.9 636.5 Q979.1 641.1 938.1 640.1 Q898.7 635.3 861.9 627.9 Q828.4 618.0 799.3 605.6 Q769.3 592.7 751.1 575.9 Q741.2 557.7 743.4 539.2 Q742.7 520.6 758.6 503.6 Q771.1 485.7 797.8 471.5 Q827.8 458.8 863.5 449.7" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<text x="960" y="558" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="54" fill="#1D2327" text-anchor="middle">费曼学习法</text>
+<path d="M765 480 Q662.5 403.5 560 395" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/>
+<text x="360" y="400" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="48" fill="#1D2327">选概念</text>
+<text x="360" y="450" font-family="'Caveat', 'Xiaolai', sans-serif" font-size="34" fill="#1C5BB8">pick one</text>
+<path d="M220.0 356.0 Q247.0 344.0 270.0 358.0 L270.0 412.0 Q247.0 399.0 220.0 412.0Z" fill="none" stroke="#1D2327" stroke-width="5" stroke-linejoin="round"/>
+<path d="M270.0 358.0 Q294.0 344.0 321.0 356.0 L321.0 412.0 Q294.0 399.0 270.0 412.0" fill="none" stroke="#1D2327" stroke-width="5" stroke-linejoin="round"/>
+<path d="M1155 480 Q1257.5 403.5 1360 395" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/>
+<text x="1440" y="400" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="48" fill="#1D2327">讲出来</text>
+<text x="1440" y="450" font-family="'Caveat', 'Xiaolai', sans-serif" font-size="34" fill="#1C5BB8">teach it</text>
+<path d="M1632.4 407.5 Q1620.7 402.0 1612.6 394.1 Q1611.6 384.7 1610.7 375.7 Q1613.2 366.6 1620.7 358.7 Q1631.8 352.8 1644.2 348.3 Q1657.9 344.7 1672.3 346.8 Q1685.8 349.6 1699.0 353.3 Q1707.4 360.7 1716.4 368.1 Q1717.1 377.4 1718.8 386.7 Q1712.0 394.9 1705.7 403.3 Q1694.2 409.2 1681.0 413.1 Q1666.4 413.4 1652.5 412.5 Q1639.6 409.1 1627.9 404.3" fill="none" stroke="#1D2327" stroke-width="5" stroke-linecap="round"/>
+<path d="M1640.6 407.0 L1628.0 435.8 L1660.4 412.4" fill="#FBFBF8" stroke="#1D2327" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="1646.0" cy="380.0" r="4.5" fill="#1D2327"/>
+<circle cx="1664.0" cy="380.0" r="4.5" fill="#1D2327"/>
+<circle cx="1682.0" cy="380.0" r="4.5" fill="#1D2327"/>
+<path d="M765 600 Q662.5 690.0 560 700" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/>
+<text x="360" y="722" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="48" fill="#1D2327">找卡点</text>
+<text x="360" y="772" font-family="'Caveat', 'Xiaolai', sans-serif" font-size="34" fill="#1C5BB8">find gaps</text>
+<path d="M247.3 725.6 Q241.3 720.1 235.6 714.4 Q231.3 707.4 230.9 699.2 Q231.2 691.2 234.4 683.7 Q238.4 676.5 245.7 672.7 Q252.6 667.7 261.1 667.8 Q269.3 669.0 276.7 672.9 Q282.8 678.5 288.2 684.9 Q290.6 693.1 290.6 701.5 Q286.7 709.0 283.8 716.6 Q278.3 723.1 270.6 726.4 Q262.4 727.9 254.2 727.8 Q246.8 724.1 239.3 720.5" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<path d="M281.8 719.8 C293.8 729.6 304.4 744.0 315.7 756.4" fill="none" stroke="#1D2327" stroke-width="8" stroke-linecap="round"/>
+<path d="M1155 600 Q1257.5 690.0 1360 700" fill="none" stroke="#1C5BB8" stroke-width="6" stroke-linecap="round"/>
+<text x="1440" y="722" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="48" fill="#1D2327">打比方</text>
+<text x="1440" y="772" font-family="'Caveat', 'Xiaolai', sans-serif" font-size="34" fill="#1C5BB8">simplify</text>
+<path d="M1656.1 707.8 Q1649.1 703.7 1641.8 699.4 Q1637.7 691.8 1634.7 683.7 Q1634.2 674.9 1637.5 666.9 Q1640.7 659.1 1646.9 653.4 Q1653.4 647.9 1661.5 645.8 Q1669.8 646.9 1677.8 648.4 Q1685.1 652.5 1690.2 659.2 Q1694.1 666.5 1696.7 674.5 Q1695.6 682.8 1694.3 691.1 Q1690.7 699.1 1684.3 704.9 Q1676.1 707.0 1668.5 710.7 Q1660.1 710.0 1652.2 707.2" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<path d="M1648.3 703.7 C1648.1 713.0 1649.8 722.2 1651.6 729.7" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<path d="M1682.1 703.6 C1680.9 713.5 1681.1 719.6 1680.3 730.1" fill="none" stroke="#1D2327" stroke-width="6" stroke-linecap="round"/>
+<path d="M1650.1 730.2 C1659.8 728.1 1672.4 730.9 1681.8 729.4" fill="none" stroke="#1D2327" stroke-width="5" stroke-linecap="round"/>
+<path d="M1650.0 738.5 C1661.4 738.0 1671.6 738.9 1681.4 737.4" fill="none" stroke="#1D2327" stroke-width="5" stroke-linecap="round"/>
+<path d="M1649.1 746.7 C1661.9 747.4 1671.1 746.9 1681.2 745.8" fill="none" stroke="#1D2327" stroke-width="5" stroke-linecap="round"/>
+<path d="M1657.0 703.0 L1661.0 676.0 L1666.0 687.0 L1671.0 676.0 L1675.0 703.0" fill="none" stroke="#1D2327" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M339.4 682.9 Q352.7 676.3 367.6 670.5 Q385.8 666.6 404.3 663.0 Q424.8 662.8 444.9 662.6 Q464.6 664.4 484.2 667.0 Q499.3 672.8 513.3 678.7 Q524.1 685.7 534.8 693.0 Q536.6 701.5 539.3 709.9 Q533.1 718.1 527.7 726.3 Q514.5 732.8 502.6 739.8 Q486.0 744.8 467.0 748.2 Q446.8 749.9 426.3 750.6 Q405.9 749.4 386.3 746.6 Q370.2 741.3 353.4 736.4 Q341.1 729.6 333.6 721.6 Q329.0 713.5 324.3 705.2 Q328.4 696.8 334.3 688.8 Q342.8 681.0 357.1 674.9 Q373.4 669.9 390.3 665.2" fill="none" stroke="#C1312A" stroke-width="6" stroke-linecap="round"/>
+<text x="360" y="830" font-family="'Xiaolai', 'Noto Sans SC', sans-serif" font-size="32" fill="#C1312A">最容易跳过，最值得做</text>
+</svg>

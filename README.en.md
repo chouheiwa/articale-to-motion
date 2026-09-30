@@ -2,9 +2,9 @@
 
 # ArticleToMotion
 
-ArticleToMotion is a macOS and Linux CLI for producing vertical motion-graphics videos.
+ArticleToMotion is a macOS and Linux CLI for producing vertical and landscape motion-graphics videos.
 
-The canvas is chosen once at `am init` — interactively, or with `--canvas vertical-3x4` / `--canvas vertical-9x16` (1080×1440 and 1080×1920, both 30fps). Non-interactive environments must pass `--canvas` explicitly; there is no silent default. It can split a final SRT into concurrently rendered scenes or drive a complete script, TTS, subtitle, cover, audio, and publishing workflow.
+The canvas is chosen once at `am init` — interactively, or with `--canvas vertical-3x4` / `--canvas vertical-9x16` / `--canvas landscape-16x9` (1080×1440, 1080×1920 and 1920×1080, all 30fps). Non-interactive environments must pass `--canvas` explicitly; there is no silent default. It can split a final SRT into concurrently rendered scenes or drive a complete script, TTS, subtitle, cover, audio, and publishing workflow.
 
 ▶ [Watch the ArticleToMotion promo video (MP4, 4m 47s)](https://github.com/chouheiwa/articale-to-motion/blob/main/docs/article-to-motion-tutorial.mp4)
 
@@ -31,6 +31,9 @@ Canvas is chosen once at init and written to `frame.md`. Built-in presets:
 |---|---|---|
 | `vertical-3x4` | 1080×1440, 30fps | Default, knowledge/tech vertical |
 | `vertical-9x16` | 1080×1920, 30fps | Full-screen vertical (TikTok, etc.) |
+| `landscape-16x9` | 1920×1080, 30fps | Landscape platforms (Bilibili, YouTube) |
+
+Landscape safe areas avoid the player's bottom controls and progress bar instead of the right-hand interaction rail of vertical platforms; `frame.md` ends with landscape composition notes. All 12 styles support every canvas.
 
 Non-interactive environments (CI, pipes) must pass `--canvas` explicitly; there is no silent default.
 

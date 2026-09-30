@@ -1,6 +1,6 @@
 # 白板手绘
 
-这是教程、概念拆解和课堂式讲解类竖屏 MG 视频的品牌层规范。YAML frontmatter 是唯一规范性 token；正文解释如何使用。
+这是教程、概念拆解和课堂式讲解类{{ORIENTATION}} MG 视频的品牌层规范。YAML frontmatter 是唯一规范性 token；正文解释如何使用。
 
 ## 使用原则
 
@@ -26,7 +26,7 @@
 
 - 外层擦痕、页角涂鸦可进入 `structural` 区；关键内容不得进入该区。
 - 普通画面使用 `main_content` 区。
-- 标题、数字、结论和核心术语使用 `critical_text` 区，主动避让抖音右侧互动栏和底部 UI。
+- 标题、数字、结论和核心术语使用 `critical_text` 区，主动避让{{PLATFORM_UI}}。
 - 中文手写体 `Xiaolai` 用于标题、正文和标签；超过三行的密集说明改用 `Noto Sans SC`。英文批注、数字小注用 `Caveat`。中文正文不得小于 24px。
 
 ## 动画

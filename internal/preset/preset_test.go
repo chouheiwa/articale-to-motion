@@ -95,7 +95,7 @@ func TestDefaultIsVertical3x4(t *testing.T) {
 
 func TestIDsListsAllBuiltins(t *testing.T) {
 	got := IDs()
-	want := []string{"vertical-3x4", "vertical-9x16"}
+	want := []string{"vertical-3x4", "vertical-9x16", "landscape-16x9"}
 	if len(got) != len(want) {
 		t.Fatalf("IDs = %v，期望 %v", got, want)
 	}
@@ -119,5 +119,23 @@ func TestCanvasLabelUsesFullWidthMultiplicationSign(t *testing.T) {
 	got := Canvas{WidthPx: 1080, HeightPx: 1440}.Label()
 	if got != "1080×1440" {
 		t.Fatalf("Label = %q，期望 1080×1440", got)
+	}
+}
+
+// 横屏没有右侧互动栏，需要让开的是底部播放器控制栏：左右对称、底部最深。
+func TestLandscape16x9SafeArea(t *testing.T) {
+	assertSafeArea(t, "landscape-16x9", map[string]ResolvedBox{
+		"structural":    {LeftPx: 48, RightPx: 48, TopPx: 40, BottomPx: 40},
+		"main_content":  {LeftPx: 120, RightPx: 120, TopPx: 80, BottomPx: 96},
+		"critical_text": {LeftPx: 160, RightPx: 160, TopPx: 96, BottomPx: 200},
+		"cover_title":   {LeftPx: 160, RightPx: 160, TopPx: 220, BottomPx: 340},
+		"subtitles":     {LeftPx: 240, RightPx: 240, TopPx: 840, BottomPx: 90},
+	})
+	p, ok := ByCanvas(1920, 1080, 30, "landscape")
+	if !ok || p.ID != "landscape-16x9" {
+		t.Fatalf("横屏反查 = %v %v", p.ID, ok)
+	}
+	if p.Platform.Orientation != "横屏" || p.LayoutNotes == "" {
+		t.Error("横屏预设必须带横屏措辞与构图要点")
 	}
 }

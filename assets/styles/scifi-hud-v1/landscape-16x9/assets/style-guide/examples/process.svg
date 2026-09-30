@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#16304A" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="vignette" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0" stop-color="#0F2233" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#0A1622"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#0A1622"/>
+  <rect width="1920" height="1080" fill="url(#vignette)"/>
+  <rect width="1920" height="1080" fill="url(#grid)" opacity="0.8"/>
+  <g fill="none" stroke="#2E5A73" stroke-width="2">
+    <path d="M40 110V56h54 M1880 110V56h-54 M40 970v54h54 M1880 970v54h-54"/>
+  </g>
+
+  <!-- background: launch pad schematic (right, under the pending step) -->
+  <g fill="none" stroke="#2E5A73" stroke-width="1.5" opacity="0.9">
+    <path d="M1600 640l26 46v224h-52v-224z"/>
+    <path d="M1574 860l-30 56h30M1626 860l30 56h-30"/>
+    <path d="M1574 740h52M1574 820h52"/>
+    <path d="M1280 916H1800"/>
+    <path d="M1440 916v-236h44v236M1462 680v-34"/>
+    <path d="M1484 740h90M1484 820h90" stroke-dasharray="6 6"/>
+    <path d="M1440 760l44 40M1484 760l-44 40M1440 840l44 40M1484 840l-44 40"/>
+  </g>
+
+  <!-- header -->
+  <g>
+    <rect x="160" y="110" width="14" height="14" fill="#37D6B5"/>
+    <text x="188" y="126" fill="#3FE0F0" font-size="28" font-weight="700" letter-spacing="4" font-family="'Noto Sans SC', sans-serif">启动序列</text>
+    <text x="1760" y="125" text-anchor="end" fill="#8FB3C4" font-size="20" font-weight="700" letter-spacing="4" font-family="'Orbitron', 'Noto Sans SC', sans-serif">SEQ · LAUNCH</text>
+    <rect x="160" y="156" width="1600" height="2" fill="#2E5A73"/>
+    <rect x="160" y="156" width="300" height="2" fill="#3FE0F0"/>
+  </g>
+  <text x="160" y="240" fill="#E6F6FA" font-size="56" font-weight="700" font-family="'Noto Sans SC', sans-serif">起飞前的最后十分钟</text>
+  <text x="160" y="290" fill="#8FB3C4" font-size="28" font-weight="400" font-family="'Noto Sans SC', sans-serif">每一步都要确认完成，下一步才会开始</text>
+
+  <!-- horizontal rail -->
+  <path d="M160 352H352" stroke="#2E5A73" stroke-width="2"/>
+  <path d="M352 352H1162" stroke="#37D6B5" stroke-width="3"/>
+  <path d="M1162 352H1567" stroke="#2E5A73" stroke-width="3" stroke-dasharray="6 6"/>
+  <path d="M1567 352H1760" stroke="#2E5A73" stroke-width="2"/>
+  <path d="M352 352v38M757 352v38M1162 366v24M1567 352v38" stroke="#2E5A73" stroke-width="2"/>
+
+  <!-- rail nodes -->
+  <rect x="340" y="340" width="24" height="24" fill="#37D6B5"/>
+  <path d="M346 352l5 5 8-10" fill="none" stroke="#0A1622" stroke-width="3"/>
+  <rect x="745" y="340" width="24" height="24" fill="#37D6B5"/>
+  <path d="M751 352l5 5 8-10" fill="none" stroke="#0A1622" stroke-width="3"/>
+  <circle cx="1162" cy="352" r="14" fill="#0A1622" stroke="#3FE0F0" stroke-width="4" filter="url(#glow)"/>
+  <circle cx="1162" cy="352" r="5" fill="#3FE0F0"/>
+  <rect x="1556" y="341" width="22" height="22" fill="#0A1622" stroke="#2E5A73" stroke-width="3"/>
+
+  <!-- step 01 done -->
+  <g>
+    <rect x="160" y="390" width="385" height="200" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+    <text x="188" y="440" fill="#3FE0F0" font-size="22" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">01</text>
+    <text x="232" y="439" fill="#8FB3C4" font-size="18" font-weight="700" letter-spacing="1" font-family="'Orbitron', 'Noto Sans SC', sans-serif">T-10:00</text>
+    <rect x="411" y="414" width="106" height="36" rx="2" fill="none" stroke="#37D6B5" stroke-width="2"/>
+    <text x="464" y="439" text-anchor="middle" fill="#37D6B5" font-size="18" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">DONE</text>
+    <text x="188" y="508" fill="#E6F6FA" font-size="30" font-weight="600" font-family="'Noto Sans SC', sans-serif">推进剂加注完成</text>
+    <text x="188" y="552" fill="#8FB3C4" font-size="24" font-family="'Noto Sans SC', sans-serif">液氧与煤油已经补满</text>
+  </g>
+  <!-- step 02 done -->
+  <g>
+    <rect x="565" y="390" width="385" height="200" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+    <text x="593" y="440" fill="#3FE0F0" font-size="22" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">02</text>
+    <text x="637" y="439" fill="#8FB3C4" font-size="18" font-weight="700" letter-spacing="1" font-family="'Orbitron', 'Noto Sans SC', sans-serif">T-01:00</text>
+    <rect x="816" y="414" width="106" height="36" rx="2" fill="none" stroke="#37D6B5" stroke-width="2"/>
+    <text x="869" y="439" text-anchor="middle" fill="#37D6B5" font-size="18" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">DONE</text>
+    <text x="593" y="508" fill="#E6F6FA" font-size="30" font-weight="600" font-family="'Noto Sans SC', sans-serif">切换箭上电源</text>
+    <text x="593" y="552" fill="#8FB3C4" font-size="24" font-family="'Noto Sans SC', sans-serif">地面供电断开，自主运行</text>
+  </g>
+  <!-- step 03 active (focus) -->
+  <g>
+    <rect x="970" y="390" width="385" height="200" fill="#132C40" stroke="#3FE0F0" stroke-width="3"/>
+    <path d="M970 414v-24h24 M1355 414v-24h-24 M970 566v24h24 M1355 566v24h-24" fill="none" stroke="#E6F6FA" stroke-width="3"/>
+    <text x="998" y="440" fill="#3FE0F0" font-size="22" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">03</text>
+    <text x="1042" y="439" fill="#E6F6FA" font-size="18" font-weight="700" letter-spacing="1" font-family="'Orbitron', 'Noto Sans SC', sans-serif">T-00:10</text>
+    <rect x="1221" y="414" width="106" height="36" rx="2" fill="#3FE0F0"/>
+    <text x="1274" y="439" text-anchor="middle" fill="#0A1622" font-size="18" font-weight="700" letter-spacing="2" font-family="'Orbitron', 'Noto Sans SC', sans-serif">ACTIVE</text>
+    <text x="998" y="508" fill="#E6F6FA" font-size="30" font-weight="700" font-family="'Noto Sans SC', sans-serif">点火序列启动</text>
+    <text x="998" y="552" fill="#3FE0F0" font-size="24" font-family="'Noto Sans SC', sans-serif">发动机预冷、阀门逐个自检</text>
+  </g>
+  <!-- step 04 pending -->
+  <g>
+    <rect x="1375" y="390" width="385" height="200" fill="#0A1622" fill-opacity="0.6" stroke="#2E5A73" stroke-width="2" stroke-dasharray="8 6"/>
+    <text x="1403" y="440" fill="#8FB3C4" font-size="22" font-weight="700" font-family="'Orbitron', 'Noto Sans SC', sans-serif">04</text>
+    <text x="1447" y="439" fill="#8FB3C4" font-size="18" font-weight="700" letter-spacing="1" font-family="'Orbitron', 'Noto Sans SC', sans-serif">T+00:00</text>
+    <rect x="1608" y="414" width="124" height="36" rx="2" fill="none" stroke="#2E5A73" stroke-width="2"/>
+    <text x="1670" y="439" text-anchor="middle" fill="#8FB3C4" font-size="18" font-weight="700" letter-spacing="0" font-family="'Orbitron', 'Noto Sans SC', sans-serif">STANDBY</text>
+    <text x="1403" y="508" fill="#8FB3C4" font-size="30" font-weight="600" font-family="'Noto Sans SC', sans-serif">点火起飞</text>
+    <text x="1403" y="552" fill="#8FB3C4" font-size="24" font-family="'Noto Sans SC', sans-serif">推力大于重量，离开发射台</text>
+  </g>
+
+  <!-- countdown readout -->
+  <g>
+    <path d="M160 636h1060v200H180l-20-20z" fill="#0F2233" stroke="#2E5A73" stroke-width="2"/>
+    <path d="M160 668v-32h32" fill="none" stroke="#3FE0F0" stroke-width="3"/>
+    <text x="196" y="690" fill="#8FB3C4" font-size="24" font-family="'Noto Sans SC', sans-serif">距离点火</text>
+    <text x="196" y="786" fill="#E6F6FA" font-size="72" font-weight="700" letter-spacing="2" font-family="'Orbitron', 'Noto Sans SC', sans-serif">T-00:07</text>
+    <path d="M600 668V804" stroke="#2E5A73" stroke-width="1"/>
+    <text x="640" y="700" fill="#8FB3C4" font-size="18" font-weight="700" letter-spacing="3" font-family="'Orbitron', 'Noto Sans SC', sans-serif">SEQ 3 / 4</text>
+    <rect x="640" y="720" width="544" height="16" fill="#0F3A48"/>
+    <rect x="640" y="720" width="408" height="16" fill="#3FE0F0"/>
+    <path d="M776 716v24M912 716v24M1048 716v24" stroke="#0A1622" stroke-width="3"/>
+    <rect x="640" y="780" width="12" height="12" fill="#37D6B5"/>
+    <text x="664" y="793" fill="#37D6B5" font-size="26" font-weight="600" font-family="'Noto Sans SC', sans-serif">全部参数正常</text>
+  </g>
+
+  <!-- footer status (decorative) -->
+  <g font-family="'Orbitron', 'Noto Sans SC', sans-serif" font-weight="700" font-size="18" letter-spacing="3">
+    <rect x="110" y="996" width="10" height="10" fill="#37D6B5"/>
+    <text x="132" y="1006" fill="#8FB3C4">GO FOR LAUNCH</text>
+    <text x="1820" y="1006" text-anchor="end" fill="#8FB3C4">PAD 01</text>
+  </g>
+</svg>

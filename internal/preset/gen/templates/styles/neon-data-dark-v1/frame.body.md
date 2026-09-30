@@ -2,7 +2,7 @@
 
 # 暗夜数据霓虹
 
-这是 AI、前沿技术与数据类竖屏 MG 视频的品牌层规范。YAML frontmatter 是唯一规范性 token；正文解释如何使用。
+这是 AI、前沿技术与数据类{{ORIENTATION}} MG 视频的品牌层规范。YAML frontmatter 是唯一规范性 token；正文解释如何使用。
 
 ## 使用原则
 
@@ -31,7 +31,7 @@
 
 - 外层网格与角标可进入 `structural` 区；关键内容不得进入该区。
 - 普通图表与面板使用 `main_content` 区。
-- 主数字、标题、结论和图例使用 `critical_text` 区，主动避让抖音右侧互动栏和底部 UI。
+- 主数字、标题、结论和图例使用 `critical_text` 区，主动避让{{PLATFORM_UI}}。
 - 图表必须有基线、刻度或来源注记之一；示意数据必须标注「示意」。
 
 ## 数据诚实

@@ -55,8 +55,8 @@ typography:
     body: 1.40
     metadata: 1.20
 spacing:
-  content_left_px: 88
-  content_width_px: 904
+  content_left_px: {{CONTENT_LEFT_PX}}
+  content_width_px: {{CONTENT_WIDTH_PX}}
   group_min_px: 12
   group_max_px: 20
   card_stack_min_px: 16
@@ -120,7 +120,7 @@ audio:
 subtitles:
   required: false
   font_size_px: {min: 32, max: 38}
-  max_width_px: 812
+  max_width_px: {{SUBTITLE_MAX_WIDTH_PX}}
   max_lines: 2
   max_fullwidth_chars_per_line: 16
   line_height: {min: 1.30, max: 1.40}
@@ -140,7 +140,7 @@ cover:
   max_fullwidth_chars_per_line: 10
   font_size_px: {min: 80, max: 112}
   line_height: {min: 1.00, max: 1.10}
-  max_width_px: 812
+  max_width_px: {{COVER_MAX_WIDTH_PX}}
   contrast_ratio_min: 7.0
   stable_frames: 18
 forbidden:

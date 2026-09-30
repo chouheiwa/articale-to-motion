@@ -92,7 +92,9 @@ fork 自外部项目的技能要带 `LICENSE` 和 `ATTRIBUTION.md`，后者记�
 
 SVG 转 PNG 必须走 `rsvg-convert`（`internal/styleimage`），**不能用 ImageMagick**：多数 ImageMagick 构建自带内置 XML SVG 渲染器，会抢在 rsvg 委托前接管 `.svg`，渲染不出文字也画不对背景填充，却返回退出码 0。
 
-新增画幅要动的地方：`internal/preset/table.go` 加一条、为每套风格手绘 4 张该尺寸的示例 SVG、跑 `go generate` 与 `-examples`。`validate` 与 `scene.BuildPrompt` 都向预设表反查，不持有画幅常量，无需改动。
+新增画幅要动的地方：`internal/preset/table.go` 加一条（安全区、`Platform` 平台措辞，必要时加 `LayoutNotes` 构图要点）、为每套风格手绘 4 张该尺寸的示例 SVG、跑 `go generate` 与 `-examples`。`validate` 与 `scene.BuildPrompt` 都向预设表反查，不持有画幅常量，无需改动。
+
+风格模板是所有画幅共用的，**随画幅变化的东西一律写占位符，不写死**：`{{CONTENT_LEFT_PX}}`、`{{CONTENT_WIDTH_PX}}`、`{{SUBTITLE_MAX_WIDTH_PX}}`、`{{COVER_MAX_WIDTH_PX}}` 由生成器从安全区推导（可带整数偏移，如 `{{CONTENT_LEFT_PX+8}}`）；`{{ORIENTATION}}`、`{{PLATFORM_UI}}`、`{{UI_ZONE}}`、`{{AVOIDANCE_ZONES}}` 取自画幅表的 `Platform`。在模板里写「竖屏」「抖音右侧互动栏」或 `904` 这类数字，横屏项目就会拿到错的规范。未知占位符会让生成器直接报错。
 
 新增风格要动的地方：`internal/preset/style.go` 加一条；在 `templates/styles/<风格>/` 写三份模板（`style_id` / `style_name` 必须与风格表一致，生成器会校验）；为每个画幅手绘 4 张示例 SVG，放进 `assets/styles/<风格>/<画幅>/assets/style-guide/examples/`；跑 `go generate` 与 `-examples`。四种镜头骨架的 id（`preset.ArchetypeIDs`）是叙事职责，所有风格共用、顺序固定，风格只换名字、用途说明和示例图。`TestInitEveryStyleAndCanvasPassesStyleValidation` 会对每个风格 × 画幅跑一遍 `am init` 加 `validate style`。
 
